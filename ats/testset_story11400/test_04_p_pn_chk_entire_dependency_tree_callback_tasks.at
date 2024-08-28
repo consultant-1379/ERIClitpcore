@@ -1,0 +1,69 @@
+## test_04_p_pn_chk_entire_dependency_tree_callback_tasks
+## Description:
+## Ensure the graph of the current sibling dependencies
+## which are defined on the "node" item types are as defined when
+## Callback Tasks are hanging off a ModelItem for the Peer Node
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types:
+## "os" profile Item-Type
+## "storage profile" Item-Type
+## "system" Item-Type
+## "network_interfaces" Item-Type
+#plug-in generates callback tasks for requires Item-Types
+add-plugins plugins/test_4_plugin
+runLitpScript ../include/two_nodes.at
+
+## "software-item" item type
+litp create -p /software/items/item -t software-item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /software/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+
+## "node-config" item type
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "routes" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Check the resulting plan order
+let __item_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/items/item
+let __service_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/services/service
+let __config_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/configs/config
+let __filesystem_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system
+let __storage_profile_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __routes_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/routes/route
+let __net_interface_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1
+let __os_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/os
+let __system_task CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/system
+
+## Result:
+## "items" and "services" Item-types appear after "filesystems" Item-types
+assertTaskBeforeTask __filesystem_task __service_task
+assertTaskBeforeTask __filesystem_task __item_task
+## "configs" Item-types after "file_systems" Item-types after "storage_profile" Item-types after "routes" Item-types
+## after "network_interfaces" Item-types after "os" Item-types after "system" Item-types
+assertTaskBeforeTask __system_task __os_task __net_interface_task __routes_task __storage_profile_task __filesystem_task __config_task
+
+# Test upgrade (applied) plan ordering
+litp run_plan
+assertPlanState successful
+
+litp create_plan
+
+# Items and Services on same level, behind filesystems
+assertTaskBeforeTask __filesystem_task __service_task
+assertTaskBeforeTask __filesystem_task __item_task
+
+assertTaskBeforeTask __system_task __os_task __net_interface_task __routes_task __storage_profile_task __filesystem_task __config_task
+

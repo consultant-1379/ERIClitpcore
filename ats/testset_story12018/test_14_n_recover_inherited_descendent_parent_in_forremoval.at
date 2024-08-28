@@ -1,0 +1,89 @@
+## test_14_n_recover_inherited_descendent_parent_in_forremoval
+## Description:
+## When an attempt to recover the descendent of an inherited Item
+## and its parent is in "ForRemoval" state
+## then a validation error is raised
+
+# Actions:
+add-extensions extensions/test_12018_extension
+add-plugins plugins/test_12018_plugin
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA that has a child item,
+#   c1 and a grandchild item, gc1
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+# 2. Inherit itemA to item1 and item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+# 3. Execute "create_plan" command
+litp create_plan
+
+# 4. Execute "run_plan" command
+litp run_plan
+
+# 5. Check all items are in "Applied" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 6. Remove item1
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+
+# 7. Check that the inherited item, item1 
+#    and its descendent are in "ForRemoval" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 8. Attempt to execute litp "update" command to recover
+#    the descendent of an inherited item (child item)
+# 9. MethodNotAllowedError raised indicating that the
+#    corresponding parent item is in "ForRemoval" state
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 -o name=child1
+
+# 10.Attempt to execute litp "create" command to re-create
+#    the descendent of an inherited item (child item)
+# 11.MethodNotAllowedError raised indicating that the
+#    corresponding parent item is in "ForRemoval" state
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's parent is marked for removal"
+assertError __err_1 create -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 -t child -o name=child1
+
+# 12.Attempt to execute litp "update" command to recover
+#    the descendent of an inherited item (grandchild item)
+# 13.MethodNotAllowedError raised indicating that the
+#    corresponding source item is in "ForRemoval" state
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+# 14.Attempt to execute litp "create" command to re-create
+#    the descendent of an inherited item (grandchild item)
+# 15.ValidationError raised indicating that the
+#    corresponding source item is in "ForRemoval" state
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+# Result:
+# The expected Validation Error is seen when an
+# attempt is made to recover the descendent of an inherited Item
+# when its corresponding parent is in "ForRemoval" state

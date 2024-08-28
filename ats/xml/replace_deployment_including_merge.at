@@ -1,0 +1,29 @@
+litp create -p /software/profiles/rhel_6_4 -t os-profile -o name='sample-profile' path='/profiles/node-iso/'
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+litp create -p /deployments/dep1 -t deployment
+litp create -p /deployments/dep1/clusters/cluster1 -t cluster
+
+# load dep2 multiple times
+litp load -p / -f root-dep2.xml --replace
+
+assertError show -p /deployments/dep1
+
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=nodea
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodeb -o hostname=nodeb
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea/network_interfaces/ip1 -o network_name=nodes
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodeb/network_interfaces/ip1 -o network_name=nodes
+
+litp update -p /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=newhostname 
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=newhostname
+
+litp update -p /deployments/dep2/clusters/at_cluster/nodes/nodea/network_interfaces/ip1 -o network_name=no_network
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea/network_interfaces/ip1 -o network_name=no_network
+
+# load dep2 again ensuring nodea hostname and ip1 are updated
+litp load -p / -f root-dep2.xml --replace
+
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=nodea
+assertPropertyUnset -p /deployments/dep2/clusters/at_cluster/nodes/nodea -o node_id
+
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea/network_interfaces/ip1 -o network_name=nodes

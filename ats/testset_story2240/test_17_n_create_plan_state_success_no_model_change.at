@@ -1,0 +1,8 @@
+runLitpScript misc/common_test_methods.at
+
+litp run_plan
+assertPlanState successful
+
+assertError --err_message "Create plan failed: no tasks were generated" create_plan
+
+assertError --err_message "Plan does not exist" run_plan

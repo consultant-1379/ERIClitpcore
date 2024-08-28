@@ -1,0 +1,53 @@
+# Test Case 01.
+## Description:
+## Test that on plan creation, the plan does not have phases containing both
+## config and callback tasks.
+## Rather than being in a mixed phase, config tasks and callback tasks phase are
+## in different phases and callback tasks will be scheduled first when there are
+## no dependencies.
+
+# Prerequisites
+add-plugins plugins/story11955_plugin
+add-extensions extensions/story11955_extension
+
+runLitpScript ../include/two_nodes.at
+
+# Actions
+# 1. Create the model items
+# 1a.Create a model item 1a
+# 1b.Create a model item 1b that inherits model item 1a and generates
+#    a Config task and a Callback task with no dependencies
+litp create -p /software/items/item1a -t story11955 -o name='item1a' testcase='tc1'
+litp inherit -s /software/items/item1a -p /deployments/local/clusters/cluster1/nodes/node1/items/item1b
+
+# 1c.Create a model item 2a
+# 1d.Create a model item 2b that inherits model item 2a and generates
+#    two Config Tasks and two Callback Tasks with no dependencies
+litp create -p /software/items/item2a -t story11955 -o name='item2a' testcase='tc1'
+litp inherit -s /software/items/item2a -p /deployments/local/clusters/cluster1/nodes/node1/items/item2b
+
+# 2. Execute the 'create_plan' command
+# 3. Execute the 'show_plan' command
+litp create_plan
+
+# 4. Check that config task and callback task are in different phases
+# 4.1 Check that first phase contains only callback tasks for items 1b and 2b
+assertTask 0 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 0 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+
+# 4.2 Check that second phase contains only config tasks for items 1b and 2b
+assertTask 1 tc1_res_1b node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 1 tc1_res_2b node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+
+# 5. Execute the 'run_plan' command
+litp run_plan
+
+# 6. Check that plan is successful
+assertPlanState successful
+
+# Result:
+# On Plan creation, config and callback tasks are in different phases.
+# Callback tasks phase (phase 1) is scheduled before the config tasks phase
+# (phase 2) when there are no dependencies.
+# Plan can be run successfully
+

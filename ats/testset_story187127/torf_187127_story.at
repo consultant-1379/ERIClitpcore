@@ -1,0 +1,74 @@
+## TORF-189014
+add-plugins plugins/dummy_187127_plugin/
+runLitpScript ../include/two_nodes.at
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+# Create and run a plan to transition all items to the Applied state
+litp create -t software-item -p /software/items/socat
+litp inherit -s /software/items/socat -p /ms/items/socat
+litp create_plan
+
+assertError --err_message "Cannot resume plan in state \"initial\"" run_plan --resume
+litp run_plan
+assertPlanState successful
+
+# Create a plan and set up failing tasks
+litp create -t software-item -p /software/items/mutt
+litp inherit -s /software/items/mutt -p /deployments/local/clusters/cluster1/nodes/node1/items/mutt
+litp inherit -s /software/items/mutt -p /deployments/local/clusters/cluster1/nodes/node2/items/mutt
+
+litp create_plan
+
+failCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node1/items/mutt
+litp run_plan
+assertPlanState failed
+
+unfailCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node1/items/mutt
+failCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node2
+
+litp run_plan --resume
+assertPlanState failed
+assertLogMessage "Resuming plan in state \"failed\"."
+
+unfailCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node2
+litp run_plan --resume
+assertPlanState successful
+
+assertError --err_message "Cannot resume plan in state \"successful\"" run_plan --resume
+
+# Create a plan that includes at least 2 tasks:
+# - one for which the model item is successfully transitioned to the Removed state and then deleted
+# - another for which the state of the item remains Applied/Initial at the end of the plan
+# These tasks have to be in the cluster group
+litp create -t software-item -p /software/items/tshark
+litp inherit -s /software/items/tshark -p /deployments/local/clusters/cluster1/nodes/node1/items/tshark
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/mutt
+litp create_plan
+
+
+failCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node1/items/tshark
+litp run_plan
+assertPlanState failed
+show show_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/tshark Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/mutt
+
+unfailCallbackTask  _noop_callback /deployments/local/clusters/cluster1/nodes/node1/items/tshark
+litp run_plan --resume
+
+litp create_snapshot
+show show_plan
+assertError --err_message "Cannot resume a snapshot plan" run_plan --resume
+
+
+litp create -t mock-package -p /software/items/nmap -o name=nmap
+litp inherit -s /software/items/nmap -p /deployments/local/clusters/cluster1/nodes/node1/items/nmap
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/nmap
+
+
+# Let's invalidate the plan!
+litp inherit -s /software/items/nmap -p /deployments/local/clusters/cluster1/nodes/node2/items/nmap
+assertPlanState invalid
+assertError --err_message "Cannot resume plan in state \"invalid\"" run_plan --resume

@@ -1,0 +1,19 @@
+add-extensions extensions/litpcds_4429
+add-plugins plugins/litpcds_4429
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t story4429 -p /software/items/story4429 -o name=test_05
+litp inherit -s /software/items/story4429 -p /ms/items/story4429
+litp inherit -s /software/items/story4429 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_4429
+litp inherit -s /software/items/story4429 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_4429
+
+litp create_plan
+
+let __taskA CallbackTask cb_do_nothing /software/items/story4429
+let __taskB CallbackTask cb_do_nothing2 /software/items/story4429
+let __taskC CallbackTask cb_do_nothing3 /software/items/story4429
+
+assertTaskBeforeTask __taskB __taskC
+assertTaskBeforeTask __taskC __taskA
+assertTaskBeforeTask __taskB __taskA

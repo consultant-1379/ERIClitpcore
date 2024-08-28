@@ -1,0 +1,57 @@
+#        Description:
+#            Given a LITP deployments, when a create_plan command is executed
+#            and a plugin returns tasks that depend on another task's (OR
+#            plugin's) query item and call_type, call_id tuple, hen the created
+#            plan will preserve the dependencies and ensure that the required
+#            dependencies are executed first.
+#
+#        Pre-Requisites:
+#            1. A running litpd service
+#
+#        Risks:
+#            Once a plugin/extension package is installed, it cannot be removed
+#
+#        Pre-Test Steps:
+#            1.  Create a new dummy extension as described in the LITP 2 SDK
+#            2.  Create a new dummy plugin as described in the LITP 2 SDK
+#            3.  Edit the plugin to return a task where TaskA requires query
+#                item of TaskB and its call_type, call_id tuple
+#            4.  Build and install the extension package
+#            5.  Build and install the plugin package
+#
+#        Steps:
+#            1.  Execute the CLI create command to create an item type
+#            2.  Execute the CLI inherit command to reference the item type to
+#                the nodes
+#            3.  Execute the CLI create_plan command
+#            4.  Check TaskB will be executed before TaskA
+#
+#        Restore:
+#            1.  Execute the CLI remove command to remove the item type and its
+#                references
+#
+#        Expected Result:
+#            show_plan output shows TaskB will be executed before TaskA
+
+runLitpScript ../include/two_nodes.at
+add-extensions ../plugins/task_dependencies
+add-plugins ../plugins/task_dependencies
+
+#            1.  Execute the CLI create command to create an item type
+litp create -p /software/items/test_item -t test_item -o name=test_item 
+
+#            2.  Execute the CLI inherit command to reference the item type to the nodes
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item 
+
+#            3.  Execute the CLI create_plan command
+litp create_plan
+
+#            4.  Check TaskB will be executed before TaskA
+let __task1 ConfigTask node1 package name /deployments/local/clusters/cluster1/nodes/node1/items/test_item 
+let __task2 ConfigTask node1 node_call_type node_call_id /deployments/local/clusters/cluster1/nodes/node1
+assertTaskBeforeTask __task2 __task1
+ 
+litp run_plan
+assertDirectoryContents manifests/task_dependencies /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+assertPlanState successful

@@ -1,0 +1,39 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp load -p / -f blade.xml --replace
+
+litp create_plan
+litp run_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Applied
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -o name=b_package_newname
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Applied
+
+assertState -p /infrastructure/storage/nfs_mounts/nfs_fs/export Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs/export Applied
+
+litp export -p / -f /tmp/root.xml
+
+# we are now allowing updates if they are the same
+# assertError --err_type InvalidRequestError load -p / -f /tmp/root.xml --replace
+
+litp load -p / -f /tmp/root.xml --replace
+
+litp remove -p /deployments/local
+litp remove -p /infrastructure/systems/system1
+litp remove -p /infrastructure/systems/system2
+litp remove -p /infrastructure/systems/system3
+litp remove -p /infrastructure/networking/networks/ms_network
+litp create_plan
+litp run_plan
+
+litp load -p / -f /tmp/root.xml --replace
+
+litp create_plan
+litp run_plan

@@ -1,0 +1,28 @@
+add-extensions ../plugins/dummy_7855
+add-plugins ../plugins/dummy_7855
+runLitpScript ../../include/two_nodes.at
+
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager="cmw"
+
+litp create -p /software/items/baz1 -t baz -o name=baz1
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/baz1 -s /software/items/baz1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/baz1 -s /software/items/baz1
+
+# no node lock for nodes in Initial state
+litp create_plan
+litp run_plan
+
+litp create -p /software/items/baz2 -t baz -o name=baz2
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/baz2 -s /software/items/baz2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/baz2 -s /software/items/baz2
+
+litp create_plan
+
+# Fail node1's lock task, but APD remains true
+disableCallbackMock cb_fail /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+assertPlanState failed
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1 True

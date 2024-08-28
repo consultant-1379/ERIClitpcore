@@ -1,0 +1,21 @@
+runLitpScript ../include/two_nodes.at
+
+add-extensions extensions
+add-plugins plugins
+
+litp create -t story6861 -p /software/items/story6861 -o name="test_03" description="model_item_validation_fail" fail="/a/path/property/"
+
+assertError --err_type "ValidationError" --err_vpath "Story6861 Error TC02" update -p /software/items/story6861 -o name="test_03" description="model_item_validation_fail" fail="/fail/path/property"
+
+litp create_plan
+
+assertCallbackTask cb_fail_model_item_validation /software/items/story6861
+
+disableCallbackMock cb_fail_model_item_validation /software/items/story6861
+
+runPlanStart
+runPlanEnd
+
+assertPlanState failed
+
+assertLogMessage "ValidationErrors occurred during update of property \"fail\" on /software/items/story6861:\n<Story6861 Error TC02"

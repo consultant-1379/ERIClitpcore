@@ -1,0 +1,37 @@
+# Moved IT 5277 TC 01
+# Description:
+# Given a LITP deployment, when a user creates a new node and lists its
+# children, the services collection must exist.
+#
+# Pre-Requisites:
+#     1. A running litpd service
+#
+# Steps:
+#     1.  Execute the CLI commands required to create a new node in the
+#         model
+#     2.  Execute the CLI show command on the created node
+#     3.  Check ../services collection is a child of the node
+#     4.  Execute the CLI show command on the /software item
+#     5.  Check ../services collection is a child of /software
+#     6.  Execute the CLI create command to create an invalid item under
+#         the ../services collection
+#     7.  Check for error message
+#     8.  Execute the CLI remove command to attempt to remove the
+#         ../services collection items
+#     9.  Check for error message
+#
+# Restore Steps:
+#     1. Execute the CLI remove command to remove the created node
+#
+# Result:
+# The services collection must exist as a child of the node.
+#
+runLitpScript two-node-std.inc
+litp show -p /deployments/site1/clusters/cluster1/nodes/node1/services
+litp show -p /software/services
+assertError --err_message "'node' is not an allowed type for collection of item type 'service-base'" create -t node -p /software/services/node
+assertError --err_message "Cannot directly delete Collection item" remove -p /software/services
+
+# cli bit from IT 5277 TC 02
+litp create -t service-base -p /software/services/service_example
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/services/service_example -s /software/services/service_example

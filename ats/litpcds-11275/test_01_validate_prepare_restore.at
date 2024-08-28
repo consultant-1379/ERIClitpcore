@@ -1,0 +1,15 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+let __err_1 --err_type "ValidationError" --err_property "path" --err_message "Invalid value '/ms'."
+let __err_2 --err_type "ValidationError" --err_property "actions" --err_message "Invalid value 'junk'."
+
+assertProperty /litp/prepare-restore -o path=/
+assertProperty /litp/prepare-restore -o actions=all
+assertProperty /litp/prepare-restore -o path=/
+assertProperty /litp/prepare-restore -o actions=all

@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:sshd-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="sshd_config">
+  <permit_root_login>false</permit_root_login>
+</litp:sshd-config>

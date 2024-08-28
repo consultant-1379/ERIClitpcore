@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:node xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="node1">
+  <hostname>node1</hostname>
+  <is_locked>false<!--note: this property is not updatable--></is_locked>
+  <litp:node-configs-collection id="configs"/>
+  <litp:node-file_systems-collection id="file_systems"/>
+  <litp:node-items-collection id="items"/>
+  <litp:node-network_interfaces-collection id="network_interfaces">
+    <litp:eth id="if0">
+      <ipaddress>10.10.10.511</ipaddress>
+      <network_name>mgmt</network_name>
+      <device_name>eth0<!--note: this property is not updatable--></device_name>
+      <macaddress>08:00:27:5B:C1:3E<!--note: this property is not updatable--></macaddress>
+    </litp:eth>
+  </litp:node-network_interfaces-collection>
+  <litp:os-profile-inherit source_path="/software/profiles/rhel_6_4" id="os"/>
+  <litp:node-routes-collection id="routes"/>
+  <litp:node-services-collection id="services"/>
+  <litp:system-inherit source_path="/infrastructure/systems/system1" id="system">
+    <litp:system-controllers-collection-inherit source_path="/infrastructure/systems/system1/controllers" id="controllers"/>
+    <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system1/disks" id="disks">
+      <litp:disk-inherit source_path="/infrastructure/systems/system1/disks/disk0" id="disk0"/>
+    </litp:system-disks-collection-inherit>
+  </litp:system-inherit>
+</litp:node>

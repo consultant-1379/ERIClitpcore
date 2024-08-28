@@ -1,0 +1,16 @@
+# the ordered_task_list_requires plugin returns
+# - an OrderedTaskList which contains a Task which requires another Task not in the OrderedTaskList
+# - and a Task which requires another Task which is provided in an OrderedTaskList
+add-plugins ../plugins/ordered_task_list_requires
+
+litp create -p /software/items/s1 -t software-item
+litp inherit -p /ms/items/s1 -s /software/items/s1
+
+litp create_plan
+litp run_plan
+
+# Assert all tasks are inluded in the plan
+assertTask 0 dummy_task_1 ms1 /ms/items/s1
+assertTask 0 dummy_task_2 ms1 /ms/items/s1
+assertTask 0 dummy_task_3 ms1 /ms/items/s1
+assertTask 0 dummy_task_4 ms1 /ms/items/s1

@@ -1,0 +1,17 @@
+add-extensions extensions/litpcds_4429
+add-plugins plugins/litpcds_4429
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t story4429 -p /software/items/story4429 -o name=test_09
+litp inherit -s /software/items/story4429 -p /ms/items/story4429
+litp inherit -s /software/items/story4429 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_4429
+litp inherit -s /software/items/story4429 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_4429
+
+litp create -t story4429-1 -p /software/items/story4429-1 -o name=test_09
+litp inherit -s /software/items/story4429-1 -p /ms/items/story4429-1
+litp inherit -s /software/items/story4429-1 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_4429-1
+litp inherit -s /software/items/story4429-1 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_4429-1
+
+assertError --err_type "InternalServerError" create_plan
+assertLogMessage "Invalid task dependency: notify"

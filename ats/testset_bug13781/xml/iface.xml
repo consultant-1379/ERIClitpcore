@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<litp:bond xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="b3259">
+    <arp_validate>all</arp_validate><!-- Note: 'mode' property omitted -->
+</litp:bond>

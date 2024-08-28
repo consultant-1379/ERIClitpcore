@@ -1,0 +1,59 @@
+litp create -p /infrastructure/networking/networks/ip-range1 -t network -o name=sample-ip-range subnet=10.10.10.0/24
+litp create -p /software/profiles/os-profile1 -t os-profile -o name=sample-os-profile path=/var/www/cobbler/ks_mirror/node-iso-x86_64
+litp create -p /infrastructure/storage/storage_profiles/storage-profile1 -t storage-profile-base
+litp create -p /infrastructure/systems/system1 -t system -o system_name=sample-system1
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+litp create -p /infrastructure/systems/system2 -t system -o system_name=sample-system2
+litp create -p /infrastructure/systems/system2/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+litp create -p /infrastructure/systems/system3 -t system -o system_name=sample-system3
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+
+litp create -p /deployments/local_vm1 -t deployment
+litp create -p /deployments/local_vm1/clusters/cluster1 -t cluster
+
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node2 -t node -o hostname=node2
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/system2
+
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node3 -t node -o hostname=node3
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/system -s /infrastructure/systems/system3
+
+litp update -p /deployments/local_vm1/clusters/cluster1 -o ha_manager="cmw"
+
+assertError create_plan
+
+add-extensions ../../plugins/dummy_foo
+add-plugins ../../plugins/dummy_foo
+
+litp create -p /software/items/foo1 -t foo -o name=foo1
+
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/foo1 -s /software/items/foo1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/items/foo1 -s /software/items/foo1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/items/foo1 -s /software/items/foo1
+
+litp create_plan
+# no node lock for nodes in Initial state
+litp run_plan
+
+litp create -p /software/items/foo2 -t foo -o name=foo2
+
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/foo2 -s /software/items/foo2
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/items/foo2 -s /software/items/foo2
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/items/foo2 -s /software/items/foo2
+
+litp create_plan
+litp run_plan
+# node lock for nodes in Applied state
+# TODO: check generated plan
+

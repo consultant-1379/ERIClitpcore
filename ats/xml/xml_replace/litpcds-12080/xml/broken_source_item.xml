@@ -1,0 +1,7 @@
+<litp:software-items-collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="items">
+  <litp:inherit_extension id="source_item">
+    <ensure>installed</ensure>
+    <name>inheritme</name>
+    <not_updatable>xml value<!--note: this property is not updatable--></not_updatable>
+  </litp:inherit_extension>
+</litp:software-items-collection>

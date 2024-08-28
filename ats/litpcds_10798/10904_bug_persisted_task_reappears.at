@@ -1,0 +1,23 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/package_1 -t mock-package -o name=package_1
+litp inherit -p /ms/items/package_1 -s /software/items/package_1
+
+litp create_plan
+assertConfigTask ms1 package package_1 /ms/items/package_1 ensure=installed
+litp run_plan
+assertPlanState successful
+
+litp update -p /ms/items/package_1 -o name=new_package_name
+
+litp create_plan
+failConfigTask package ms1 /ms/items/package_1
+litp run_plan
+assertPlanState failed
+assertAppliedPropertiesDeterminable -p /ms/items/package_1 False
+
+# Assert that previously successful persisted tasks don't make their way back
+# into the plan because of the apd flag
+litp create_plan
+assertConfigTask ms1 package new_package_name /ms/items/package_1 ensure=installed
+assertNoConfigTask ms1 package package_1 /ms/items/package_1 ensure=installed

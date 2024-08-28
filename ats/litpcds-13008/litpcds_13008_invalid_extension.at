@@ -1,0 +1,18 @@
+## LITPCDS-13008: Create plan fails when extension has clashing field names
+## with ModelItem properties
+runLitpScript ../include/two_nodes.at
+
+# Extension has keyword clashes - children, source, vpath
+add-extensions extensions/invalid_13008_extension
+
+litp create -p /software/services/parent -t parent -o source=some_value
+
+assertState -p /software/services/parent/children Initial
+assertState -p /software/services/parent/vpath Initial
+
+# Use mock-package plugin to create a valid plan
+litp create -p /software/items/foo -t mock-package -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+
+# No Error
+litp create_plan

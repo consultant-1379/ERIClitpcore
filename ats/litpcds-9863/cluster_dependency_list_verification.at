@@ -1,0 +1,42 @@
+# cluster_dependency_list_verification
+# ====================================
+
+# Description:
+# Test that the cluster dependency list validation does not throw exception
+#
+# Actions:
+# 1. Create multi cluster deployment
+#   a) one cluster is no-property item eg. "cluster-base"
+#   b) one cluster with empty "dependency_list" 
+#   c) one cluster with not-empty "dependency_list"
+# 2. Create and  Run plan
+# 3. Test verification
+#
+# Results:
+# Create Plan is successful
+
+
+
+# Import plugins/extensions
+add-extensions ../plugins/dummy_8809
+add-plugins ../plugins/dummy_8809
+
+
+# Create multi cluster deployment
+litp create -p /deployments/litpcds_9863 -t deployment
+litp create -p /deployments/litpcds_9863/clusters/cluster_1 -t cluster -o dependency_list='cluster_2'
+litp create -p /deployments/litpcds_9863/clusters/cluster_2 -t cluster -o dependency_list=''
+# cluster-base is a cluster with no property
+litp create -p /deployments/litpcds_9863/clusters/c_base -t cluster-base
+
+runLitpScript misc/create_multi_cluster_deployment.inc
+
+litp create_plan
+
+assertState -p /deployments/litpcds_9863/clusters/c_base Initial
+assertState -p /deployments/litpcds_9863/clusters/cluster_1/nodes/node1 Initial
+assertState -p /deployments/litpcds_9863/clusters/cluster_1/nodes/node2 Initial
+assertState -p /deployments/litpcds_9863/clusters/cluster_1/nodes/node3 Initial
+assertState -p /deployments/litpcds_9863/clusters/cluster_2/nodes/node1 Initial
+assertState -p /deployments/litpcds_9863/clusters/cluster_2/nodes/node2 Initial
+

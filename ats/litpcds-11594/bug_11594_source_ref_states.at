@@ -1,0 +1,57 @@
+runLitpScript ../include/two_nodes.at
+add-extensions ../testset_story11331/extensions/dummy_11270_extension
+add-plugins plugins/dummy_11594_plugin
+
+litp create -p /software/items/yum_repo -t yum-repository -o name='yum'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -s /software/items/yum_repo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo \
+    -s /software/items/yum_repo
+
+litp create_plan
+litp run_plan
+
+assertState -p /software/items/yum_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo Applied
+
+# Update source
+litp create_plan
+
+assertState -p /software/items/yum_repo Updated
+assertProperty /software/items/yum_repo -o checksum='a767c030fe3d1cab264e77d28e94812e'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o checksum='a767c030fe3d1cab264e77d28e94812e'
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo \
+    -o checksum='a767c030fe3d1cab264e77d28e94812e'
+
+# Call clear_property on source item
+litp create_plan
+assertState -p /software/items/yum_repo Applied
+assertPropertyUnset -p /software/items/yum_repo -o checksum
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Applied
+assertPropertyUnset p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -o checksum
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo Applied
+assertPropertyUnset p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo -o checksum
+
+# ForRemoval states
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo
+litp remove -p /software/items/yum_repo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo ForRemoval
+assertState -p /software/items/yum_repo ForRemoval
+
+# Update the source: ForRemoval -> Updated
+litp create_plan
+
+assertState -p /software/items/yum_repo Updated
+assertProperty /software/items/yum_repo -o checksum='a767c030fe3d1cab264e77d28e94812e'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o checksum='a767c030fe3d1cab264e77d28e94812e'
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo \
+    -o checksum='a767c030fe3d1cab264e77d28e94812e'

@@ -1,0 +1,22 @@
+# LITPCDS-1612: Delete-protect basic structure items (most of these are collections)
+# LITPCDS-1971: Delete-protect collections
+
+assertError remove -p /
+assertError remove -p /software
+assertError remove -p /software/items
+assertError remove -p /software/deployables
+assertError remove -p /software/profiles
+assertError remove -p /software/runtimes
+assertError remove -p /infrastructure
+assertError remove -p /infrastructure/system_providers
+assertError remove -p /infrastructure/items
+assertError remove -p /infrastructure/storage
+assertError remove -p /infrastructure/storage/storage_profiles
+assertError remove -p /infrastructure/systems
+assertError remove -p /infrastructure/networking
+assertError remove -p /infrastructure/networking/ip_ranges
+assertError remove -p /ms
+assertError remove -p /ms/services
+assertError remove -p /ms/items
+assertError remove -p /ms/ipaddresses
+assertError remove -p /deployments

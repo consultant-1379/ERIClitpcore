@@ -1,0 +1,35 @@
+add-plugins plugins/
+add-extensions plugins/
+
+litp update -p /ms -o hostname=ms1
+litp create -p /ms/services/pseudo_cobbler -t distro-service -o name="foo"
+
+litp create_plan
+assertConfigTask ms1 cobblerdata::import_distro foo /ms/services/pseudo_cobbler
+assertCallbackTask _dummy_callback /ms
+
+failCallbackTask _dummy_callback /ms
+
+litp run_plan
+# The first task's resource is present and applied in the manifest
+assertFileContents distro_resource_applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+assertPlanState failed
+#assertTask 0 cobblerdata::import_distro ms1 /ms/services/pseudo_cobbler Success
+#assertCallbackTask _dummy_callback /ms Failed
+
+litp create_plan
+
+failCallbackTask _dummy_callback /ms
+litp run_plan
+assertPlanState failed
+#assertTask 0 foo ms1 /ms Failed
+
+# The resource for the first plan's succesful task is still present and applied in the manifest
+assertFileContents distro_resource_applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+litp create_plan
+litp run_plan
+
+# The resource for the first plan's succesful task is still present and applied in the manifest
+assertFileContents distro_resource_applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

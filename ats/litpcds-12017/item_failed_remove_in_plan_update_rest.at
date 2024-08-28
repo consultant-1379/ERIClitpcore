@@ -1,0 +1,32 @@
+## LITPCDS-12017: Remove parent in plan, but fail plan before child item is
+## removed in cleanup at end of plan. Then try update parent item via REST API
+add-extensions extensions/dummy_12017_extension
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/foo -t dummy-12017 -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+litp create_plan
+litp run_plan
+
+# Remove parent item, note it has child item (CollectionItem 'packages')
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo/packages ForRemoval
+
+litp create_plan
+runPlanUntil 1
+stopPlan
+runPlanEnd
+assertPlanState stopped
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo/packages ForRemoval
+
+# Update item via command line that previously failed removal
+let __val_err --err_type "MethodNotAllowedError" --err_message "Cannot update item which has previously failed removal"
+assertError --errors_length 1 __val_err update -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=new_foo
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=foo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo/packages ForRemoval

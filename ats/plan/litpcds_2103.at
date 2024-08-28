@@ -1,0 +1,92 @@
+# ATs for bug LITPCDS-2103:
+# "Cannot add second link to a SW item after SW item has been used in a plan."
+#
+
+# =================================
+# Creating test preconditions
+# =================================
+
+litp create -p /software/profiles/osprofile1 -t os-profile -o name="node-iso" path="/cobbler/ks_mirror/node-iso-x86_64"
+
+litp create -p /software/items/package_file -t mock-package -o name="file"
+litp create -p /software/items/package_vim -t mock-package -o name="vim-enhanced"
+
+litp create -p /infrastructure/systems/sys1 -t system -o system_name="sys1"
+litp create -p /infrastructure/systems/sys2 -t system -o system_name="sys2"
+litp create -p /infrastructure/networking/networks/mgmt_iprange2 -t network -o name="mgmt" subnet="10.10.10.0/24"
+
+litp create -p /deployments/site1 -t deployment
+litp create -p /deployments/site1/clusters/cluster1 -t cluster
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2 -t node -o hostname="node2"
+
+# assertState -p /software/items/package_file Initial
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/os -s /software/profiles/osprofile1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/os -s /software/profiles/osprofile1
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/sys1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/sys2
+
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/os Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/os Initial
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file -s /software/items/package_file
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim -s /software/items/package_vim
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_file -s /software/items/package_file
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim -s /software/items/package_vim
+
+litp create_plan
+litp run_plan
+
+
+# =================================
+# End of creating test preconditions
+# =================================
+
+# Bug verification steps:
+
+# 1) Add package to the first node:
+litp create -p /software/items/package_telnet -t mock-package -o name="telnet"
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet -s /software/items/package_telnet
+
+assertState -p /software/items/package_telnet Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet Initial
+
+litp create_plan
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet Initial
+
+litp run_plan
+
+# 2) Verify the package is added
+assertState -p /software/items/package_telnet Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet Applied
+
+
+# 3) Add the same package (telnet) to node 2
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_telnet -s /software/items/package_telnet
+
+assertState -p /software/items/package_telnet Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_telnet Initial
+
+
+litp create_plan
+
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_telnet Initial
+
+litp run_plan
+
+# 4) Verify package telnet is added to node 2
+assertState -p /software/items/package_telnet Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_telnet Applied
+

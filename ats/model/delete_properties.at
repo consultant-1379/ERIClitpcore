@@ -1,0 +1,39 @@
+litp create -p /deployments/local -t deployment
+litp create -p /deployments/local/clusters/cluster1 -t cluster
+litp create -p /deployments/local/clusters/cluster1/nodes/node1 -t node -o hostname='node1'
+
+litp create -t os-profile -p /software/profiles/os -o name='sample-profile' path="/cobbler/ks_mirror/node-iso"
+assertProperty /software/profiles/os -o breed="redhat"
+assertProperty /software/profiles/os -o arch="x86_64"
+
+litp update -p /software/profiles/os -o breed="dog"
+assertProperty /software/profiles/os -o breed="dog"
+
+litp update -p /software/profiles/os -d breed
+assertProperty /software/profiles/os -o breed="redhat"
+litp update -p /software/profiles/os -o breed="dog"
+
+litp update -p /software/profiles/os -o arch="i386"
+assertProperty /software/profiles/os -o arch="i386"
+
+assertError --err_type MissingRequiredPropertyError update -p /software/profiles/os -d name
+
+assertError --err_type InvalidRequestError update -p /software/profiles/os -d sowrong
+
+litp update -p /software/profiles/os -d breed,arch
+assertProperty /software/profiles/os -o arch="x86_64"
+assertProperty /software/profiles/os -o breed="redhat"
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/os -s /software/profiles/os
+# show show -p /deployments/local/clusters/cluster1/nodes/node1/os 
+assertNotOverridden -p /deployments/local/clusters/cluster1/nodes/node1/os -o breed
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/os -o breed=centos
+# show show -p /deployments/local/clusters/cluster1/nodes/node1/os 
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/os -o breed=centos
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/os -d breed
+# litp update -p /deployments/local/clusters/cluster1/nodes/node1/os -o breed=
+# show show -p /deployments/local/clusters/cluster1/nodes/node1/os 
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/os -o breed
+assertNotOverridden -p /deployments/local/clusters/cluster1/nodes/node1/os -o breed

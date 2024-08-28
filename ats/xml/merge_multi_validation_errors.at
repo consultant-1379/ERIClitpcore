@@ -1,0 +1,9 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+assertError --err_type ValidationError load -p / -f bad_values.xml --merge
+
+litp load -p / -f blade.xml --replace
+
+litp create_plan
+litp run_plan

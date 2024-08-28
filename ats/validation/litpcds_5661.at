@@ -1,0 +1,6 @@
+litp create -t deployment -p /deployments/d1 
+litp create -t cluster    -p /deployments/d1/clusters/c1
+litp create -t node       -p /deployments/d1/clusters/c1/nodes/n2 -o hostname=foo1 
+
+# Can't assign IPv6 address to network's subnet property 
+assertError create -t network -p /infrastructure/networking/networks/network1 -o subnet=fdde:4d7e:d471::834:0:0/64 name=net1

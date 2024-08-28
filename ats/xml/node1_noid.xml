@@ -1,0 +1,13 @@
+<litp:node xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"	xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+    <hostname>node1</hostname>
+    <litp:node-network_interfaces-collection id="network_interfaces">
+    	<litp:network-interface id="net1"/>
+    </litp:node-network_interfaces-collection>
+    <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os">
+        <name>sample-profile</name>
+    </litp:os-profile-inherit>
+    <litp:storage-profile-base-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile"/>
+    <litp:system-inherit source_path="/infrastructure/systems/system1" id="system">
+        <system_name>MN1VM</system_name>
+    </litp:system-inherit>
+</litp:node>

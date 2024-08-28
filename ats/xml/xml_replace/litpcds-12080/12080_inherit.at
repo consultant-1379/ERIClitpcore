@@ -1,0 +1,21 @@
+## LITPCDS-12080 alters load behaviour
+##  previously we got "cannot remove x item" errors
+## for each inherited item when a source_item replace failed
+
+add-extensions inherit_extension
+runLitpScript two-node-std.inc
+
+litp create -p /software/items/source_item -t inherit_extension -o name=inheritme not_updatable="value at initial"
+litp inherit -p /ms/items/sinkitem -s /software/items/source_item
+
+litp create_plan
+litp run_plan
+
+assertState -p /software/items/source_item Applied
+assertState -p /ms/items/sinkitem Applied
+
+let __err_1 --err_type InvalidRequestError --err_vpath /software/items/source_item --err_message 'Unable to modify readonly property: not_updatable'
+assertError __err_1 --errors_length 1 load -p /software -f xml/broken_source_item.xml --replace
+
+assertState -p /software/items/source_item Applied
+assertState -p /ms/items/sinkitem Applied

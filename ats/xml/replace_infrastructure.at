@@ -1,0 +1,36 @@
+litp create -t os-profile -p /software/profiles/rhel_6_4 -o name="sample-profile" path="/var/www/html/6/os/x86_64/"
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+litp create -p /deployments/dep1 -t deployment
+litp create -p /deployments/dep1/clusters/cluster1 -t cluster
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+litp create -p /software/items/mp1 -t mock-package -o name=mockpackage
+
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=nodes
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/os -s /software/profiles/rhel_6_4
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/items/mp1 -s /software/items/mp1
+
+
+litp load -p / -f infrastructure.xml --merge
+
+litp create_plan
+litp run_plan
+
+assertState -p /infrastructure/storage/storage_profiles/profile_1 Applied
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node1/storage_profile Applied
+
+# LITPCDS-12018: Allow removal or source, source and inherited items go to ForRemoval
+litp load -p / -f infrastructure_missing_storage.xml --replace
+
+assertState -p /infrastructure/storage/storage_profiles/profile_1 ForRemoval
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node1/storage_profile ForRemoval
+assertState -p /deployments/dep1 Applied
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node1 Applied
+assertState -p /software/items/mp1 Applied
+
+litp load -p / -f infrastructure_with_storage.xml --replace
+
+assertState -p /infrastructure/storage/storage_profiles/profile_1 Applied
+# FIXME: assertState -p /deployments/dep1/clusters/cluster1/nodes/node1/network_profile Applied

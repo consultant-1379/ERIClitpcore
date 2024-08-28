@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:ms-configs-collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="configs">
+  <litp:dummy_extension id="defaults_and_non">
+    <property5>xml_supplied_value</property5>
+    <property6>xml_supplied_value<!--note: this property is not updatable--></property6>
+    <property7>xml_supplied_value</property7>
+    <property8>xml_supplied_value<!--note: this property is not updatable--></property8>
+  </litp:dummy_extension>
+  <litp:dummy_extension id="all_user_supplied">
+    <property5>xml_supplied_value</property5>
+    <property6>xml_supplied_value<!--note: this property is not updatable--></property6>
+    <property7>xml_supplied_value</property7>
+    <property8>xml_supplied_value<!--note: this property is not updatable--></property8>
+  </litp:dummy_extension>
+  <litp:dummy_extension id="only_required">
+    <property5>xml_supplied_value</property5>
+    <property6>xml_supplied_value<!--note: this property is not updatable--></property6>
+    <property7>xml_supplied_value</property7>
+    <property8>xml_supplied_value<!--note: this property is not updatable--></property8>
+  </litp:dummy_extension>
+</litp:ms-configs-collection>

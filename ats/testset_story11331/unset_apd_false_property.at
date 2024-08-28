@@ -1,0 +1,32 @@
+# 1. Applied item with no property 'optional_prop' created.
+# 2. Update item to have property 'optional_prop'.
+# 3. Create and run plan, but fail task leaving Updated item with APD=False
+# 4. Call clear_property('optional_prop') to bring it back to Applied state
+# 5. Property cleared but item remains in Updated due to APD=False
+runLitpScript ../include/two_nodes.at
+add-extensions extensions/dummy_11270_extension
+add-plugins plugins/dummy_11331_plugin
+
+litp create -p /software/items/yum_repo -t yum-repository -o name='yum'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -s /software/items/yum_repo
+
+litp create_plan
+litp run_plan
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -o optional_prop='updated'
+
+litp create_plan
+failConfigTask yumrepo node1 /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo
+litp run_plan
+assertPlanState failed
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo False
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Updated
+
+# Plugin will call clear_property('optional_prop') here ->
+# Property unset but Item will still be Updated due to APD=False
+litp create_plan
+
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -o optional_prop
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo False
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Updated

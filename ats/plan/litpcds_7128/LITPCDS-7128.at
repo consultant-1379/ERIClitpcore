@@ -1,0 +1,53 @@
+runLitpScript ../../include/two_nodes.at
+add-extensions .
+add-plugins .
+
+litp create -t replaceable -p /software/items/litpcds_7128 -o name=foo drop_all=true
+
+litp inherit -s /software/items/litpcds_7128 -p /ms/items/litpcds_7128
+
+litp create_plan
+
+assertConfigTask ms1 item foo /ms/items/litpcds_7128 name=foo ensure=present drop_all=true
+
+litp run_plan
+
+assertFileContents applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+litp remove -p /ms/items/litpcds_7128
+
+litp create_plan
+
+assertConfigTask ms1 item foo /ms/items/litpcds_7128 name=foo ensure=absent drop_all=true
+
+failConfigTask item ms1 /ms/items/litpcds_7128
+
+runPlanStart
+runPlanEnd
+#
+assertPlanState failed
+# The item is still marked ForRemoval
+assertState -p /ms/items/litpcds_7128 ForRemoval
+
+# The resource is still applied
+assertFileContents applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+litp create_plan
+assertConfigTask ms1 item foo /ms/items/litpcds_7128 name=foo ensure=absent drop_all=true
+
+failConfigTask item ms1 /ms/items/litpcds_7128
+
+litp run_plan
+# Even after a second failed removal task, the resource is still applied
+assertFileContents applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+assertState -p /ms/items/litpcds_7128 ForRemoval
+
+litp create_plan
+runPlanUntil 1
+# The manifest now includes a resource definition that will deconfigure the resource
+assertFileContents successfulremoval.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+runPlanEnd
+assertFileContents removalcomplete.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+assertNone -p /ms/items/litpcds_7128 Removed

@@ -1,0 +1,55 @@
+#Given a LITP MS with a model with some items in an Applied/Updated state and some in a ForRemoval state
+#WHEN I run "litp prepare_for_restore"
+#THEN my model is set back to an 'Initial state' and any old deployment specific data is cleaned (puppet cobbler etc..).
+#(It won't be possible to leave it as ForRemoval as it doesn't exist to remove, so it will get redeployed, user will need to remove later if required)
+
+
+
+runLitpScript ../setup_two_nodes.inc
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+litp inherit -p /ms/items/y1 -s /software/items/x
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/y -s /software/items/xx
+
+litp create_plan
+
+assertState -p /software/items/x Initial
+assertState -p /ms/items/y Initial
+assertState -p /ms/items/y1 Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/y Initial
+
+litp run_plan
+litp update -p /litp/prepare-restore -o path='/'
+
+# Verify that after a prepare_for_restore all Model Items are in state Initial
+assertState -p /software/items/x Initial
+assertState -p /ms/items/y Applied
+assertState -p /ms/items/y1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/y Initial
+
+litp update -p /software/items/xx -o name=yy
+
+litp create_plan
+litp run_plan
+
+litp update -p /software/items/xx -o name=xy
+litp remove -p /ms/items/y1
+
+assertState -p /software/items/xx Updated
+assertState -p /ms/items/y1 ForRemoval
+
+litp update -p /litp/prepare-restore -o path='/'
+
+
+# Check that an Updated item goes back to Initial after calling prepare_for_restore
+assertState -p /software/items/xx Initial
+
+# Check that a removed item goes back to Initial after calling prepare_for_restore
+assertState -p /ms/items/y1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/y Initial
+assertProperty /software/items/xx -o name=yy
+
+# Check snapshots have been removed from the model
+assertError --err_type "InvalidLocationError" show -p /snapshots/snapshot

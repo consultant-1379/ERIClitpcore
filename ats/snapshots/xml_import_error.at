@@ -1,0 +1,1 @@
+assertErrorMessage '    MethodNotAllowedError    Operation not permitted' load -p /snapshots -f export.xml

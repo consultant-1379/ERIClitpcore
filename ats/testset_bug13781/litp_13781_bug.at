@@ -1,0 +1,18 @@
+## TORF-13781: Core should full set (including default)
+## of properties to item type validator
+
+add-extensions extensions/dummy_13781_extension
+
+# Create bond item without optional 'mode' property
+litp create -p /ms/network_interfaces/b3259 -t bond -o arp_validate='all'
+assertProperty /ms/network_interfaces/b3259 -o mode=1
+
+assertError create -p /ms/network_interfaces/b3259 -t bond -o arp_validate='all' mode=100
+
+# Test create with xml load
+litp remove -p /ms/network_interfaces/b3259
+assertNone -p /ms/network_interfaces/b3259
+
+litp load -p /ms/network_interfaces/ -f xml/iface.xml
+assertState -p /ms/network_interfaces/b3259 Initial
+assertProperty /ms/network_interfaces/b3259 -o mode=1

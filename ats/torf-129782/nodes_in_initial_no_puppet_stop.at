@@ -1,0 +1,22 @@
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes_with_packages.at
+
+litp create_snapshot
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+
+# nodes in Initial state won't generate stop puppet task
+litp restore_snapshot
+assertNoCallbackTask _stop_puppet /deployments/local
+
+litp remove_snapshot
+litp create_plan
+litp run_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+
+# nodes in Applied state still do
+litp create_snapshot
+litp restore_snapshot
+assertCallbackTask _stop_puppet /deployments/local

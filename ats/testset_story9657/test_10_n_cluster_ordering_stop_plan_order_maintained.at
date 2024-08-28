@@ -1,0 +1,98 @@
+# test_10_n_prepare_for_restore_remove_dependencies.at
+# =====================================================
+# Description:
+# -Test that prepare an restore does not remove dependencies.
+
+ # Actions:
+ # 1. Create a deployment with multiple clusters
+ # 2. Add a cluster to the "dependency_list" property
+ # 3. Follow the steps
+ # 4. Create a plan
+ # 5. Check cluster ordering as per depency list
+ # 6. Run plan, until node alpha is installed
+ # 7. Create a plan
+ # 8. After plan is created, check that
+ # the tasks are ordered as per the order
+ # in the "dependency_list" property
+ # 9. Reorder the clusters remaining
+ # 10. Recreate the plan
+ # 11. Check that the order of tasks in the plan is correct
+ # 12. Run the plan and assert that it is succesful
+
+# Result:
+# Plan maintains the correct order even after being stopped
+
+# 1. Create multi cluster deployment
+add-extensions ../plugins/dummy_9657
+add-plugins ../plugins/dummy_9657
+runLitpScript misc/create_multi_cluster_deployment.inc
+
+# 2. Define cluster ordering -> 2, alpha, 3 (zulu and 1 unlisted)
+litp update -p /deployments/litpcds_9657/clusters/cluster_alpha -o dependency_list='cluster_zulu'
+litp update -p /deployments/litpcds_9657/clusters/cluster_3 -o dependency_list='cluster_alpha','cluster_zulu'
+litp update -p /deployments/litpcds_9657/clusters/cluster_1 -o dependency_list='cluster_2','cluster_3'
+litp update -p /deployments/litpcds_9657/clusters/cluster_2 -o dependency_list='cluster_3'
+litp update -p /deployments/litpcds_9657/clusters/cluster_zulu -o dependency_list=''
+
+# 3. Add configuration to the deployment across multiple clusters
+# See step 1
+
+# 4. Create a plan
+litp create_plan
+
+# 5. Check cluster ordering as per depency list
+let __task_n1_c3 ConfigTask c3-node1 foo foo1 /deployments/litpcds_9657/clusters/cluster_3/nodes/node1/items/foo1
+let __task_n2_c3 ConfigTask c3-node2 foo foo1 /deployments/litpcds_9657/clusters/cluster_3/nodes/node2/items/foo1
+
+let __task_n1_c2 ConfigTask c2-node1 foo foo1 /deployments/litpcds_9657/clusters/cluster_2/nodes/node1/items/foo1
+let __task_n2_c2 ConfigTask c2-node2 foo foo1 /deployments/litpcds_9657/clusters/cluster_2/nodes/node2/items/foo1
+
+let __task_n1_c1 ConfigTask c1-node1 foo foo1 /deployments/litpcds_9657/clusters/cluster_1/nodes/node1/items/foo1
+let __task_n2_c1 ConfigTask c1-node2 foo foo1 /deployments/litpcds_9657/clusters/cluster_1/nodes/node2/items/foo1
+
+let __task_n1_ca ConfigTask ca-node1 foo foo1 /deployments/litpcds_9657/clusters/cluster_alpha/nodes/node1/items/foo1
+let __task_n2_ca ConfigTask ca-node2 foo foo1 /deployments/litpcds_9657/clusters/cluster_alpha/nodes/node2/items/foo1
+
+let __task_n1_cz ConfigTask cz-node1 foo foo1 /deployments/litpcds_9657/clusters/cluster_zulu/nodes/node1/items/foo1
+let __task_n2_cz ConfigTask cz-node2 foo foo1 /deployments/litpcds_9657/clusters/cluster_zulu/nodes/node2/items/foo1
+
+let __task_n1_cnha ConfigTask c-no-ha-node1 foo foo1 /deployments/litpcds_9657/clusters/cluster_no_ha/nodes/node1/items/foo1
+let __task_n2_cnha ConfigTask c-no-ha-node2 foo foo1 /deployments/litpcds_9657/clusters/cluster_no_ha/nodes/node2/items/foo1
+
+# Dependency defined order
+assertTaskBeforeTask __task_n1_cz __task_n1_ca __task_n1_c3 __task_n1_c2 __task_n1_c1
+assertTaskBeforeTask __task_n2_cz __task_n2_ca __task_n2_c3 __task_n1_c2 __task_n1_c1
+
+# 6. Run plan, until node alpha is installed
+runPlanStart
+runPlanUntil 4
+litp stop_plan
+runPlanEnd
+assertPlanState stopped
+assertState -p /deployments/litpcds_9657/clusters/cluster_alpha/nodes/node2/items/foo1 Applied
+assertState -p /deployments/litpcds_9657/clusters/cluster_3/nodes/node1/items/foo1 Initial
+
+# 7. Create a Plan
+litp create_plan
+
+# 8. After plan is created, check that the tasks are ordered as per the order in the "dependency_list" property
+# Dependency defined order
+assertTaskBeforeTask __task_n1_c3 __task_n1_c2 __task_n1_c1
+assertTaskBeforeTask __task_n2_c3 __task_n1_c2 __task_n1_c1
+
+#9. Reorder the clusters remaining
+litp update -p /deployments/litpcds_9657/clusters/cluster_3 -o dependency_list='cluster_1','cluster_2'
+litp update -p /deployments/litpcds_9657/clusters/cluster_1 -o dependency_list='cluster_2'
+litp update -p /deployments/litpcds_9657/clusters/cluster_2 -o dependency_list=''
+
+# 10. Create a Plan
+litp create_plan
+
+# 11. After plan is created, check that the tasks are ordered as per the order in the "dependency_list" property
+# Dependency defined order
+assertTaskBeforeTask __task_n1_c2 __task_n1_c1 __task_n1_c3
+assertTaskBeforeTask __task_n2_c2 __task_n1_c1 __task_n1_c3
+
+# 12. Run the plan and assert that it is succesful
+litp run_plan
+assertPlanState successful

@@ -1,0 +1,23 @@
+[OS]
+name = OS
+baseurl = http://<%= host %>/rhel6/6.2/x86_64/os
+enabled = 1
+gpgcheck = 0
+
+[UPDATES]
+name = UPDATES
+baseurl = http://<%= host %>/rhel6/6.2/x86_64/updates
+enabled = 1
+gpgcheck = 0
+
+[LITP]
+name = LITP
+baseurl = http://<%= host %>/litp
+enabled = 1
+gpgcheck = 0
+
+[CUSTOM]
+name = CUSTOM
+baseurl = http://<%= host %>/custom
+enabled = 1
+gpgcheck = 0

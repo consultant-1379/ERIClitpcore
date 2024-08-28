@@ -1,0 +1,5 @@
+runLitpScript misc/common_test_methods.at
+
+litp remove_plan
+
+assertError --err_message "Plan does not exist" show_plan

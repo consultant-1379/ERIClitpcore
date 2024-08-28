@@ -1,0 +1,46 @@
+runLitpScript ../include/two_nodes.at
+
+# 1. Create a package and save the persisted task
+litp create -p /software/items/nano -t mock-package -o name=nano
+litp inherit -p /ms/items/nano -s /software/items/nano
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertDirectoryContents manifests/first_plan /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+# 2. Create another package and assert that the package in 1. is also still there
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertDirectoryContents manifests/second_plan /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+# 3. Fail removal of package created at 2. so that the successful task is put back in
+litp remove -p /ms/items/telnet
+litp create_plan
+
+failConfigTask package ms1 /ms/items/telnet
+litp run_plan
+assertPlanState failed
+
+assertDirectoryContents manifests/second_plan /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+# 4. Re run the plan so the actual removal is done
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertDirectoryContents manifests/first_plan /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+# 5. Remove a node - check that node classification and manifest has been removed
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertDirectoryContents manifests/no_node1 /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/

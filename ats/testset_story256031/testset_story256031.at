@@ -1,0 +1,40 @@
+runLitpScript ../include/two_nodes.at
+
+# Test 09 Attempt to create the sshd-config item type on a peer node path
+litp create -t sshd-config -p /deployments/local/clusters/cluster1/nodes/node1/configs/sshd_config
+let __error9 --err_type ValidationError --err_message 'This ItemType is only supported on the MS' --err_vpath=/deployments/local/clusters/cluster1/nodes/node1/configs/sshd_config
+assertError __error9 create_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/configs/sshd_config
+
+# Test 10 Attempt to set sshd-config item to a string other than false or true
+let __error10 --err_type ValidationError --err_message "Invalid value 'bogus'."
+assertError __error10 create -t sshd-config -p /ms/configs/sshd_config -o permit_root_login=bogus
+
+# Test 11 Attempt to set sshd-config item to an integer of 1 or 0
+let __error11 --err_type ValidationError --err_message "Invalid value '0'."
+assertError __error11 create -t sshd-config -p /ms/configs/sshd_config -o permit_root_login=0
+
+litp create -t sshd-config -p /ms/configs/sshd_config
+assertProperty /ms/configs/sshd_config -o permit_root_login=true
+
+# Test 12 Update sshd-config "PermitRootLogin” item from true to false using an xml file
+litp load --merge -p /ms/configs/ -f xml/update_to_false.xml
+assertProperty /ms/configs/sshd_config -o permit_root_login=false
+
+# Test 13 Update sshd-config "PermitRootLogin” item from false to true using an xml file
+litp load --merge -p /ms/configs/ -f xml/update_to_true.xml
+assertProperty /ms/configs/sshd_config -o permit_root_login=true
+
+# Put the Item in Applied state
+litp create_plan
+litp run_plan
+
+# Test 14 Attempt to delete an sshd-config item, and get error returned
+let __error14 --err_type MethodNotAllowedError --err_message "Operation not permitted" --err_vpath "/ms/configs/sshd_config"
+assertError __error14 remove -p /ms/configs/sshd_config
+
+# Test 15 Attempt to create a new sshd-config item, and get error returned
+litp create -t sshd-config -p /ms/configs/another_sshd_config
+let __error15 --err_type ValidationError --err_message "Create plan failed: One sshd-config item supported, more found: /ms/configs/another_sshd_config, /ms/configs/sshd_config" --err_vpath="/ms/configs/another_sshd_config, /ms/configs/sshd_config"
+assertError __error15 create_plan

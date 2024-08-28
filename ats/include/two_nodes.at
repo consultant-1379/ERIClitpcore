@@ -1,0 +1,31 @@
+litp create -p /software/profiles/rhel_6_2 -t os-profile -o name='sample-profile' path='/profiles/node-iso/'
+
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system1/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/systems/system2 -t system -o system_name='SYS2'
+litp create -p /infrastructure/systems/system2/disks/disk0 -t disk -o name='sdb' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system2/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/networking/networks/ms_network -t network -o name='nodes' subnet='10.10.10.0/24'
+
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+
+litp create -p /ms/network_interfaces/ip1 -t network-interface -o network_name='nodes' ipaddress='10.10.10.100'
+
+litp create -p /deployments/local -t deployment
+litp create -p /deployments/local/clusters/cluster1 -t cluster
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node1 -t node -o hostname='node1'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node2 -t node -o hostname='node2'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/system2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1

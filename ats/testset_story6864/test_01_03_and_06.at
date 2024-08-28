@@ -1,0 +1,47 @@
+# test_01_n_restore_model_empty_model
+# test_03_p_restore_model_applied_model
+# test_06_n_restore_model_successful_plan
+
+# If no plan has run successfully, then no restore file exists (test_01)
+assertError restore_model --err_message "The deployment model couldn't be restored" --err_type "InternalServerError" --err_vpath "/litp/restore_model"
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /ms/items/y -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/y -s /software/items/x -o name=y
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/y -s /software/items/x
+
+litp create_plan
+
+assertConfigTask ms1 package x /ms/items/y ensure='installed'
+assertConfigTask node1 package y /deployments/local/clusters/cluster1/nodes/node1/items/y ensure='installed'
+assertConfigTask node2 package x /deployments/local/clusters/cluster1/nodes/node2/items/y ensure='installed'
+
+
+litp run_plan
+
+# Assert an applied model exists
+assertState -p /ms/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/y Applied
+
+# Create new item (test_03), post successful plan
+litp create -p /software/items/z -t mock-package -o name=z
+litp inherit -p /ms/items/z -s /software/items/z
+assertState -p /ms/items/z Initial
+
+# Update the model, post successful plan (test_06)
+litp update -p /software/items/x -o name=foo
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/y -o name=bar
+assertProperty /software/items/x -o name=foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/y -o name=bar
+
+# Restore the model and check the the property has reverted to pre-run_plan value
+litp restore_model
+assertProperty /software/items/x -o name=x
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/y -o name=y
+
+# Assert that the created item has also been removed from the model
+assertNone -p /software/items/z
+assertNone -p /ms/items/z

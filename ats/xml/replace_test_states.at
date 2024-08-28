@@ -1,0 +1,41 @@
+
+litp load -p / -f infrastructure.xml --merge
+litp create -t os-profile -p /software/profiles/rhel_6_4 -o name="sample-profile" path="/var/www/html/6/os/x86_64/"
+litp create -p /deployments/dep1 -t deployment
+litp create -p /deployments/dep1/clusters/cluster1 -t cluster
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node2 -t node -o hostname=node2
+litp create -p /software/items/mp1 -t mock-package -o name=mockpackage
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=nodes
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/os -s /software/profiles/rhel_6_4
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node1/items/mp1 -s /software/items/mp1
+
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/system1
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name=nodes
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node2/os -s /software/profiles/rhel_6_4 
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/dep1/clusters/cluster1/nodes/node2/items/mp1 -s /software/items/mp1
+
+assertProperty /infrastructure/systems/system1 -o system_name=MN1VM
+
+litp create_plan
+litp run_plan
+
+assertState -p /infrastructure/storage/storage_profiles/profile_1 Applied
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node1/storage_profile Applied
+
+# LITPCDS-12018: Allow removal of source items
+litp load -p / -f root-without-node2.xml --replace
+
+# no storage profile item under node1 in xml either
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node1/storage_profile ForRemoval
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/dep1/clusters/cluster1/nodes Applied
+assertState -p /deployments/dep1/clusters/cluster1 Applied
+assertState -p /deployments/dep1/clusters Applied
+assertState -p /deployments/dep1 Applied
+
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node2/storage_profile ForRemoval
+assertState -p /deployments/dep1/clusters/cluster1/nodes/node2 ForRemoval

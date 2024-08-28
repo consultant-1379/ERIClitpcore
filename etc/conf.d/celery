@@ -1,0 +1,14 @@
+PYTHONPATH=/opt/ericsson/nms/litp:/opt/ericsson/nms/litp/lib
+export PYTHONPATH
+CELERY_APP="litp.core.worker.celery_app:celery_app"
+CELERYD_NODES="litpDefault litpPlan litpTask"
+CELERYD_OPTS="--statedb=/var/run/celery/%n.state -Q:litpDefault litp_default -Ofair --autoscale:litpDefault=255,1 -Q:litpPlan litp_plan -Ofair -c:litpPlan 1 -Q:litpTask litp_task -Ofair --autoscale:litpTask=255,4"
+CELERYD_MULTI="multi"
+CELERY_BIN="/usr/bin/python2 -m celery"
+CELERYD_PID_FILE="/var/run/celery/%n.pid"
+CELERYD_LOG_FILE="/dev/null"
+CELERYD_LOG_LEVEL="INFO"
+
+CELERYBEAT_PID_FILE="/var/run/celery/beat.pid"
+CELERYBEAT_LOG_FILE="/dev/null"
+CELERYBEAT_OPTS="--schedule=/var/run/celery/celerybeat-schedule"

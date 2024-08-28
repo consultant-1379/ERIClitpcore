@@ -1,0 +1,6 @@
+
+litp create -p /deployments/local_vm -t deployment
+litp create -p /deployments/local_vm/clusters/cluster1 -t cluster
+litp load -p /deployments/local_vm/clusters/cluster1/services -f litpcds_4202_import_cluster.xml
+
+#assertProperty /deployments/local_vm/clusters/cluster1/services/PMmed standby=1 node_list="node1,node2"

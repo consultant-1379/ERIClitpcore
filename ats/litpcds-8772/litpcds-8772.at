@@ -1,0 +1,61 @@
+#######################################################################
+#       Make sure create_snapshot doesn't call set all_applied.       #
+#######################################################################
+
+
+add-plugins ../plugins/mock_volmgr_plugin
+add-plugins ../plugins/initial_node_tasks_only
+runLitpScript ../include/two_nodes.at
+
+litp create -t mock-package -p /software/items/vim -o name=vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/vim -s /software/items/vim
+
+# All nodes + ms are initial - 3 tasks should be generated for each of them
+litp create_plan
+assertConfigTask ms1 foo ms1 /ms
+assertConfigTask node1 foo node1 /deployments/local/clusters/cluster1/nodes/node1
+assertConfigTask node2 foo node2 /deployments/local/clusters/cluster1/nodes/node2
+assertConfigTask node1 package vim /deployments/local/clusters/cluster1/nodes/node1/items/vim ensure='installed'
+
+# Asset that no snapshot phase was automatically created in plan
+assertNoCallbackTask _do_stuff /ms
+assertNoCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node2
+
+# Assert that no snapshot exists
+assertError remove_snapshot --err_message "no tasks were generated. No remove snapshot tasks added because Deployment Snapshot does not exist" --err_type "DoNothingPlanError"
+
+# Assert that ModelItems are Initial before running create_snapshot
+assertState -p /ms Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim Initial
+
+# Assert that a snpahot phase was created on demand
+litp create_snapshot
+assertCallbackTask _do_stuff /ms
+assertCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node2
+
+# create_snapshot must not update the state of items (can't run set_all_applied())
+assertState -p /ms Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim Initial
+
+# All nodes + ms should be initial - 3 tasks should be generated for each of them
+litp create_plan
+assertConfigTask ms1 foo ms1 /ms
+assertConfigTask node1 foo node1 /deployments/local/clusters/cluster1/nodes/node1
+assertConfigTask node2 foo node2 /deployments/local/clusters/cluster1/nodes/node2
+assertConfigTask node1 package vim /deployments/local/clusters/cluster1/nodes/node1/items/vim ensure='installed'
+
+# Assert that remove_snapshot is unaffected
+litp remove_snapshot
+assertError remove_snapshot --err_message "no tasks were generated. No remove snapshot tasks added because Deployment Snapshot does not exist" --err_type "DoNothingPlanError"
+
+# create_snapshot must not update the state of items (can't run set_all_applied())
+assertState -p /ms Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim Initial

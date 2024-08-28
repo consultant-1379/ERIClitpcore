@@ -1,0 +1,55 @@
+## test_13_p_ms_plugin_defined_dependencies
+## Description:
+## Ensure that plugin defined dependencies are still enforced on the ms
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types
+##   on the MS and Peer Node:
+##   "system" Item-Type
+##   "os" profile Item-Type
+##   "network_interfaces" Item-Type
+##   "storage profile" Item-Type
+##   "software-item" item type
+##   "service-item" item type
+##   "node-config" item type
+##   "file-system" item type
+##   "routes" item type
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/test_13_plugin
+# Basic 2 node deployment setup
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create -p /software/items/item -t software-item
+litp inherit -p /ms/items/item -s /software/items/item
+
+litp create -p /ms/services/service -t service-base
+
+litp create -p /ms/configs/config -t node-config
+
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /ms/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Check the resulting plan order
+let __configs_ms ConfigTask ms1 ms::configs 4 /ms/configs/config
+let __services_ms ConfigTask ms1 ms::services 3 /ms/services/service
+let __routes_ms ConfigTask ms1 ms::routes 2 /ms/routes/route
+let __items_ms ConfigTask ms1 ms::items 1 /ms/items/item
+let __file_systems_ms ConfigTask ms1 ms::file_systems 5 /ms/file_systems/file_system
+let __network_interfaces_ms ConfigTask ms1 ms::network_interfaces 6 /ms/network_interfaces
+let __storage_profile_ms ConfigTask ms1 ms::storage_profile 7 /ms/storage_profile
+let __os_ms ConfigTask ms1 ms::os 8 /ms/os
+let __system_ms ConfigTask ms1 ms::system 9 /ms/system
+
+## Result:
+## Tasks are in expected order
+assertTaskBeforeTask __configs_ms __services_ms
+assertTaskBeforeTask  __items_ms __configs_ms
+assertTaskBeforeTask __system_ms __os_ms __network_interfaces_ms __routes_ms __storage_profile_ms __file_systems_ms __items_ms __configs_ms

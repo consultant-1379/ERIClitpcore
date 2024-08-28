@@ -1,0 +1,9 @@
+# create multiple system-provider items
+litp /infrastructure/system_providers/sys1 create system-provider
+litp /infrastructure/system_providers/sys2 create system-provider
+litp /infrastructure/system_providers/sys3 create system-provider
+
+# ensure we can delete them
+litp /infrastructure/system_providers/sys1 remove
+litp /infrastructure/system_providers/sys2 remove
+litp /infrastructure/system_providers/sys3 remove

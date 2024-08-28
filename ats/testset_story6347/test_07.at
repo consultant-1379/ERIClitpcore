@@ -1,0 +1,13 @@
+runLitpScript two-node-std.inc
+add-extensions extensions/dummy_extension
+add-plugins plugins/dummy_plugin
+
+litp create -t dummy-profile -p /software/profiles/dummy
+litp create -t dummy-item -p /software/profiles/dummy/item -o name=foo
+litp inherit -s /software/profiles/dummy/item -p /software/profiles/dummy/ro/ref
+
+litp create_plan
+disableCallbackMock _cb /software/profiles/dummy/ro/ref
+litp run_plan
+assertPlanState failed
+assertLogMessage "Read-only reference cannot be updated"

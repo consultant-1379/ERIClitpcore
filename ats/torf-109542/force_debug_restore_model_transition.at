@@ -1,0 +1,35 @@
+runLitpScript ../include/two_nodes.at
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /ms/items/9d7b4297 -s /software/items/x
+litp create_plan
+litp run_plan
+
+# reset force_debug to false and verify no DEBUG message appears
+litp update -p /litp/logging -o force_debug=false
+assertProperty /litp/logging -o force_debug=false
+litp remove -p /ms/items/9d7b4297
+assertNoLogMessage "DEBUG - set item for removal: /ms/items/9d7b4297"
+litp restore_model
+assertProperty /litp/logging -o force_debug=false
+litp remove -p /ms/items/9d7b4297
+assertNoLogMessage "DEBUG - set item for removal: /ms/items/9d7b4297"
+litp prepare_restore
+assertProperty /litp/logging -o force_debug=false
+litp remove -p /ms/items/9d7b4297
+assertNoLogMessage "DEBUG - set item for removal: /ms/items/9d7b4297"
+
+litp restore_model
+
+# update force_debug to true and verify DEBUG message appears
+litp update -p /litp/logging -o force_debug=true
+assertProperty /litp/logging -o force_debug=true
+litp remove -p /ms/items/9d7b4297
+assertLogMessage "DEBUG - set item for removal: /ms/items/9d7b4297"
+litp restore_model
+assertProperty /litp/logging -o force_debug=true
+litp remove -p /ms/items/9d7b4297
+assertLogMessage "DEBUG - set item for removal: /ms/items/9d7b4297"
+litp prepare_restore
+assertProperty /litp/logging -o force_debug=true
+litp remove -p /ms/items/9d7b4297
+assertLogMessage "DEBUG - set item for removal: /ms/items/9d7b4297"

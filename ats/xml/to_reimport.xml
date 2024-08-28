@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:root-deployments-collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="deployments">
+  <litp:deployment id="d1">
+    <litp:deployment-clusters-collection id="clusters">
+      <litp:cluster id="c1">
+        <litp:cluster-configs-collection id="configs"/>
+        <litp:cluster-nodes-collection id="nodes">
+          <litp:node id="n1">
+            <hostname>node1</hostname>
+            <litp:node-configs-collection id="configs"/>
+            <litp:node-file_systems-collection id="file_systems"/>
+            <litp:node-items-collection id="items"/>
+            <litp:node-network_interfaces-collection id="network_interfaces">
+              <litp:network-interface id="net1">
+                <network_name>misternetwork</network_name>
+              </litp:network-interface>
+            </litp:node-network_interfaces-collection>
+            <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os"/>
+            <litp:node-routes-collection id="routes"/>
+          </litp:node>
+        </litp:cluster-nodes-collection>
+        <litp:cluster-services-collection id="services"/>
+        <litp:cluster-software-collection id="software"/>
+      </litp:cluster>
+    </litp:deployment-clusters-collection>
+  </litp:deployment>
+</litp:root-deployments-collection>

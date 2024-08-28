@@ -1,0 +1,328 @@
+## Description:
+## When the source descendent of a doubly inherited item in state "Initial",
+## is removed and not all the inherited items are in
+## state, "Initial"(APD = True), then the item and its descendents
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+##
+## Preconditions: (Indirect Double inheritance)
+## Source item itemA: /software/items/itemA
+## Source item itemB: /software/services/itemB
+## Inherited item item1 (source is itemA): /software/services/itemB/packages/item1
+## Inherited item item2 (source is itemB): /deployments/d1/clusters/c1/nodes/n1/services/item2
+## Inherited item item3 (source is itemB): /deployments/d1/clusters/c1/nodes/n1/services/item3
+## The doubly indirectly inherited item1X (under item1) is implicitly inherited from /software/services/itemB/packages/item1
+## The doubly indirectly inherited item3X (under item3) is implicitly inherited from /software/services/itemB/packages/item1
+
+# 1. Create itemA with 2 child items with 2 grandchild items each e.g. child1 has grandchild1 and grandchild2 and child2 has grandchild3 and grandchild4
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_12
+runLitpScript ../include/two_nodes.at
+
+# 1. Create itemA with 2 child items with 2 grandchild items each  e.g. child1 has grandchild1 and grandchild2 and child2 has grandchild3 and grandchild4
+litp create -p /software/items/itemA -t parent -o name=parentA
+litp create -p /software/items/itemA/childs/child1 -t child -o name=childA_1
+litp create -p /software/items/itemA/childs/child2 -t child -o name=childA_2
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1 -t g-child -o name=gchildA_1
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild2 -t g-child -o name=gchildA_2
+litp create -p /software/items/itemA/childs/child2/grand_children/grandchild1 -t g-child -o name=gchildA_3
+litp create -p /software/items/itemA/childs/child2/grand_children/grandchild2 -t g-child -o name=gchildA_4
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child2 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild2 Initial
+assertState -p /software/items/itemA/childs/child2/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child2/grand_children/grandchild2 Initial
+
+# 2. Create itemB
+litp create -t 'parent-b' -p /software/services/itemB -o name=parentB service_name=parentB_service
+assertState -p /software/services/itemB Initial
+
+# 3. Inherit itemA to item1
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+
+assertState -p /software/services/itemB/packages/item1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child2 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 Initial
+
+# 4. Inherit itemB to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 -s /software/services/itemB
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+# 5. Inherit itemB to item3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 -s /software/services/itemB
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 Initial
+
+# 6. Check that item1X and item3X and their descendents have been created
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 Initial
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 Initial
+
+# 7. create plan
+litp create_plan
+
+# 7.3 Fail item3X child1 task and item3X grandchild2 task
+failConfigTask task_childA_1 node1 /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1
+failConfigTask task_gchildA_2 node1 /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2
+
+#7.4 Fail item3X grandchild3 and grandchild4 tasks
+failConfigTask task_gchildA_3 node1 /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1
+failConfigTask task_gchildA_4 node1 /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2
+
+# 8. run plan
+litp run_plan
+assertPlanState failed
+
+# 9 expected states
+# itemA
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child2 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild2 Initial
+assertState -p /software/items/itemA/childs/child2/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child2/grand_children/grandchild2 Initial
+
+assertAppliedPropertiesDeterminable -p /software/items/itemA True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child1 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child2 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child1/grand_children/grandchild2 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child2/grand_children/grandchild2 True
+
+# itemB
+assertState -p /software/services/itemB Applied
+assertAppliedPropertiesDeterminable -p /software/services/itemB True
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child2 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild2 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild2 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 True
+
+# item1X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 True
+
+# item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 Initial
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 False
+
+# 10. Remove source descendent of doubly inherited item (item1 child1)
+litp remove -p /software/services/itemB/packages/item1/childs/child1
+
+# itemB
+assertState -p /software/services/itemB Applied
+assertAppliedPropertiesDeterminable -p /software/services/itemB True
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 ForRemoval
+assertState -p /software/services/itemB/packages/item1/childs/child2 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild2 ForRemoval
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild2 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 True
+
+# item1X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 True
+
+# item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 Initial
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 False
+
+# 12,13 create and run plan
+litp create_plan
+litp run_plan
+
+# 14. result
+
+# itemA
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child2 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild2 Applied
+assertState -p /software/items/itemA/childs/child2/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /software/items/itemA True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child1 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child2 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child1/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child1/grand_children/grandchild2 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/items/itemA/childs/child2/grand_children/grandchild2 True
+
+# itemB
+assertState -p /software/services/itemB Applied
+assertAppliedPropertiesDeterminable -p /software/services/itemB True
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertNone -p /software/services/itemB/packages/item1/childs/child1
+assertState -p /software/services/itemB/packages/item1/childs/child2 Applied
+assertNone -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild1
+assertNone -p /software/services/itemB/packages/item1/childs/child1/grand_children/grandchild2
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /software/services/itemB/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 True
+
+# item1X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1/grand_children/grandchild2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3 True
+
+# item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child1/grand_children/grandchild2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 Applied
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild1 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/item3/packages/item1/childs/child2/grand_children/grandchild2 True
+
+# Result:
+# The deletion of a source descendent of a doubly inherited item
+# whose state is "Initial" and not all the inherited reference
+# items are in state, "Initial", then the item and its descendents
+# and all its corresponding inherited progeny
+# (which encompasses inherited progeny and double inherited progeny)
+# will move to "ForRemoval" state

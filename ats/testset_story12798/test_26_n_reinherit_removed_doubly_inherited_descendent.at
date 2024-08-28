@@ -1,0 +1,116 @@
+## Description:
+## When a doubly inherited item descendent is removed
+## after a successful plan execution,
+## and an attempt is made to reinherit
+## the removed inherited descendent's parent item
+## then a ItemExistsError will be raised
+##
+## Preconditions:
+## Source itemA: /software/items/itemA
+## Inherited item1 (source is itemA): /ms/items/item1
+## Doubly inherited item2 (source is child of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item2
+## Note that child of item2 is a reference to the grandchild of item1
+## Inherited item3 (source is itemA): /ms/items/item3
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_12
+runLitpScript ../include/two_nodes.at
+
+# 1,5. create itemA
+
+litp create -t parent -p /software/items/itemA -o name=parent1
+litp create -t child -p /software/items/itemA/childs/child1 -o name=child1
+litp create -t g-child -p /software/items/itemA/childs/child1/grand_children/grandchild1 -o name=grandchild1
+litp create -t g-g-child -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 -o name=grand_grandchild1
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 2,5. Inherit itemA to item1
+litp inherit -p /ms/items/item1 -s /software/items/itemA
+
+assertState -p /ms/items/item1 Initial
+assertState -p /ms/items/item1/childs/child1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 3,5. Inherit itemA to item3
+litp inherit -p /ms/items/item3 -s /software/items/itemA
+
+assertState -p /ms/items/item3 Initial
+assertState -p /ms/items/item3/childs/child1 Initial
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 4,5. Inherit child of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -s /ms/items/item1/childs/child1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 6,7 create and run plan
+litp create_plan
+litp run_plan
+
+# 8. all items should be applied
+
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /ms/items/item3 Applied
+assertState -p /ms/items/item3/childs/child1 Applied
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 9. Remove a descendent of a doubly inherited item (child of item2)
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1
+
+# 10. Check that the descendents of the doubly inherited item, item2 are in "ForRemoval" state
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 ForRemoval
+
+# 11,12 create and run plan
+litp create_plan
+litp run_plan
+
+# 13. Check the doubly inherited item descendent and its descendent have been removed
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1
+
+# 14. Attempt to execute litp "inherit" command to recover the parent of the removed descendent \
+ of a doubly inherited item with a v-path that is a descendent of the inherit source v-path
+# 14.1 source v-path is item1 child, attempt to recover item2
+
+assertError --err_type ItemExistsError \
+ inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -s /ms/items/item3/childs/child1
+
+# 16.Attempt to recover/re-create the descendents of a doubly inherited item \
+   by executing the litp "inherit" command
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# Result:
+# An ItemExistsError is raised when
+# an attempt is made to re-inherit the removed
+# inherited descendent's parent item

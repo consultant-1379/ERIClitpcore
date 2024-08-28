@@ -1,0 +1,5 @@
+assertError --err_type=DoNothingPlanError --err_message='no tasks were generated' create_snapshot
+
+assertError --err_type=DoNothingPlanError --err_message='no tasks were generated' create_snapshot -n snapshot
+
+assertError --err_type=DoNothingPlanError --err_message='no tasks were generated' create -p /snapshots/snapshot -t snapshot-base

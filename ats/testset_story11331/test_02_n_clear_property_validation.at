@@ -1,0 +1,181 @@
+# test_02_n_clear_property_validation
+# Description:
+# Test that exceptions are raised when queryItem.clear_property("<property>")
+# is invoked in the following scenarios:
+# - <property> is a required property with no default value specified
+#   and the property bar is plugin_updatable
+# - <property> is not plugin_updatable
+# - <property> is contained in a read only reference Item
+# - <property> is not in the Item Types structure
+# - <property> is not a property
+ 
+# Prerequisite:
+# Create a plugin that generates the ability to clear a property
+add-extensions extensions/failure_11331_extension
+add-plugins plugins/test02_11331_plugin
+
+# Set up Model
+runLitpScript ../include/two_nodes.at
+
+# AC3:When a plugin developer invokes queryItem.clear_property("bar")
+# And the property bar is a required property with no default value specified 
+# And the property bar is plugin_updatable
+# Then an Exception will be raised
+# 1.1 Create a source and inherited items with a required property with no default but is plugin updatable
+litp create -p /software/items/yum_repo2a -t yum-repository -o name='test_2a' required_prop2="test_2a"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2a -s /software/items/yum_repo2a
+
+# 1.2 Create plan
+litp create_plan
+
+# 1.3 Run plan
+litp run_plan
+
+# 1.4 Update the source model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /software/items/yum_repo2a -o required_prop2="test_2b_update"
+
+# 1.5 Execute create_plan command
+# 1.6 Plugin invokes the clear_property for the required property for the source item
+# 1.7 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message "Create plan failed: Model update failed with: ValidationErrors occurred during update of property"
+assertLogMessage "ValidationErrors occurred during update of property"
+
+# 1.8 Update the inherited model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2a -o required_prop2="test_2b_inherit"
+
+# 1.9 Execute create_plan command
+# 1.10 Plugin invokes the clear_property for the required property for the source item
+# 1.11 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message "Create plan failed: Model update failed with: ValidationErrors occurred during update of property"
+assertLogMessage "ValidationErrors occurred during update of property"
+
+# 1.12 Remove model items 
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2a
+litp remove -p /software/items/yum_repo2a
+
+# AC4:Given a LITP plugin
+# When a plugin developer invokes queryItem.clear_property("bar")
+# and bar is not plugin_updatable
+# Then an Exception will be raised
+# 2.1 Create model item with a property not updatable by plugin
+litp create -p /software/items/yum_repo2b -t yum-repository -o name='test_2b' not_updatable_prop="test_2b" required_prop2="test_2b"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2b -s /software/items/yum_repo2b
+
+# 2.2 Create plan
+litp create_plan
+
+# 2.3 Run plan
+litp run_plan
+
+# 2.4 Update the source model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /software/items/yum_repo2b -o required_prop2="test_2b_update"
+
+# 2.5 Execute create_plan command
+# 2.6 Plugin invokes the clear_property for the property not updatable by plugin
+# 2.7 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message "not updatable by plugins"
+assertLogMessage "not updatable by plugins"
+
+# 2.8 Update the inherited model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2b -o required_prop2="test_2b_inherit"
+
+# 2.9 Plugin invokes the clear_property for the property not updatable by plugin
+# 2.10 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message "not updatable by plugins"
+assertLogMessage "not updatable by plugins"
+
+# 2.11 Remove model items 
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2b
+litp remove -p /software/items/yum_repo2b
+
+# AC5:An Exception will be raised when an attempt is made to
+# invoke queryItem.clear_property("<property>")
+# the <property> is contained in a read only reference Item
+# 3.1. Create model item
+litp create -p /software/items/yum_repo2c -t yum-repository -o name='test_2c' required_prop2="test_2c" optional_prop="old"
+litp create -p /software/items/bar2c -t bar -o name='bar_ref_to_yum_repo'
+litp inherit -s /software/items/yum_repo2c -p /software/items/bar2c/ref_read_only
+
+# 3.2. Execute create_plan command
+# 3.3 Plugin invokes the clear_property for the property not defined
+# 3.4 Check that an internal server error is raised and error message is logged
+assertError --err_type "InternalServerError" --err_message "Read-only reference cannot be updated" create_plan
+assertLogMessage "Read-only reference cannot be updated"
+
+# 3.5 Remove items
+litp remove -p /software/items/bar2c
+litp remove -p /software/items/yum_repo2c
+
+# AC10: An exception will be raised when queryItem.clear_property("<property>") and the <property> is not in item type structure
+# 4.1 Create model item
+litp create -p /software/items/yum_repo2d -t yum-repository -o name='test_2d' required_prop2="test_2d"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2d -s /software/items/yum_repo2d
+
+# 4.2 Create plan
+litp create_plan
+
+# 4.3 Run plan
+litp run_plan
+
+# 4.4 Update the source model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /software/items/yum_repo2d -o required_prop2="test_2d_update"
+
+# 4.5 Execute create_plan command
+# 4.6 Plugin invokes the clear_property for the property not defined in item type structure
+# 4.7 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message "Create plan failed: Model update failed with: No such field"
+assertLogMessage "AttributeError: No such field"
+
+# 4.8 Update the inherited model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2d -o required_prop2="test_2d_update"
+
+# 4.9 Execute create_plan command
+# 4.10 Plugin invokes the clear_property for the property not defined in item type structure
+# 4.11 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message "Create plan failed: Model update failed with: No such field"
+assertLogMessage "AttributeError: No such field"
+
+# 4.12 Remove model items
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2d
+litp remove -p /software/items/yum_repo2d
+
+# AC11:An Exception is raised when queryItem.clear_property("<property>") is invokes when the <property> is not a property
+# 5.1. Create model item 
+litp create -p /software/items/yum_repo2e -t yum-repository -o name='test_2e' required_prop2="test_2e"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2e -s /software/items/yum_repo2e
+
+# 5.2 Create plan
+litp create_plan
+
+# 5.3 Run plan
+litp run_plan
+
+# 5.4 Update the source model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /software/items/yum_repo2e -o required_prop2="test_2e_update"
+
+# 5.5 Execute create_plan command
+# 5.6 Plugin invokes the clear_property for the collection (e.g. not a property)
+# 5.7 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message 'Create plan failed: Model update failed with: Field "not_a_property"'
+assertLogMessage 'AttributeError: Field "not_a_property"'
+
+# 5.8 Update the inherited model item to invoke the queryItem.clear_property("<property>") from the plugin
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2e -o required_prop2="test_2e_update"
+
+# 5.9 Remove model items 
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2e
+litp remove -p /software/items/yum_repo2e
+
+# 5.10 Invokes the clear_property on a property that does not exist
+litp create -p /software/items/yum_repo2f -t yum-repository -o name='test_2f' required_prop2="test_2f"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2f -s /software/items/yum_repo2f
+
+# 5.11 Execute create_plan command
+# 5.12 Plugin invokes the clear_property for the collection (e.g. not a property)
+# 5.13 Check that an internal server error is raised and error message is logged
+assertError create_plan --err_type InternalServerError --err_message 'No such field "11331_prop"'
+assertLogMessage 'AttributeError: No such field "11331_prop"'
+
+# 5.14 Remove model items
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo2f
+litp remove -p /software/items/yum_repo2f

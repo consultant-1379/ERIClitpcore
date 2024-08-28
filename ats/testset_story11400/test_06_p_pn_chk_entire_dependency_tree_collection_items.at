@@ -1,0 +1,45 @@
+## test_06_p_pn_chk_entire_dependency_tree_collection_items
+## Description:
+## Ensure the graph of the current sibling dependencies
+## which are defined on the "node" item types are as defined when
+## ConfigTasks and Callback tasks are hanging off a collection Item for the Peer Node
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following sub items:
+## /storage_profile
+## /items
+## /network_interfaces
+## /system
+## /services
+## /routes
+## /configs
+## /os
+## /file_systems
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/test_6_plugin
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Check the resulting plan order
+let __configs_node1 ConfigTask node1 node::configs 12 /deployments/local/clusters/cluster1/nodes/node1/configs
+let __services_node1 ConfigTask node1 node::services 11 /deployments/local/clusters/cluster1/nodes/node1/services
+let __items_node1 ConfigTask node1 node::items 10 /deployments/local/clusters/cluster1/nodes/node1/items
+let __file_systems_node1 ConfigTask node1 node::file_systems 13 /deployments/local/clusters/cluster1/nodes/node1/file_systems
+let __routes_node1 ConfigTask node1 node::routes 14 /deployments/local/clusters/cluster1/nodes/node1/routes
+let __network_interfaces_node1 ConfigTask node1 node::network_interfaces 15 /deployments/local/clusters/cluster1/nodes/node1/network_interfaces
+let __storage_profile_node1 ConfigTask node1 node::storage_profile 16 /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __os_node1 ConfigTask node1 node::os 17 /deployments/local/clusters/cluster1/nodes/node1/os
+let __system_node1 ConfigTask node1 node::system 18 /deployments/local/clusters/cluster1/nodes/node1/system
+
+## Result:
+## "items" and "services" Collection type tasks appear after "configs" collection type tasks in the plan
+assertTaskBeforeTask __configs_node1 __services_node1
+assertTaskBeforeTask __configs_node1 __items_node1
+## "configs" collection type task appears after "file_systems" collection type task appears after "storage_profile"
+## collection type task appears after "routes" collection type task appears after
+## "network_interfaces" collection type task appears after "os" collection type task appears after "system" Item-types
+assertTaskBeforeTask __system_node1 __os_node1 __network_interfaces_node1 __routes_node1 __storage_profile_node1 __file_systems_node1 __configs_node1

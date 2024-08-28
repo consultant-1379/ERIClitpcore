@@ -1,0 +1,33 @@
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+# Assert that no snapshot exists
+assertError remove_snapshot --err_message "no tasks were generated. No remove snapshot tasks added because Deployment Snapshot does not exist" --err_type "DoNothingPlanError"
+
+litp create -p /software/items/vim -t mock-package -o name=vim
+litp inherit -p /ms/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/vim -s /software/items/vim -o name=vim
+
+litp create_plan
+# Asset that no snapshot phase was automatically created in plan
+assertNoCallbackTask _do_stuff /ms
+assertNoCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node2
+
+litp run_plan
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/vim -s /software/items/vim -o name=vim
+litp create_plan
+assertNoCallbackTask _do_stuff /ms
+assertNoCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node2
+
+# Assert that a snpahot phase was created on demand
+litp create_snapshot
+assertCallbackTask _do_stuff /ms
+assertCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _do_stuff /deployments/local/clusters/cluster1/nodes/node2
+
+# Assert that remove_snapshot is unaffected
+litp remove_snapshot
+assertError remove_snapshot --err_message "no tasks were generated. No remove snapshot tasks added because Deployment Snapshot does not exist" --err_type "DoNothingPlanError"

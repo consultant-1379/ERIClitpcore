@@ -1,0 +1,30 @@
+runLitpScript ../include/two_nodes.at
+add-extensions extensions/dummy_11456_extension
+add-plugins plugins/dummy_11456_plugin
+
+# This items is included in the 'git' ConfigTask.model_items
+litp create -p /software/items/x -t foo -o name=x
+
+# This item gets configured/deconfigured to persist a task with item x in it
+litp create -p /software/items/git -t foo -o name=git
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/git -s /software/items/git
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Remove the item which is in the tasks model_items
+litp remove -p /software/items/x
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertNone -p /software/items/x
+
+# Trigger serialization
+litp restore_model
+
+# Recreate a plan so that plan builder inspects persisted tasks,
+# previously removed items, should not be deserialized in their model_items
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/git -o name=new_git
+litp create_plan

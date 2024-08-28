@@ -1,0 +1,38 @@
+add-extensions ../extensions/dummy_package_like_extensions
+add-plugins plugins/package_like
+add-extensions ../extensions/dummy_yum-repository_like_extension
+add-plugins plugins/mock_yum_like_plugin
+add-extensions ../extensions/dummy_volmgr_extensions
+add-plugins plugins/circular_deconfigure_tasks
+runLitpScript ../include/two_nodes.at
+
+litp remove -p /infrastructure/storage/storage_profiles/profile_1
+
+#create package and yum repo
+litp create -p /software/items/my_package -t dummy-package-like -o name=package1
+litp create -p /software/items/my_yum -t yum-repository -o name=yumrepo1
+
+# create storage-profil
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile
+litp create -t volume-group -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vgA -o volume_group_name=foo
+litp create -t physical-device -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vgA/physical_devices/pd1 -o device_name=c0t0d0s0
+litp create -t file-system -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vgA/file_systems/fs1 -o type=ext4 name=bar size=35G mount_point="/shiny"
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/package1 -s /software/items/my_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -s /software/items/my_yum
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/package1 -s /software/items/my_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/yum1 -s /software/items/my_yum
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/package1
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems/fs1 -o mount_point="/serenity"
+
+litp create_plan
+assertLogMessage "The dependency between configure task \"Update\" for file-system \"fs1\" and deconfigure task \"Deconfigure\" for file-system \"fs1\" is deprecated and will be ignored."
+litp run_plan
+assertPlanState successful

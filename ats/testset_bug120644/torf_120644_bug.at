@@ -1,0 +1,38 @@
+## TORF-120644
+add-extensions extensions/dummy_120644_extension
+add-plugins plugins/dummy_120644_plugin
+runLitpScript ../include/two_nodes.at
+
+litp create -t vm-service -p /ms/services/ms_vmservice1 -o service_name="vm1"
+
+litp create_plan
+litp run_plan
+
+assertPlanState successful
+assertFileContents all_applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+assertState -p /ms/services/ms_vmservice1 Applied
+assertState -p /ms/services/ms_vmservice1/foo Applied
+assertState -p /ms/services/ms_vmservice1/bar Applied
+assertState -p /ms/services/ms_vmservice1/baz Applied
+assertState -p /ms/services/ms_vmservice1/quux Applied
+
+litp remove -p /ms/services/ms_vmservice1
+litp create_plan
+show show_plan
+
+failCallbackTask _fail_callback /deployments/local/clusters/cluster1/nodes/node1
+failCallbackTask _fail_callback /deployments/local/clusters/cluster1/nodes/node2
+
+runPlanUntil 3
+assertFileContents cleanup_not_run.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+runPlanEnd
+assertPlanState failed
+
+assertState -p /ms/services/ms_vmservice1 ForRemoval
+assertState -p /ms/services/ms_vmservice1/foo ForRemoval
+assertState -p /ms/services/ms_vmservice1/bar ForRemoval
+assertState -p /ms/services/ms_vmservice1/baz ForRemoval
+assertState -p /ms/services/ms_vmservice1/quux ForRemoval
+
+assertFileContents cleanup_not_run.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

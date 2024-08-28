@@ -1,0 +1,48 @@
+## test_04_p_double_inherit_xml
+## Description:
+## A test on double inheritance, export deployment with double
+## inheritance in initial state to xml, load same file with merge
+## and replace.
+## Requirements id: TORF-107260
+
+add-plugins plugins
+add-extensions extensions
+runLitpScript two-node-std.inc
+
+#Create a parent item with name property
+litp create -p /software/items/bug7725_tc_04 -t bug7725-sw-item -o name='tc_04'
+
+#Inherit parent item to ms overwriting its name property
+litp inherit -p /ms/items/bug7725_tc_04 -s /software/items/bug7725_tc_04 -o name='tc_04_overwrite_src'
+
+#Inherit parent item to node1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_04 -s /software/items/bug7725_tc_04
+
+#Double inherit ms child item to node2
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_04 -s /ms/items/bug7725_tc_04
+
+#export root to xml file
+litp export -p /  -f /tmp/bug7725_tc_04_double_inherit.xml
+
+#load the created xml file with --merge flag
+litp load -p / -f /tmp/bug7725_tc_04_double_inherit.xml --merge
+
+#check all items in tree are in Initial state
+
+assertState -p /software/items/bug7725_tc_04 Initial
+assertState -p /ms/items/bug7725_tc_04 Initial
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_04 Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_04 Initial
+
+#load the created xml file with --replace flag
+litp load -p / -f /tmp/bug7725_tc_04_double_inherit.xml --replace
+
+#check all items in tree are in Initial state
+
+assertState -p /software/items/bug7725_tc_04 Initial
+assertState -p /ms/items/bug7725_tc_04 Initial
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_04 Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_04 Initial
+

@@ -1,0 +1,38 @@
+# Test Case 01.
+
+# Description:
+# Test that on creating a plan with default deployment ruleset defined and a
+# task's tag is set and valid, the task will be assigned to the appropriate
+# task group based on the ruleset and will be ordered in the correct phase.
+#
+# Actions:
+# 1. Create a model item that generates tasks associated with all valid task's
+#    tags as per the plugin SDK documentation (e.g. MS, BOOT, NODE, CLUSTER tags)
+#    with no dependency between tasks
+# 2. Execute "create_plan" command
+# 3. Check that tagged tasks are in the correct phase of the plan
+#
+# Result:
+# On plan creation, tasks tagged with MS, BOOT, NODE and CLUSTER tags are in
+# the correct phase and sequenced in the correct order as per the deployment ruleset
+
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Create a model item that generates tasks associated with all valid task's tag
+litp create -p /software/items/item1 -t foo1 -o name='item1'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 2. Execute "create_plan" command
+litp create_plan
+
+# 3. Check that tagged tasks are in the correct phase of the plan
+assertTask 0 res_ms node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 1 res_boot_1 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 1 res_boot_2 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 2 res_node node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 3 res_cluster node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial

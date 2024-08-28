@@ -1,0 +1,1079 @@
+{
+    "extensions": [
+        {
+            "class": "litp.extensions.core_extension.CoreExtension", 
+            "name": "core_extension", 
+            "version": "1.2.3"
+        }, 
+        {
+            "class": "mock_package_extension.mock_package_extension.MockPackageExtension", 
+            "name": "mock_package_extension", 
+            "version": "1.2.3"
+        }
+    ], 
+    "items": {
+        "/": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "root"
+        }, 
+        "/deployments": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "deployment"
+        }, 
+        "/deployments/local": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "deployment"
+        }, 
+        "/deployments/local/clusters": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "cluster-base"
+        }, 
+        "/deployments/local/clusters/cluster1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "cluster"
+        }, 
+        "/deployments/local/clusters/cluster1/configs": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "cluster-config"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "node"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "hostname": "node1", 
+                "is_locked": "false"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "hostname": "node1", 
+                "is_locked": "false"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "node"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/configs": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "node-config"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/file_systems": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "file-system-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/items": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "software-item"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/network_interfaces": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network-interface"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "network_name": "nodes"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "network_name": "nodes"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network-interface"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/os": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "arch": "x86_64", 
+                "breed": "redhat", 
+                "kopts_post": "console=ttyS0,115200", 
+                "name": "sample-profile", 
+                "path": "/profiles/node-iso/", 
+                "version": "rhel6"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/software/profiles/rhel_6_2", 
+            "item_status": "Applied", 
+            "item_type_id": "os-profile"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/routes": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "route-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/services": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "service-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/storage_profile": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/storage/storage_profiles/profile_1", 
+            "item_status": "Applied", 
+            "item_type_id": "storage-profile-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/system": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "system_name": "SYS1"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system1", 
+            "item_status": "Applied", 
+            "item_type_id": "system"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/system/controllers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system1/controllers", 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/system/controllers/c1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system1/controllers/c1", 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/system/disks": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system1/disks", 
+            "item_status": "Applied", 
+            "item_type_id": "disk-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node1/system/disks/disk0": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "bootable": "false", 
+                "disk_part": "false", 
+                "name": "disk0", 
+                "size": "1G", 
+                "uuid": "foo"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system1/disks/disk0", 
+            "item_status": "Applied", 
+            "item_type_id": "disk"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "hostname": "node2", 
+                "is_locked": "false"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "hostname": "node2", 
+                "is_locked": "false"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "node"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/configs": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "node-config"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/file_systems": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "file-system-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/items": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "software-item"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/network_interfaces": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network-interface"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/network_interfaces/ip1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "network_name": "nodes"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "network_name": "nodes"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network-interface"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/os": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "arch": "x86_64", 
+                "breed": "redhat", 
+                "kopts_post": "console=ttyS0,115200", 
+                "name": "sample-profile", 
+                "path": "/profiles/node-iso/", 
+                "version": "rhel6"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/software/profiles/rhel_6_2", 
+            "item_status": "Applied", 
+            "item_type_id": "os-profile"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/routes": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "route-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/services": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "service-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/storage_profile": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/storage/storage_profiles/profile_1", 
+            "item_status": "Applied", 
+            "item_type_id": "storage-profile-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/system": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "system_name": "SYS2"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system2", 
+            "item_status": "Applied", 
+            "item_type_id": "system"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/system/controllers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system2/controllers", 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/system/controllers/c1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system2/controllers/c1", 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/system/disks": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system2/disks", 
+            "item_status": "Applied", 
+            "item_type_id": "disk-base"
+        }, 
+        "/deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "bootable": "false", 
+                "disk_part": "false", 
+                "name": "sdb", 
+                "size": "1G", 
+                "uuid": "foo"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/infrastructure/systems/system2/disks/disk0", 
+            "item_status": "Applied", 
+            "item_type_id": "disk"
+        }, 
+        "/deployments/local/clusters/cluster1/services": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "clustered-service"
+        }, 
+        "/deployments/local/clusters/cluster1/software": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "software-item"
+        }, 
+        "/infrastructure": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "infrastructure"
+        }, 
+        "/infrastructure/items": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "infra-item"
+        }, 
+        "/infrastructure/networking": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "networking"
+        }, 
+        "/infrastructure/networking/networks": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network"
+        }, 
+        "/infrastructure/networking/networks/ms_network": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "litp_management": "false", 
+                "name": "nodes", 
+                "subnet": "10.10.10.0/24"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "litp_management": "false", 
+                "name": "nodes", 
+                "subnet": "10.10.10.0/24"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network"
+        }, 
+        "/infrastructure/networking/routes": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "route-base"
+        }, 
+        "/infrastructure/service_providers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "service-provider"
+        }, 
+        "/infrastructure/storage": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "storage"
+        }, 
+        "/infrastructure/storage/nfs_mounts": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "file-system-base"
+        }, 
+        "/infrastructure/storage/storage_profiles": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "storage-profile-base"
+        }, 
+        "/infrastructure/storage/storage_profiles/profile_1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "storage-profile-base"
+        }, 
+        "/infrastructure/storage/storage_providers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "storage-provider-base"
+        }, 
+        "/infrastructure/system_providers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "system-provider"
+        }, 
+        "/infrastructure/systems": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "system"
+        }, 
+        "/infrastructure/systems/system1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "system_name": "SYS1"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "system_name": "SYS1"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "system"
+        }, 
+        "/infrastructure/systems/system1/controllers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/infrastructure/systems/system1/controllers/c1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/infrastructure/systems/system1/disks": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "disk-base"
+        }, 
+        "/infrastructure/systems/system1/disks/disk0": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "bootable": "false", 
+                "disk_part": "false", 
+                "name": "disk0", 
+                "size": "1G", 
+                "uuid": "foo"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "bootable": "false", 
+                "disk_part": "false", 
+                "name": "disk0", 
+                "size": "1G", 
+                "uuid": "foo"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "disk"
+        }, 
+        "/infrastructure/systems/system2": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "system_name": "SYS2"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "system_name": "SYS2"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "system"
+        }, 
+        "/infrastructure/systems/system2/controllers": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/infrastructure/systems/system2/controllers/c1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "controller-base"
+        }, 
+        "/infrastructure/systems/system2/disks": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "disk-base"
+        }, 
+        "/infrastructure/systems/system2/disks/disk0": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "bootable": "false", 
+                "disk_part": "false", 
+                "name": "sdb", 
+                "size": "1G", 
+                "uuid": "foo"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "bootable": "false", 
+                "disk_part": "false", 
+                "name": "sdb", 
+                "size": "1G", 
+                "uuid": "foo"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "disk"
+        }, 
+        "/litp": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "litp-service-base"
+        }, 
+        "/litp/logging": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "force_debug": "false"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "force_debug": "false"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "logging"
+        }, 
+        "/litp/maintenance": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "enabled": "false", 
+                "status": "None"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "enabled": "false", 
+                "status": "None"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "maintenance"
+        }, 
+        "/litp/prepare-restore": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "actions": "all", 
+                "path": "/"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "actions": "all", 
+                "path": "/"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "prepare-restore"
+        }, 
+        "/litp/restore_model": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "update_trigger": "updatable"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "update_trigger": "updatable"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "restore"
+        }, 
+        "/ms": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "hostname": "ms1"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "hostname": "ms1"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "ms"
+        }, 
+        "/ms/configs": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "node-config"
+        }, 
+        "/ms/file_systems": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "file-system-base"
+        }, 
+        "/ms/items": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "software-item"
+        }, 
+        "/ms/items/y": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "ensure": "installed", 
+                "name": "xx"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": "/software/items/xx", 
+            "item_status": "Applied", 
+            "item_type_id": "mock-package"
+        }, 
+        "/ms/network_interfaces": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network-interface"
+        }, 
+        "/ms/network_interfaces/ip1": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "ipaddress": "10.10.10.100", 
+                "network_name": "nodes"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "ipaddress": "10.10.10.100", 
+                "network_name": "nodes"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "network-interface"
+        }, 
+        "/ms/routes": {
+            "__type__": "RefCollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "route-base"
+        }, 
+        "/ms/services": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "service-base"
+        }, 
+        "/plans": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "plan"
+        }, 
+        "/snapshots": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "snapshot-base"
+        }, 
+        "/snapshots/some_named_snapshot": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {
+                "active": "true", 
+                "force": "false", 
+                "timestamp": null
+            }, 
+            "item_source": null, 
+            "item_status": "Initial", 
+            "item_type_id": "snapshot-base"
+        }, 
+        "/software": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "software"
+        }, 
+        "/software/deployables": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "deployable-entity"
+        }, 
+        "/software/images": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "image-base"
+        }, 
+        "/software/items": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "software-item"
+        }, 
+        "/software/items/xx": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "ensure": "installed", 
+                "name": "xx"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "ensure": "installed", 
+                "name": "xx"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "mock-package"
+        }, 
+        "/software/profiles": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "profile"
+        }, 
+        "/software/profiles/rhel_6_2": {
+            "__type__": "ModelItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {
+                "arch": "x86_64", 
+                "breed": "redhat", 
+                "kopts_post": "console=ttyS0,115200", 
+                "name": "sample-profile", 
+                "path": "/profiles/node-iso/", 
+                "version": "rhel6"
+            }, 
+            "item_previous_status": "Initial", 
+            "item_properties": {
+                "arch": "x86_64", 
+                "breed": "redhat", 
+                "kopts_post": "console=ttyS0,115200", 
+                "name": "sample-profile", 
+                "path": "/profiles/node-iso/", 
+                "version": "rhel6"
+            }, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "os-profile"
+        }, 
+        "/software/runtimes": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "runtime-entity"
+        }, 
+        "/software/services": {
+            "__type__": "CollectionItem", 
+            "item_app_prop_det": true, 
+            "item_applied_properties": {}, 
+            "item_previous_status": "Initial", 
+            "item_properties": {}, 
+            "item_source": null, 
+            "item_status": "Applied", 
+            "item_type_id": "service-base"
+        }
+    }, 
+    "plan": {}, 
+    "plugins": [
+        {
+            "class": "litp.plugins.core.puppet_manager_plugin.PuppetManagerPlugin", 
+            "name": "puppet_manager", 
+            "version": "1.2.3"
+        }, 
+        {
+            "class": "litp.plugins.core.core_plugin.CorePlugin", 
+            "name": "core_plugin", 
+            "version": "1.2.3"
+        }, 
+        {
+            "class": "mock_package_plugin.mock_package_plugin.MockPackagePlugin", 
+            "name": "mock_package_plugin", 
+            "version": "1.2.3"
+        }, 
+        {
+            "class": "mock_volmgr_plugin.MockVolmgrPlugin", 
+            "name": "mock_volmgr_plugin", 
+            "version": "1.2.3"
+        }
+    ], 
+    "puppet_manager": {
+        "node_tasks": {}
+    }
+}

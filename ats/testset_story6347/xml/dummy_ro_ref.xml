@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:dummy-item-inherit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="ref" source_path="/software/profiles/dummy/item">
+    <name>bar</name>
+</litp:dummy-item-inherit>

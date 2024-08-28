@@ -1,0 +1,76 @@
+# Purpose:
+#     This AT replaces Story46, test_07_p_create_plan_again_after_prop_update_undone
+#     Story46 and Story2240 tests can be found as follows:
+#     ERIClitpcore-testware/python-testcases/src/main/resources/core/testset_story46.py
+#     ERIClitpcore-testware/python-testcases/src/main/resources/core/testset_story2240.py
+#
+# Description:
+#     This test checks that when an update to an object is reverted that
+#     a plan shall not be generated as the deployment description
+#     shall once again reflect the environment.
+#
+# Actions:
+#     1. Test Preparation
+#           Create a software package item (e.g. vim)
+#           Create and run the plan
+#           Check that the item in applied state
+#      2. Update name property for vim software package (e.g. update name to vim_newname)
+#      3. Check that the items state are set to Updated
+#      4. Create Plan and check that tasks relating to the update are in the plan
+#      5. Change the name property back to its original name (e.g. vim)
+#      6. Issue the create plan command and check that an error message is generated to indicate
+#         that the plan failed to be created as the model once again reflects the
+#         environment, also the software package item does not change its state
+#         from applied.
+#
+# Results:
+#     A plan is not created as the model once again reflects the
+#     environment, also the software package item does not change its state
+#     from applied.
+
+# Define mocked environment
+runLitpScript ../include/two_nodes.at
+
+# 1. Test Preparation
+# Create a software package
+litp create -p /software/items/vim -t mock-package -o name="vim"
+
+litp inherit -p /ms/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/vim -s /software/items/vim
+
+# Create and run the plan
+litp create_plan
+litp run_plan
+
+# Check that the item in applied state
+assertState -p /ms/items/vim Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/vim Applied
+
+# 2 . Update name property for vim software package (e.g. update to vim_newname)
+litp update -p /software/items/vim -o name="vim_newname"
+
+# 3. Check that the items state is set to Updated
+assertState -p /ms/items/vim Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/vim Updated
+
+# 4. Create Plan and check that tasks relating to the update are in the plan
+litp create_plan
+assertTask 0 package ms1 /ms/items/vim Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/vim Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/vim Initial
+
+# 5. Change the name property back to its original name (e.g. vim)
+litp update -p /software/items/vim -o name="vim"
+
+# 6. Issue the create plan command and check that an error message is generated to
+# indicate that the plan failed to be created as the model once again reflects the
+#  environment, also the software package item does not change its state from applied.
+assertError --err_message "Create plan failed: no tasks were generated" create_plan
+assertError --err_message "Plan does not exist" show_plan
+
+assertState -p /ms/items/vim Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/vim Applied

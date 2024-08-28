@@ -1,0 +1,5 @@
+runLitpScript ../model/setup_two_nodes.inc
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node2 -o hostname=NoDe1
+
+assertError --err_message "Hostname 'node1' is duplicated across /deployments/site1/clusters/cluster1/nodes/node1, /deployments/site1/clusters/cluster1/nodes/node2. All hostnames must be unique." create_plan

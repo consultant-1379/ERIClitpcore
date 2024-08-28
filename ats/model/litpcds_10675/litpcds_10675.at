@@ -1,0 +1,5 @@
+add-extensions extension/
+
+litp create -p /software/items/foo -t deprecation
+
+assertLogMessage "Property 'deprecated_property' (of type 'basic_string') set on '/software/items/foo' is marked for deprecation"

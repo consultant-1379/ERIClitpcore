@@ -1,0 +1,12 @@
+{
+    "data": {
+        "description": "$getVar('description', {})",
+        "fields": $getVar('fields', {}),
+        #if $getVar('supertype', '')
+            "supertype": $supertype,
+        #end if
+        "name": "$name",
+        "uri": "$uri"
+    },
+    "messages": []
+}

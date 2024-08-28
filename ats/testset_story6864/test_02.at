@@ -1,0 +1,29 @@
+# test_02_p_restore_model_applied_model_no_changes
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /ms/items/y -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/y -s /software/items/x -o name=y
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/y -s /software/items/x -o name=foo
+
+litp create_plan
+assertConfigTask ms1 package x /ms/items/y ensure='installed'
+assertConfigTask node1 package y /deployments/local/clusters/cluster1/nodes/node1/items/y ensure='installed'
+assertConfigTask node2 package foo /deployments/local/clusters/cluster1/nodes/node2/items/y ensure='installed'
+
+litp run_plan
+
+# Assert an applied model exists
+assertState -p /ms/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/y Applied
+
+# Restore the model and assert that the model remained unchanged
+litp restore_model
+assertProperty /software/items/x -o name=x
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/y -o name=y
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/y -o name=foo
+assertState -p /ms/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/y Applied

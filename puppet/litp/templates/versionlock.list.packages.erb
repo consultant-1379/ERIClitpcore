@@ -1,0 +1,11 @@
+<%
+def return_epoch(package)
+  return 0
+end
+%><% if @excluded_packages != "None"
+    for package in @excluded_packages
+       if package.include? ":" %><%= package %>.*
+<% else %><%= return_epoch(package) %>:<%= package %>.*
+<% end
+    end
+end %>

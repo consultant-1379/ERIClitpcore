@@ -1,0 +1,48 @@
+## test_05_n_multiple_replaces_for_same_task
+## Description:
+## Test that multiple replacement Config Tasks cannot replace the same task
+
+## Prerequisite:
+## Create a plug-in that generates tasks and a replacement task
+
+## Actions:
+## 1. Create a model items so the plug-in will generate tasks
+## 2. Create plan
+## 3. Run plan
+## 4. Update model items so plug-in will generate replacement tasks
+##    plug-in task 1: (foo1, bar1), replaces: (foo, bar)
+##    plug-in task 2: (foo2, bar2), replaces: (foo, bar)
+## 5. Create plan
+## 6. Check Error raised
+
+## Result:
+## Core will log an error and fail the create_plan, when replacement
+## tasks attempt to replace the same task
+
+#Prerequisite:
+#Create a plug-in that generates tasks and a replacement task
+#to be replaced in the same plan
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model items so the plug-in will generate tasks
+litp create -p /software/items/item1 -t story10650 -o name="tc05_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+#4. Update model items so plug-in will generate replacement tasks
+#   plug-in task 1: (foo1, bar1), replaces: (foo, bar)
+#   plug-in task 2: (foo2, bar2), replaces: (foo, bar)
+litp update -p /software/items/item1 -o name="tc05_foobar2"
+
+#5. Create plan
+#6. Check Error raised
+assertError create_plan --err_type "InternalServerError" --err_message "Task validation errors occurred"
+assertLogMessage 'ERROR - There are multiple tasks trying to replace ("foo1", "bar1") for node "node1"'

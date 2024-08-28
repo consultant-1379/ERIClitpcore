@@ -1,0 +1,84 @@
+# Description: Test to verify that the state transition of the LITP items works correctly following the update of non-configuration and configuration properties on an inherited object in state For-Removal.
+# Covers test cases 22, 23 and 24
+# Test steps:
+# 1. On an existing file-system which has been inherited below a node
+# 2. issue the remove command on the object
+# 3. update all of the non-configuration properties as well as some configuration property on the source item
+# 4. ensure the object has transitioned to state Updated.
+# 5. update all of the non-configuration properties and some configuration property on the source item
+# 6. ensure the object has transitioned to state Updated.
+
+add-extensions ../testset_story200916/extensions/dummy_200916_extension
+
+runLitpScript ../testset_story200916/include/two_nodes_torf200916.at
+
+litp create -t storage-profile -p /infrastructure/storage/storage_profiles/sp
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='5G' snap_size='100' backup_policy='snapshot' req_non_config_prop='required'
+litp inherit -p /deployments/d1/clusters/c1/nodes/n1/storage_profile -s /infrastructure/storage/storage_profiles/sp
+litp inherit -p /deployments/d1/clusters/c1/nodes/n2/storage_profile -s /infrastructure/storage/storage_profiles/sp
+
+litp create_plan
+litp run_plan
+
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='5G' snap_size='100' backup_policy='snapshot' req_non_config_prop='required'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='5G' snap_size='100' backup_policy='snapshot' req_non_config_prop='required'
+
+# Test Case 22
+# Remove optional non-config properties without default
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2  -o non_config_default='non-config'
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o non_config_default='non-config'
+
+# Remove property on the source item
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -d snap_size
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertPropertyUnset -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size
+assertPropertyUnset -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o snap_size
+
+# Update the items after they have been removed
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='100'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='100'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o snap_size='100'
+
+litp update -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o snap_size=50
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o snap_size=50
+
+# Remove property on the inherited item
+litp update -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -d snap_size
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o snap_size='100'
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='100'
+
+# Test Case 23
+# Remove optional non-config properties with default
+
+# Remove property on the source item
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -d non_config_default
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o non_config_default='non-config'
+
+# Remove property on the inherited item
+litp update -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -d non_config_default
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o non_config_default='non-config'
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o non_config_default='non-config'
+
+# Test Case 24
+# Remove required non-config properties on source and inherited items
+litp update -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o req_non_config_prop="overwritten"
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o req_non_config_prop='overwritten'
+
+assertError --err_type MissingRequiredPropertyError update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -d req_non_config_prop
+# inherited properties reset to value from source item
+litp update -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -d req_non_config_prop
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o req_non_config_prop='required'

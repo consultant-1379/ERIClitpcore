@@ -1,0 +1,44 @@
+## LITPCDS-12624: Missing task to remove item causes subsequent create plan to fail.
+
+## Steps to Reproduce:
+## 1. Create a package item, inherit it and apply items
+## 2. Remove applied inherited package item
+## 3. Create a service item on the same node and inherit the package source item under it
+## 4. Inherit the service item to the same node (which has the package inherited under it)
+## 5. Create plan, check a clean up task exists for original package item
+## 6. The ForRemoval package item should be removed and the new package item
+##    should be Applied in its new location on the same node
+add-plugins plugins/dummy_12624_plugin
+add-extensions ../extensions/dummy_package_like_extensions
+runLitpScript ../include/two_nodes.at
+
+# 1.
+litp create -p /software/items/test_service -t dummy-package-like -o name=test_service
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_service -s /software/items/test_service
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_service Applied
+
+# 2.
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/test_service
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_service ForRemoval
+
+# 3.
+litp create -p /software/services/test_service -t service -o service_name=test_service
+litp inherit -p /software/services/test_service/packages/pkg1 -s /software/items/test_service
+
+# 4.
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/test_service -s /software/services/test_service
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/test_service/packages/pkg1 Initial
+
+# 5.
+litp create_plan
+assertCleanupTask 1 /deployments/local/clusters/cluster1/nodes/node1/items/test_service Initial
+litp run_plan
+assertPlanState successful
+
+# 6.
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_service
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/test_service/packages/pkg1 Applied

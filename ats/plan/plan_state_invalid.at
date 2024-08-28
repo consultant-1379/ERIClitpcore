@@ -1,0 +1,29 @@
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+# say no to mock - learn to write some plugin code
+add-extensions plan_states
+add-plugins plan_states
+
+litp create -p /software/items/x -t test-package -o name=x
+litp inherit -p /ms/items/y -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/y -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/y -s /software/items/x
+
+
+# 1. initial->invalid
+litp create_plan
+assertTask 0 package ms1 /ms/items/y Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/y Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/y Initial
+
+assertPlanState initial
+litp update -p /software/items/x -o version=1
+assertPlanState invalid
+
+assertError --err_message 'Plan is invalid - model changed' run_plan
+
+# ensure nothing changed
+assertState -p /ms/items/y Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/y Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/y Initial

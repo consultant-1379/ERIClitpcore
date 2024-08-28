@@ -1,0 +1,41 @@
+# TORF-539617 - Improve model_manager.py code to cater for node1/node10 case, described in TORF-537061
+
+runLitpScript ../setup_two_nodes_with_similar_node_names.inc
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+litp inherit -p /ms/items/y1 -s /software/items/x
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/y -s /software/items/xx
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node10/items/y -s /software/items/xx
+
+litp create_plan
+
+assertState -p /software/items/x Initial
+assertState -p /ms/items/y Initial
+assertState -p /ms/items/y1 Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/y Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node10/items/y Initial
+
+litp run_plan
+assertState -p /software/items/x Applied
+assertState -p /ms/items/y Applied
+assertState -p /ms/items/y1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/y Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node10/items/y Applied
+
+litp update -p /litp/prepare-restore -o path='/deployments/site1/clusters/cluster1/nodes/node10'
+
+# Verify that after a prepare_for_restore all Model Items are in state Initial
+assertState -p /software/items/x Initial
+assertState -p /ms/items/y Applied
+assertState -p /ms/items/y1 Applied
+assertState -p /deployments Initial
+assertState -p /deployments/site1 Initial
+assertState -p /deployments/site1/clusters Initial
+assertState -p /deployments/site1/clusters/cluster1 Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/y Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node10 Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node10/items/y Initial

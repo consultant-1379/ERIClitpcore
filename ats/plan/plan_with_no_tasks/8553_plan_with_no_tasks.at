@@ -1,0 +1,16 @@
+# LITPCDS-8553: Able to create and run a plan with no tasks
+
+# Create two plugins which both return the same config task, with the same
+# kwarg list, except one of the list has unicode values.
+
+runLitpScript ../../include/two_nodes.at
+
+add-plugins plugins/first_plugin
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+add-plugins plugins/similar_plugin
+
+assertError --err_type "DoNothingPlanError" --err_message "Create plan failed: no tasks were generated" create_plan

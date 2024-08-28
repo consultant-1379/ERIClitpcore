@@ -1,0 +1,46 @@
+# Description: Test to verify that the state transition of the LITP items works correctly following the update of non-configuration and configuration properties on an item in state Applied. Also test to verify state transition of LITP item with non-configuration and configuration properties following a remove commmand.
+# Covers test cases 07, 08 and 09
+# Test steps:
+# 1. On an existing dummy-filesystem item
+# 2. Ensure item is in a state applied and update only non-configuration properties
+# 3. ensure the items have remained in state applied
+# 4. update all of the non-configuration properties as well as some of the configuration properties
+# 5. ensure the items have transitioned to state Updated.
+# 6. remove an item containing both non-configuration and configuration properties
+# 7. update the non-configuration properties back to their applied values
+# 8. ensure the items have transitioned back to a state applied
+
+add-extensions ../testset_story200916/extensions/dummy_200916_extension
+
+runLitpScript ../testset_story200916/include/two_nodes_torf200916.at
+
+litp create -t storage-profile -p /infrastructure/storage/storage_profiles/sp
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs1 -o path='/var/log' size='5G' req_non_config_prop='required' non_config_default='non-config'
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='5G' snap_size='10' backup_policy='snapshot' req_non_config_prop='required' non_config_default='non-config'
+litp inherit -p /deployments/d1/clusters/c1/nodes/n1/storage_profile -s /infrastructure/storage/storage_profiles/sp
+litp inherit -p /deployments/d1/clusters/c1/nodes/n2/storage_profile -s /infrastructure/storage/storage_profiles/sp
+
+litp create_plan
+litp run_plan
+
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='10' backup_policy='snapshot' size='5G' path='/home' non_config_default='non-config'
+
+# Test Case 07
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='something'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='something' size='5G' path='/home' non_config_default='non-config'
+
+# Test Case 08
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='something' path='/foo'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='something' size='5G' path='/foo' non_config_default='non-config'
+
+# Test Case 09
+litp remove -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 ForRemoval
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='something' size='5G' path='/foo' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' snap_size='15' backup_policy='something'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='something' size='5G' path='/home' non_config_default='non-config'

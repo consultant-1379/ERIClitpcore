@@ -1,0 +1,26 @@
+runLitpScript ../include/two_nodes.at
+
+## Check if it's ok to update a updatable_rest=False on an Initial item
+assertState -p /deployments/local/clusters/cluster1 Initial
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=cmw
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+## Item should remain Initial
+assertState -p /deployments/local/clusters/cluster1 Initial
+
+## Create a package to get some tasks
+litp create -p /software/items/foo -t mock-package -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+
+## Run plan to set all items to Applied
+litp create_plan
+litp run_plan
+
+## Check if the item is Applied
+assertProperty /deployments/local/clusters/cluster1 -o ha_manager=vcs
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+## Check if it's disallowed to update an updatable_rest=False property if an item is Applied
+let __err --err_type InvalidRequestError --err_message 'Unable to modify readonly property: ha_manager'
+assertError __err update -p /deployments/local/clusters/cluster1 -o ha_manager=cmw
+assertProperty /deployments/local/clusters/cluster1 -o ha_manager=vcs

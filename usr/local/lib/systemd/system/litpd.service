@@ -1,0 +1,24 @@
+[Unit]
+SourcePath=/usr/local/bin/litpd.sh
+Description=LSB: daemon for starting LITP service
+Before=shutdown.target
+After=rabbitmq-server.service
+After=network-online.target
+After=xinetd.service
+After=rh-postgresql96-postgresql.service
+Wants=network-online.target
+Conflicts=shutdown.target
+
+[Service]
+Type=forking
+Restart=no
+TimeoutSec=5min
+IgnoreSIGPIPE=no
+KillMode=process
+PIDFile=/var/run/litp_service.py.pid
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/litpd.sh --start
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,32 @@
+add-extensions ../extensions/dummy_10127_extension/
+add-plugins ../plugins/dummy_10127_plugin/
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/items/mock_package -t mock-package -o name=mock_package
+litp inherit -p /ms/items/mock_package -s /software/items/mock_package
+
+litp create -p /software/profiles/litpcds-10127 -t litpcds-10127 -o name=litpcds-10127
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Task hangs off litpcds-10127 item and has node1 item in task.model_items
+assertState -p /software/profiles/litpcds-10127 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+
+assertAppliedPropertiesDeterminable -p /software/profiles/litpcds-10127 True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1 True
+
+litp update -p /software/profiles/litpcds-10127 -o name=10127
+litp create_plan
+
+# Fail task hanging off litpcds-10127 item
+disableCallbackMock _cb_fail /software/profiles/litpcds-10127
+litp run_plan
+assertPlanState failed
+
+# Both the item that the task hangs off (litpcds-10127) and the node
+# item which is in the tasks task.model_items should be APD=False
+assertAppliedPropertiesDeterminable -p /software/profiles/litpcds-10127 False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1 False

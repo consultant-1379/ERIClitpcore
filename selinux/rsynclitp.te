@@ -1,0 +1,23 @@
+
+module rsynclitp 1.0;
+
+require {
+	type iso9660_t;
+	type openshift_initrc_tmp_t;
+        type rsync_t;
+        type admin_home_t;
+        type httpd_sys_content_t;
+	class file { rename write getattr setattr read create open unlink };
+	class dir { create write setattr remove_name add_name };
+}
+
+#============= rsync_t ==============
+
+allow rsync_t iso9660_t:dir { write remove_name add_name setattr };
+
+allow rsync_t iso9660_t:file { rename write setattr read create open unlink };
+allow rsync_t openshift_initrc_tmp_t:file write;
+allow rsync_t httpd_sys_content_t:dir { write remove_name add_name setattr };
+allow rsync_t admin_home_t:dir { write add_name };
+allow rsync_t httpd_sys_content_t:file { rename write setattr read create open unlink };
+allow rsync_t httpd_sys_content_t:dir { create };

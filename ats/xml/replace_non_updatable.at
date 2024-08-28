@@ -1,0 +1,11 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp load -p / -f blade.xml --replace
+litp load -p /infrastructure/systems/system1/disks -f disk.xml --replace
+litp update -p /infrastructure/systems/system1/disks/disk0 -o disk_part=true
+litp load -p / -f blade.xml --replace
+litp create_plan
+litp run_plan
+let __err_1 --err_type InvalidRequestError --err_message "Unable to modify readonly property: disk_part"
+assertError __err_1 --errors_length 1 load -p /infrastructure/systems/system1/disks -f disk.xml --replace

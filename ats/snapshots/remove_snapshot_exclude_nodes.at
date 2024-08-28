@@ -1,0 +1,62 @@
+runLitpScript ../include/two_nodes.at
+
+add-plugins ../plugins/mock_volmgr_exclude_nodes_plugin
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+## Happy path:
+# Legacy - simple remove_snapshot
+litp create_snapshot
+litp remove_snapshot
+assertCallbackTask _do_remove /ms
+assertCallbackTask _do_remove /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _do_remove /deployments/local/clusters/cluster1/nodes/node2
+
+# One node excluded
+litp create_snapshot --name='something'
+litp remove_snapshot --name='something' --exclude_nodes 'node1'
+assertCallbackTask _do_remove /ms
+assertNoCallbackTask _do_remove /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _do_remove /deployments/local/clusters/cluster1/nodes/node2
+
+# Two nodes excluded
+litp create_snapshot --name='something'
+litp remove_snapshot --name='something' --exclude_nodes='node1,node2'
+assertCallbackTask _do_remove /ms
+assertNoCallbackTask _do_remove /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _do_remove /deployments/local/clusters/cluster1/nodes/node2
+
+## Exception path:
+litp create_snapshot --name='something'
+# No MS allowed in exclude_nodes
+assertError remove_snapshot --name='something' --exclude_nodes='ms1'
+assertError remove_snapshot --name='something' --exclude_nodes='node1,ms1'
+assertError remove_snapshot --name='something' --exclude_nodes='nonexistentnode1,ms1'
+# Make sure the snapshot object hasn't been created.
+
+# Nonexistent node not allowed in exclude_nodes
+assertError remove_snapshot --name='something' --exclude_nodes='nonexistentnode1,node1'
+
+# Duplicated nodes not allowed in exclude_nodes
+assertError create_snapshot --name='something' --exclude_nodes='node1,node2,node1'
+
+# Malformed exclude_nodes - error from litp cli
+assertError remove_snapshot --name='something' --exclude_nodes=',node1,node2'
+assertError remove_snapshot --name='something' --exclude_nodes='node1,node2,'
+assertError remove_snapshot --name='something' --exclude_nodes='node1,,node2,'
+
+# Empty exclude_nodes not allowed in exclude_nodes - error from litp cli
+assertError remove_snapshot --name='something' --exclude_nodes=''
+
+# Default snapshot name is "snapshot" - not allowed
+assertError remove_snapshot --name='snapshot' --exclude_nodes='node1,node2'
+
+# Not-named snapshot with exclude_nodes not allowed
+assertError remove_snapshot --exclude_nodes='node1,node2'
+
+# Make sure it's possible to remove a snapshot
+litp remove_snapshot --name='something'

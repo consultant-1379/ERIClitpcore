@@ -1,0 +1,17 @@
+## LITPCDS-12507
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/dummy_12507_plugin
+add-extensions extensions/dummy_12507_extension
+
+litp create -p /software/items/foo -t dummy-12507-package -o name=foo
+litp inherit -p /ms/items/foo -s /software/items/foo
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+litp remove -p /ms/items/foo
+
+litp create_plan
+
+assertNoConfigTask ms1 notify /ms/items/foo /ms/items/foo
+assertConfigTask ms1 package foo /deployments/local/clusters/cluster1/nodes/node1

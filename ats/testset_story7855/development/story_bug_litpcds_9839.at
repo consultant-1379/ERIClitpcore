@@ -1,0 +1,67 @@
+# LITPCDS-9839: Two callback tasks hanging off one cluster model item, stop
+# plan after first task is successful, leaving its APD=False. Rerun the plan,
+# APD should go to True
+
+# Note: Plan order should be, Phase 1 - CallbackTask_1 & ConfigTask
+# Phase 3 - CallbackTask_2
+
+add-extensions ../plugins/dummy_7855/
+add-plugins ../plugins/dummy_7855/
+runLitpScript ../../include/two_nodes.at
+
+# Create a mock package so we have an Applied cluster
+litp create -p /software/items/git -t mock-package -o name=git
+litp inherit -p /ms/items/git -s /software/items/git
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Applied cluster item with APD=True
+assertState -p /deployments/local/clusters/cluster1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1 True
+
+# Create a foo item, which will return 2 callback tasks in separate phases also
+litp create -p /software/items/foo1 -t foo -o name=foo1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo1 -s /software/items/foo1
+
+litp create_plan
+runPlanUntil 2
+stopPlan
+runPlanEnd
+assertPlanState stopped
+
+assertState -p /deployments/local/clusters/cluster1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1 False
+
+# Rerun the plan, so that all tasks are successfull and APD is set to True
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /deployments/local/clusters/cluster1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1 True
+
+# Test plan failure, but all associated tasks succuess so APD is set to True
+# Create a bar item, which will return 2 associated tasks and one unnassociated task
+litp create -p /software/items/bar -t bar -o name=bar
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar -s /software/items/bar
+
+litp create_plan
+runPlanUntil 2
+stopPlan
+runPlanEnd
+assertPlanState stopped
+
+# Cluster is Applied & APD=False
+assertState -p /deployments/local/clusters/cluster1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1 False
+
+# Rerun the plan, so it fails, but all associated tasks are successfull and APD is set to True
+litp create_plan
+disableCallbackMock cb_fail /deployments/local/clusters/cluster1/nodes
+litp run_plan
+assertPlanState failed
+
+assertState -p /deployments/local/clusters/cluster1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1 True

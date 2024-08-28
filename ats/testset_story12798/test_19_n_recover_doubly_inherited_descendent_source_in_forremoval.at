@@ -1,0 +1,190 @@
+## test_19_n_recover_doubly_inherited_descendent_source_in_forremoval
+## Description:
+## When an attempt to recover a doubly inherited item or
+## the descendent of a doubly inherited Item
+## and its corresponding source is in "ForRemoval" state
+## then a MethodNotAllowedError is raised
+##
+## Preconditions:
+## Source itemA: /software/items/itemA
+## Inherited item1 (source is itemA): /ms/items/item1
+## Doubly inherited item2 (source is grandchild of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item2
+## Doubly inherited item3 (source is grandchild of item1): /deployments/local/clusters/cluster1/nodes/node2/items/item3
+## Note that child of item2 is a reference to the grandchild of item1
+
+# Actions:
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_14
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA with a child item
+#    and a grandchild item and a grand-grandchild
+litp create -p /software/items/itemA -t parent -o name='parent' # source item
+litp create -p /software/items/itemA/childs/child1 -t child
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1 -t g-child
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 -t g-g-child
+
+# 2. Inherit itemA to item1
+litp inherit -p /ms/items/item1 -s /software/items/itemA
+
+# 3. Inherit grandchild of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+# 4. Inherit grandchild of item1 to item3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+# 5. Check that all descendents are created and in "Initial" state
+# item A
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item 1
+assertState -p /ms/items/item1 Initial
+assertState -p /ms/items/item1/childs/child1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/g-grandchild1 Initial
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 Initial
+
+# 6. Execute "create_plan" command
+litp create_plan
+
+# 7. Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 8. Check all items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 Applied
+
+# 9. Remove itemA
+litp remove -p /software/items/itemA
+
+# 10.Check all items are in "ForRemoval" state
+# item A
+assertState -p /software/items/itemA ForRemoval
+assertState -p /software/items/itemA/childs/child1 ForRemoval
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item 1
+assertState -p /ms/items/item1 ForRemoval
+assertState -p /ms/items/item1/childs/child1 ForRemoval
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 ForRemoval
+
+# 11.Attempt to execute litp "update" command to recover
+#    doubly inherited item2
+# 12.MethodNotAllowedError raised indicating that the
+#   corresponding source item is in "ForRemoval" state
+let  __err_1 --err-type MethodNotAllowedError --err-message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_doubly_inherited_desc
+
+# 13.Attempt to execute litp "update" command to recover
+#    doubly inherited item3 descendent
+# 14.MethodNotAllowedError raised indicating that the
+#    corresponding source item is in "ForRemoval" state
+let  __err_1 --err-type MethodNotAllowedError --err-message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 -o name=update_doubly_inherited_desc
+
+# 15.Restore litp model to bring all items to "Applied" state
+litp restore_model
+
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 Applied
+
+# 16.Remove inherited item1 granchild
+litp remove -p /ms/items/item1/childs/child1/grand_children/grandchild1
+
+# 17.Check that item1 grandchild and its descendent
+#    are in "ForRemoval" state
+# 18.Check that doubly inherited item2 and item3 and all descendents are in
+#    "ForRemoval" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 ForRemoval
+
+# 19.Attempt to execute litp "update" command to recover
+#    doubly inherited item2
+# 20.MethodNotAllowedError raised indicating that the
+#    corresponding source item is in "ForRemoval" state
+let  __err_1 --err-type MethodNotAllowedError --err-message "Item's source is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_doubly_inherited
+
+# 21.Attempt to execute litp "update" command to recover
+#    doubly inherited item3 descendent
+# 22.MethodNotAllowedError raised indicating that the
+#    corresponding source item is in "ForRemoval" state
+let  __err_1 --err-type MethodNotAllowedError --err-message "Item's source is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_grand_children/g-grandchild1 -o name=update_doubly_inherited_desc
+
+# Result:
+# The expected Validation Error is seen when an
+# attempt is made to recover a doubly inherited Item or its descendent
+# when its corresponding parent is in "ForRemoval" state

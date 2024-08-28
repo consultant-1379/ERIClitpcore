@@ -1,0 +1,4 @@
+[plugin]
+name=TestAPlugin
+class=a.b.c.APlugin
+version=1.0

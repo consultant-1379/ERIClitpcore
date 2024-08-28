@@ -1,0 +1,63 @@
+
+litp create -p /software/items/package_vim -t mock-package -o name="vim-enhanced"
+
+litp create -p /deployments/site1 -t deployment
+litp create -p /deployments/site1/clusters/cluster1 -t cluster
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+
+assertError create -p /software/items/node1 -t node
+
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node2 -t node
+
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node2 -t node -o hostname=":_"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname=":_"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="$node"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="-node"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node-"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node."
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node.com"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node com"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="a23456789a23456789a23456789a23456789a23456789a23456789a23456"
+
+assertError update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345.a1"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="1node"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node1"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="nod1e"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="nod-e"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="112-1"
+
+
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname=":_"
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname=":_"
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="$node"
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="-node"
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="node-"
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="node."
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="node.com"
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="node com"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="a23456789a23456789a23456789a23456789a23456789a23456789a23456"
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node3
+assertError create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345.a1"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="1node"
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node3
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="node3"
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node3
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="nod1e"
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node3
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="nod-e"
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node3
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="112-1"
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node3

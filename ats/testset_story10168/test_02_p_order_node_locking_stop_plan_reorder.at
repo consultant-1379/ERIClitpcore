@@ -1,0 +1,65 @@
+#test_02_p_order_node_locking_stop_plan_reorder
+#=============================================
+#Description:
+#Test that the order can be changed when an upgrade plan
+#is stopped and the "node_upgrade_ordering" is updated
+
+#Actions:
+#Presequite:
+#LITP installed and deployed with VCS cluster
+#1. Create a new deployment
+#2. Update the node ordering provided by the view "node_upgrade_ordering"
+#3. Follow upgrade steps
+#4. Execute "create_plan" command
+#5. Check node ordering follows order returned by view
+#6. Execute "run_plan" command
+#7. Stop the plan
+#8. Update the node ordering provided by the view "node_upgrade_ordering"
+#9. Recreate the plan
+#10. Check node ordering follows order returned by view
+#11. Execute "run_plan" command
+
+#Result:
+#Node order provided by the view "node_upgrade_ordering" is followed
+#and the upgrade is successful
+
+# 1. Create a new deployment
+# 2. Update the node ordering provided by the view "node_upgrade_ordering"
+# 3. Follow upgrade steps
+add-extensions ../plugins/dummy_10168
+add-plugins ../plugins/dummy_10168
+runLitpScript misc/create_multi_node_deployment.inc
+
+#4. Execute "create_plan" command
+litp create_plan
+
+#5. Check node ordering follows order returned by view
+let __task_n1 ConfigTask c1-node1 foo bar /deployments/litpcds_10168/clusters/cluster_1/nodes/node1
+let __task_n2 ConfigTask c1-node2 foo bar /deployments/litpcds_10168/clusters/cluster_1/nodes/node2
+assertTaskBeforeTask __task_n1 __task_n2
+
+#6. Execute "run_plan" command
+#7. Stop the plan
+runPlanStart
+runPlanUntil 3
+litp stop_plan
+runPlanEnd
+assertPlanState stopped
+
+#8. Update the node ordering provided by the view "node_upgrade_ordering"
+litp update -p /deployments/litpcds_10168/clusters/cluster_1 -o ordering_behaviour=reverse
+
+litp create -p /software/items/bar1 -t mock-package -o name=bar1
+
+litp inherit -p /deployments/litpcds_10168/clusters/cluster_1/nodes/node1/items/bar1 -s /software/items/bar1
+litp inherit -p /deployments/litpcds_10168/clusters/cluster_1/nodes/node2/items/bar1 -s /software/items/bar1
+
+#9. Recreate the plan
+litp create_plan
+
+#10. Check node ordering follows order returned by view
+let __new_task_n1 ConfigTask c1-node1 package bar1 /deployments/litpcds_10168/clusters/cluster_1/nodes/node1/items/bar1
+assertTaskBeforeTask __task_n2 __new_task_n1
+
+#11. Execute "run_plan" command
+litp run_plan

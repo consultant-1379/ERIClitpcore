@@ -1,0 +1,47 @@
+## test_01_p_req_config_task_not_returned_model_dep_ms
+## Description:
+## Ensure that when a required task is not returned by the plugin, its model
+## defined dependencies which are defined on the 'ms' item types are taken into
+## account in the plan and the manifest.
+
+## Prerequisite
+## Plugin generates a required Config task (t2) which is not returned
+## t1 - Config task associated with 'software-item' item type
+## t1 requires t2
+## t2 - Config task associated with 'node-config' item type (not returned by plugin)
+## t3 - Config task associated with 'file_system' item type
+add-plugins plugins/tc1_tc2_plugin
+
+# Define 2 nodes deployment
+runLitpScript ../include/two_nodes.at
+
+## Actions:
+
+## 1. Create Model items on ms
+## "software-item" item type
+litp create -p /software/items/item -t software-item
+litp inherit -p /ms/items/item_tc1 -s /software/items/item
+
+## "node-config" item type
+litp create -p /ms/configs/config_tc1 -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system_tc1 -s /infrastructure/storage/nfs_mounts/file_system
+
+## 2. Execute the 'create_plan' command
+litp create_plan
+
+## 3. Check that the tasks associated with software-item, node-config and filesystem are all in the plan
+## even though the node-config task was not returned by the plugin
+assertTask 0 ms::items ms1 /ms/items/item_tc1
+assertTask 0 ms::configs ms1 /ms/configs/config_tc1
+assertTask 0 ms::file_systems ms1 /ms/file_systems/file_system_tc1
+
+## 4. Execute the 'run__plan' command
+litp run_plan
+
+## 5. Assert puppet manifest
+## Model defined dependency 'Config' requires 'filesystem' is present in the manifest
+## for node-config task
+assertFileContents manifests/tc1_ms1.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

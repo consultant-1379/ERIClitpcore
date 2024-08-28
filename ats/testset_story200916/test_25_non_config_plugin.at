@@ -1,0 +1,46 @@
+#Description: Test correct tasks are generated after the creation, update and removal of items with both configuration and non-configuration properties.
+# Test steps:
+# 1. Create a storage-profile and a dummy-filesystem item
+# 2. Add dummy plugin
+# 3. Create and run plan. Ensure that correct tasks are bing generated
+# 4. Update and remove configuration and non-configuration properties on an item
+# 5. Create and run plan. Ensure that correct tasks are being generated
+
+add-extensions ../testset_story200916/extensions/dummy_200916_extension
+add-plugins ../testset_story200916/extensions/dummy_200916_extension
+runLitpScript ../testset_story200916/include/two_nodes_torf200916.at
+
+litp create -t storage-profile -p /infrastructure/storage/storage_profiles/sp
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' config_prop='config' non_config_prop='non_config' size='5G' req_non_config_prop='required'
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs3 -o path='/home' config_prop='config' non_config_prop='non_config' size='5G' req_non_config_prop='required'
+litp inherit -p /deployments/d1/clusters/c1/nodes/n1/storage_profile -s /infrastructure/storage/storage_profiles/sp
+litp inherit -p /deployments/d1/clusters/c1/nodes/n2/storage_profile -s /infrastructure/storage/storage_profiles/sp
+
+litp create_plan
+litp run_plan
+
+assertCallbackTask config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs2
+assertNoCallbackTask non_config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs2
+assertCallbackTask config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs3
+assertNoCallbackTask non_config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs3
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o non_config_prop='new_non_config'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+
+assertError --err_type DoNothingPlanError create_plan
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o config_prop='new_config'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='5G' config_prop="new_config" non_config_prop="new_non_config" req_non_config_prop non_config_default='required'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs3 -d config_prop non_config_prop
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs3 Updated
+assertPropertyUnset -p /infrastructure/storage/storage_profiles/sp/file_systems/fs3 -o config_prop non_config_prop
+
+litp create_plan
+litp run_plan
+
+assertCallbackTask config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs2
+assertNoCallbackTask non_config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs2
+assertCallbackTask config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs3
+assertNoCallbackTask non_config_task /infrastructure/storage/storage_profiles/sp/file_systems/fs3

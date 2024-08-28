@@ -1,0 +1,89 @@
+# Test Case 05.
+# Description:
+# Test that when creating a config task using one task's tag and then after
+# creating and running the plan, the same task is removed using a different
+# task's tag, the removal task is in the correct phase of the plan on plan
+# creation
+#
+# Actions:
+# 1. Create a model item that generates a task associated with:
+#   - a valid task's tag_1 at creation
+#   - a valid task's tag_2 at deletion (different from tag_1)
+# 2. Execute "create_plan" command
+# 3. Assert the items state as Initial
+# 4. Check that tagged tasks for the model item are in the correct phase
+# 5. Run plan
+# 6. Assert that the persisted tasks are present in the puppet manifest
+# 7. Assert the items state as Applied
+# 8. Remove the model item
+# 9. Execute "create_plan" command
+# 10. Assert the items state as ForRemoval
+# 11. Check that tagged tasks for the model item are in the correct phase
+# 12. Run plan
+# 13. Assert the item does not exist
+# 14. Assert that the persisted tasks are not present in the puppet manifest
+#
+# Result:
+# A config task using one tag for creation can be removed successfully when using different tag at removal
+
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Create a model item that generates a task associated with:
+#    - a valid task's tag_1 at creation
+#    - a valid task's tag_2 at deletion (different from tag_1)
+litp create -p /software/items/item1 -t foo5 -o name='item1'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 2. Execute "create_plan" command
+litp create_plan
+
+# 3. Assert the items state as Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+
+# 4. Check that tagged tasks for the model item are in the correct phase
+assertTask 0 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 1 service node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 2 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 3 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+
+# 5. Run plan
+litp run_plan
+
+# 6. Assert puppet manifest
+assertFileContents manifests/items_applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+# 7. Assert the items state as Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 Applied
+
+# 8. Remove the model item
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp remove -p /software/items/item1
+
+# 9. Execute "create_plan" command
+litp create_plan
+
+# 10. Assert the items state as ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 ForRemoval
+
+# 11. Check that tagged tasks for the model item are in the correct phase
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 1 service node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 2 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 2 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 3 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+
+# 12. Run plan
+litp run_plan
+
+# 13. Assert the item does not exist
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 14. Assert puppet manifest
+assertFileContents manifests/items_removed.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+

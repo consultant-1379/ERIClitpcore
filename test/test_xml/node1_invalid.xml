@@ -1,0 +1,23 @@
+<litp:node id="node1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+    <hostname>node1*INVALID</hostname>
+    <litp:ha-manager id="ha_manager">
+        <name>CMW</name>
+    </litp:ha-manager>
+    <litp:os-profile-link id="os">
+        <name>sample-profile</name>
+        <version>6.2</version>
+    </litp:os-profile-link>
+    <interfaces>
+        <litp:nic id="nic0">
+            <macaddress>DE:AD:BE:EF:00:01</macaddress>
+        </litp:nic>
+        <litp:nic id="nic1">
+            <macaddress>DE:AD:BE:EF:00:02</macaddress>
+        </litp:nic>
+    </interfaces>
+    <litp:node-network_interfaces-collection id="network_interfaces">
+        <litp:network-interface id="ip1">
+            <network_name>nodes</network_name>
+        </litp:network-interface>
+    </litp:node-network_interfaces-collection>
+</litp:node>

@@ -1,0 +1,49 @@
+## test_04_p_replace_doubly_inherited_resurrection
+## Description:
+## Verify that when inherited items are in state For removal and
+## source in state Applied, an xml load replace where source properties
+## are updated and inherited and doubly inherited items are present,
+## all items are resurrected and state transitioned as expected.
+
+
+add-extensions extensions/test_12798_extension
+add-plugins plugins/test_12798_plugin
+runLitpScript ../../include/two_nodes.at
+
+
+## 1. Standard doubly inherited model setup
+runLitpScript model.inc
+
+
+## 1. Mark inherit parent for removal
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+
+## 2. Assert states and properties are as expected
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='grandchild1Prime'
+
+
+## 1. Run xml load --replace with source properties updated
+litp load -p / -f xml/source_parent_updated_source_child_updated_source_grandchild_updated.xml --replace
+
+## 1. Assert states and properties are as expected
+assertState -p /software/services/parent1 Updated
+assertState -p /software/services/parent1/childs/child1 Updated
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='grandchild1Prime'

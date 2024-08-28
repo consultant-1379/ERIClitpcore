@@ -1,0 +1,82 @@
+runLitpScript ../../include/two_nodes.at
+add-extensions ../plugins/foo_package
+add-plugins ../plugins/foo_package
+
+litp create -p /software/items/foo -t foo-package -o name=foo
+litp create -p /software/items/bar -t foo-package -o name=bar
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar -s /software/items/bar
+
+# Assert that a stopeed plan doesn't backup the manifests
+litp create_plan
+runPlanStart
+stopPlan
+runPlanEnd
+assertPlanState stopped
+assertDirectoryContents ../manifests/empty /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/
+
+# Assert that a successful plan doesn't back up the manifests
+litp create_plan
+litp run_plan
+assertPlanState successful
+# Assert empty dir
+assertDirectoryContents ../manifests/empty /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/
+
+# Test that manifest files are saved on a failed plan
+litp create -p /software/items/foo2 -t foo-package -o name=foo2
+litp create -p /software/items/bar2 -t foo-package -o name=bar2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo2 -s /software/items/foo2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar2 -s /software/items/bar2
+
+litp create_plan
+
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo2
+
+litp run_plan
+assertPlanState failed
+
+assertDirectoryContents ../manifests/failed /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/
+
+# Test that and that file doesn't get overwritten on an empty plan
+litp create_plan
+litp run_plan
+
+assertError --err_message 'no tasks were generated' create_plan
+assertError --err_message 'Plan does not exist'  run_plan
+assertDirectoryContents ../manifests/failed /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/
+
+# Assert that a subsequent successful plan doesn't overwrite the backup up manifest
+litp create -p /software/items/foo3 -t foo-package -o name=foo3
+litp create -p /software/items/bar3 -t foo-package -o name=bar3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo3 -s /software/items/foo3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar3 -s /software/items/bar3
+
+litp create_plan
+
+litp run_plan
+assertPlanState successful
+assertDirectoryContents ../manifests/failed /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/
+
+# Test that backup up manifest file is ovewritten on a subsequent failed plan
+litp create -p /software/items/foo4 -t foo-package -o name=foo4
+litp create -p /software/items/bar4 -t foo-package -o name=bar4
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo4 -s /software/items/foo4
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar4 -s /software/items/bar4
+
+litp create_plan
+
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo4
+
+litp run_plan
+assertPlanState failed
+assertDirectoryContents ../manifests/failed2 /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/
+
+# Check that a failed callback task doesn't overwrite the manifests
+add-plugins ../../plugins/failed_callback
+
+litp create_plan
+
+disableCallbackMock cb_fail /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan
+assertPlanState failed
+assertDirectoryContents ../manifests/failed2 /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/

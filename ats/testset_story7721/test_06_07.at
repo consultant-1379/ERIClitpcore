@@ -1,0 +1,40 @@
+add-plugins plugins/plugins6
+litp create -t software-item -p /software/items/pkg1
+litp inherit -p /ms/items/pkg1 -s /software/items/pkg1
+
+# related task will require network-interface through sibling dependency
+litp create -t service-base -p /ms/services/srv1
+
+litp create -t storage-profile-base  -p /infrastructure/storage/storage_profiles/stor1
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/stor1
+
+litp create -t system -p /infrastructure/systems/sys1 -o system_name=systname
+litp inherit -p /ms/system -s /infrastructure/systems/sys1
+
+litp create_plan
+#show show_plan
+litp run_plan
+
+assertFileContents ./manifests/test_06.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+# related task will require software-item query item
+litp create -p /ms/network_interfaces/nic1 -t network-interface -o network_name=mgmt ipaddress=10.10.10.100
+
+
+litp create_plan
+#show show_plan
+assertNoConfigTask ms1 package test6 /ms/items/pkg1
+#assertNoConfigTask ms1 package test6 /ms/items/pkg1
+litp run_plan
+
+assertFileContents ./manifests/test_06_02.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+
+# test_07
+litp remove -p /ms/items/pkg1
+
+litp create_plan
+litp run_plan
+#show show_plan
+
+assertFileContents ./manifests/test_07.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

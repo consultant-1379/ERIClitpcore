@@ -1,0 +1,82 @@
+
+
+class task_ms1_nas__test(){
+    nas::test { "mister_test":
+        field =>       "value"
+    }
+}
+
+class ms1_package_sysstat(){
+    package { "sysstat":
+        ensure => "present"
+    }
+}
+
+node "ms1" {
+
+#package { "sysstat":
+#
+#}
+
+#class {'ms1_package_sysstat':
+#}
+
+#notify {'litp:ran_ms1_package_sysstat':
+#    require => Class['ms1_package_sysstat']
+#}
+
+
+#package { "vim-enhanced":
+#
+#}
+
+#package { "file":
+#
+#}
+
+#package { "procps":
+#
+#}
+
+#package { "bind-utils":
+#
+#}
+
+#package { "lsof":
+#
+#}
+
+#package { "ltrace":
+#
+#}
+
+#package { "screen":
+#
+#}
+
+#package { "strace":
+#
+#}
+
+#package { "tcpdump":
+#
+#}
+
+#package { "traceroute":
+#
+#}
+
+
+class {'task_ms1_nas__test':
+}
+
+#notify {'litp:ran_mister_test':
+#    require => [Class['task_ms1_nas__test'], Notify['litp:ran_ms1_package_sysstat']]
+#}
+
+landscape::litp_feedback {'feedback_task_ms1_nas__test':
+    taskid => 'ms1.nas::test("mister_test")',
+    require => Class['task_ms1_nas__test']
+}
+
+}

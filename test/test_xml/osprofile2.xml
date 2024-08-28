@@ -1,0 +1,8 @@
+<litp:os-profile2 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd"
+	id="rhel_6_2" version="LITP2">
+        <name>sample-profile</name>
+        <path>/var</path>
+        <foo>bar</foo>
+        <foo3>foo3</foo3>
+</litp:os-profile2>

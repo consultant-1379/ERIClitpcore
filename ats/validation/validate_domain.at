@@ -1,0 +1,19 @@
+# Correct values updated to domain property
+litp update -p /ms -o domain=domain.com
+assertProperty /ms -o domain=domain.com
+litp update -p /ms -o domain=domain.com.in
+assertProperty /ms -o domain=domain.com.in
+litp update -p /ms -o domain=dom-ain.com
+assertProperty /ms -o domain=dom-ain.com
+
+# Removing domain property
+litp update -p /ms -d domain
+assertPropertyUnset -p /ms -o domain
+
+# Incorrect values updated to domain property
+assertError --err_type "ValidationError" --err_message "Invalid value 'domain..com'." update -p /ms -o domain=domain..com
+assertError --err_type "ValidationError" --err_message "Invalid value '-domain.com'." update -p /ms -o domain=-domain.com
+assertError --err_type "ValidationError" --err_message "Invalid value '3domain.com'." update -p /ms -o domain=3domain.com
+assertError --err_type "ValidationError" --err_message "Invalid value 'd$omain.com'." update -p /ms -o domain=d$omain.com
+assertError --err_type "ValidationError" --err_message "Invalid value '&domain.com'." update -p /ms -o domain=&domain.com
+assertError --err_type "ValidationError" --err_message "Invalid value 'domain.com.'." update -p /ms -o domain=domain.com.

@@ -1,0 +1,3 @@
+#LITPCDS-196
+litp create -t file-system-base -p /infrastructure/storage/nfs_mounts/fs1
+

@@ -1,0 +1,64 @@
+## test_11_n_non_persisted_task_failure
+
+## Description:
+## Test that if a non-persisted task fails,
+## and its associated item type has its APD flag
+## set to false, when the plan is re-created,
+## the non-persisted task appears in the plan
+
+# Actions:
+# 1.Create a plug-in that generates a non-persisted "ConfigTask"
+#   (i.e. task persist flag is set to False)
+# 2.Create an item that results in the task being generated
+#   and other tasks
+# 3.Execute "create_plan"
+# 4.Execute "run_plan"
+# 5.Fail the non-persisted task
+# 6.Check its state and that its APD flag is set to False
+# 7.Execute "create_plan"
+# 8.Check that the non-persisted task appears in the plan
+
+# 1.
+add-plugins plugins/dummy_12781_plugin
+add-extensions extensions/dummy_12781_extension
+runLitpScript ../include/two_nodes.at
+
+# 2.
+litp create -p /software/services/one -t test_12781_tc11 -o name=test_12781_tc11
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/one -s /software/services/one
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/one -o name=testme
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/two -s /software/services/one
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/two -o name=unrelated_item
+
+# 3.
+litp create_plan
+
+assertConfigTask node1 failme test_12781_tc11 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 2  # that phase has 2 task
+
+# 5.
+failConfigTask failme node1 /deployments/local/clusters/cluster1/nodes/node1/services/one
+
+# 4.
+litp run_plan
+
+# 6.
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/one Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/one False
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/two Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/two True
+
+# 7.
+litp create_plan
+
+# 8.
+assertConfigTask node1 failme test_12781_tc11 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# Result:
+# When the persist flag of a task is set to False,
+# this task will appear in subsequent plans

@@ -1,0 +1,28 @@
+
+runLitpScript setup_twonodes.inc
+
+litp create_plan
+
+
+litp run_plan
+
+
+# Add software
+litp create -p /software/items/package_wget -t mock-package -o name="wget" version="1"
+
+# Add os profile
+litp create -p /software/profiles/osprofile2 -t os-profile -o name="ubuntu" path="/cobbler/ks_mirror/ubuntu"
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_wget -s /software/items/package_wget
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_wget Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim ForRemoval
+
+litp create_plan
+
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim Initial deconfigure
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_wget Initial

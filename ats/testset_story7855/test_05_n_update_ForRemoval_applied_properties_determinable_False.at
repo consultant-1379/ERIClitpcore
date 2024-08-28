@@ -1,0 +1,154 @@
+# Test Case 05
+# Description:
+# covers ACs 14-22
+# Tests the applied_properties_determinable flag when model
+# items transitions from state "Applied" to "ForRemoval"
+# to "Updated" when updating model item
+
+# Prerequisite - LITP Deployment
+runLitpScript ../include/two_nodes.at
+
+# Test setup
+# a. Create model items
+litp create -p /software/items/firefox -t mock-package -o name=firefox
+litp inherit -p /ms/items/firefox -s /software/items/firefox
+
+# b. Check they are in Initial state and their APD flag is set to True
+assertState -p /software/items/firefox Initial
+assertState -p /ms/items/firefox Initial
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertAppliedPropertiesDeterminable -p /ms/items/firefox True
+
+# c. Create plan
+litp create_plan
+
+# d. Run plan
+litp run_plan
+
+# e. Wait for plan to succeed
+assertPlanState successful
+
+# f. Check model items are in applied state and the APD flag is True
+assertState -p /software/items/firefox Applied
+assertState -p /ms/items/firefox Applied
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertAppliedPropertiesDeterminable -p /ms/items/firefox True
+
+#1. Remove a model item that is in state, "Applied" with
+#   the applied_properties_determinable flag is set to True
+litp remove -p /ms/items/firefox
+litp remove -p /software/items/firefox
+
+#1a.Check model items are in "ForRemoval" state and the APD flag is True
+assertState -p /software/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/firefox True
+
+#2. Create plan
+litp create_plan
+
+#3. Run plan
+runPlanUntil 0
+assertPlanState running
+
+#4. Wait for plan to fail at associated task
+failConfigTask package ms1 /ms/items/firefox
+runPlanEnd
+assertPlanState failed
+#show show_plan
+
+#5. Check that the item is in state, "ForRemoval"
+#   and the applied_properties_determinable flag is set to False
+assertState -p /software/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/firefox False
+
+#6. Update the item in state, "ForRemoval" and with
+#   the applied_properties_determinable flag is set to False
+#   using original properties
+litp update -p /software/items/firefox -o name=firefox
+
+#7. Check that the item is in state, "Updated"
+#   and the applied_properties_determinable flag is set to False
+assertState -p /software/items/firefox Applied
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox Updated
+assertAppliedPropertiesDeterminable -p /ms/items/firefox False
+
+#8. Create plan after model has been updated
+#   to ensure plan will pass
+litp create_plan
+
+#9. Run plan
+litp run_plan
+
+#10.Wait for plan to pass
+assertPlanState successful
+
+#11.Check that the item is in state, "Applied"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/firefox Applied
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox Applied
+assertAppliedPropertiesDeterminable -p /ms/items/firefox True
+
+#12.Remove a model item in state, "Applied" with
+#   the applied_properties_determinable flag is set to True
+litp remove -p /ms/items/firefox
+litp remove -p /software/items/firefox
+
+#12a.Check model items are in "ForRemoval" state and the APD flag is True
+assertState -p /software/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/firefox True
+
+#13.Create plan
+litp create_plan
+
+#14.Run plan
+runPlanUntil 0
+assertPlanState running
+
+#15. Wait for plan to fail at associated task
+failConfigTask package ms1 /ms/items/firefox
+runPlanEnd
+assertPlanState failed
+
+#16.Check that the item is in state, "ForRemoval"
+#   and the applied_properties_determinable flag is set to False
+assertState -p /software/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/firefox False
+
+#17.Recreate the item in state, "ForRemoval" and with
+#   the applied_properties_determinable flag is set to False
+#   using the new properties
+litp update -p /software/items/firefox -o name=firefox version=5 arch=1
+
+#18.Check that the item is in state, "Updated"
+#   and the applied_properties_determinable flag is set to False
+assertState -p /software/items/firefox Updated
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertState -p /ms/items/firefox Updated
+assertAppliedPropertiesDeterminable -p /ms/items/firefox False
+
+#19.Create plan after model has been updated
+#   to ensure plan will pass
+litp create_plan
+
+#20.Run plan
+litp run_plan
+
+#21.Wait for plan to pass
+assertPlanState successful
+
+#22.Check that the item is in state, "Applied"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/firefox Applied
+assertState -p /ms/items/firefox Applied
+assertAppliedPropertiesDeterminable -p /software/items/firefox True
+assertAppliedPropertiesDeterminable -p /ms/items/firefox True

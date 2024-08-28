@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:infrastructure xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="infrastructure">
+  <litp:infrastructure-items-collection id="items" />
+  <litp:networking id="networking">
+    <litp:networking-networks-collection id="networks">
+      <litp:network id="ms_network">
+        <litp_management>false</litp_management>
+        <name>nodes</name>
+        <subnet>10.10.10.0/24</subnet>
+      </litp:network>
+    </litp:networking-networks-collection>
+    <litp:networking-routes-collection id="routes" />
+  </litp:networking>
+  <litp:infrastructure-service_providers-collection id="service_providers" />
+  <litp:storage id="storage">
+    <litp:storage-storage_profiles-collection id="storage_profiles">
+      <litp:storage-profile-base id="profile_1">
+      </litp:storage-profile-base>
+    </litp:storage-storage_profiles-collection>
+  </litp:storage>
+  <litp:infrastructure-system_providers-collection id="system_providers" />
+  <litp:infrastructure-systems-collection id="systems">
+    <litp:system id="ms_system">
+      <system_name>ms_system</system_name>
+      <litp:system-disks-collection id="disks" />
+    </litp:system>
+    <litp:system id="system2">
+      <system_name>MN2VM</system_name>
+      <litp:system-disks-collection id="disks">
+        <litp:disk id="disk0">
+          <bootable>true</bootable>
+          <disk_part>true</disk_part>
+          <name>sda</name>
+          <size>56G</size>
+          <uuid>ATA_VBOX_HARDDISK_VBdeadbeef-22f1eedb</uuid>
+        </litp:disk>
+      </litp:system-disks-collection>
+    </litp:system>
+    <litp:system id="system1">
+      <system_name>MN1VM</system_name>
+      <litp:system-disks-collection id="disks">
+        <litp:disk id="disk0">
+          <bootable>true</bootable>
+          <disk_part>true</disk_part>
+          <name>sda</name>
+          <size>56G</size>
+          <uuid>ATA_VBOX_HARDDISK_VBdeadbeef-21f1eedb</uuid>
+        </litp:disk>
+      </litp:system-disks-collection>
+    </litp:system>
+  </litp:infrastructure-systems-collection>
+</litp:infrastructure>

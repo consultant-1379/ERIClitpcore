@@ -1,0 +1,84 @@
+## test_08_p_upgrade_and_configuration_plan_order 
+## Description:
+## Ensure that the plan is in the expected order
+## when there are both upgrade and configuration
+## tasks generated
+
+# Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types:
+## "os" profile Item-Type
+## "storage profile" Item-Type
+## "system" Item-Type
+## "network" Item-Type
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/initial_install_plugin
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+## "software-item" item type
+litp create -p /software/items/item -t mock-package -o name=foo
+litp inherit -p /ms/items/item -s /software/items/item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /software/services/service -t service-base
+litp create -p /ms/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+
+## "node-config" item type
+litp create -p /ms/configs/config -t node-config
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /ms/routes/route -s /infrastructure/networking/routes/route
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Execute the "run_plan" command
+litp run_plan
+
+## 4. Create model items to be deployed so an existinng node's configuration is updated
+litp update -p /ms/items/item -o name=some_new_name
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item -o name=some_new_name_2
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item -s /software/items/item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/service -s /software/services/service
+litp create -p /deployments/local/clusters/cluster1/nodes/node2/configs/config -t node-config
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/routes/route -s /infrastructure/networking/routes/route
+
+## 5. Execute the "create_plan" command
+litp create_plan
+
+## 6. Check the resulting plan order
+let __configs_node2 ConfigTask node2 node::configs id_node_config /deployments/local/clusters/cluster1/nodes/node2/configs
+let __services_node2 ConfigTask node2 node::services id_node_service /deployments/local/clusters/cluster1/nodes/node2/services
+let __items_node2 ConfigTask node2 node::items id_node_item /deployments/local/clusters/cluster1/nodes/node2/items
+let __file_systems_node2 ConfigTask node2 node::file_systems id_node_file /deployments/local/clusters/cluster1/nodes/node2/file_systems
+let __routes_node2 ConfigTask node2 node::routes id_node_route /deployments/local/clusters/cluster1/nodes/node2/routes
+let __network_interfaces_node2 ConfigTask node2 node::network_interfaces id_node_net /deployments/local/clusters/cluster1/nodes/node2/network_interfaces
+let __storage_profile_node2 ConfigTask node2 node::storage_profile id_node_storage /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+let __os_node2 ConfigTask node2 node::os id_node_os /deployments/local/clusters/cluster1/nodes/node2/os
+let __system_node2 ConfigTask node2 node::system id_node_system /deployments/local/clusters/cluster1/nodes/node2/system
+
+let __items_ms ConfigTask ms1 package some_new_name /ms/items/item
+let __items_node1 ConfigTask node1 package some_new_name_2 /deployments/local/clusters/cluster1/nodes/node1/items/item
+
+let __lock_task_node1 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node1 lock_unlock lock
+let __lock_task_node2 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node2 lock_unlock lock
+let __unlock_task_node1 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node1 lock_unlock unlock
+let __unlock_task_node2 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node2 lock_unlock unlock
+
+assertTaskBeforeTask __items_ms __lock_task_node1 __items_node1 __unlock_task_node1  __lock_task_node2
+assertTaskBeforeTask __lock_task_node2 __routes_node2 __file_systems_node2 __configs_node2 __items_node2 __services_node2 __unlock_task_node2
+

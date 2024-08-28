@@ -1,0 +1,6 @@
+add-plugins ../plugins/tagged_tasks
+litp create_snapshot
+
+litp remove_snapshot
+
+show show -p /snapshots -r

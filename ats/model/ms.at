@@ -1,0 +1,5 @@
+litp create -p /software/items/vim -t mock-package -o name="vim"
+assertError create_plan
+
+litp inherit -p /ms/items/vim -s /software/items/vim
+litp create_plan

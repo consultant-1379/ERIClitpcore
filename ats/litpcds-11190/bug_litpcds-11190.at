@@ -1,0 +1,12 @@
+add-plugins plugins
+
+runLitpScript ../include/two_nodes.at
+
+litp create_plan
+
+assertCallbackTask _cb_fail /deployments/local/clusters/cluster1/nodes/node2
+disableCallbackMock _cb_fail /deployments/local/clusters/cluster1/nodes/node2
+
+litp run_plan
+assertLogMessage "CallbackExecutionException running task: LITPCDS-11190 failing CallbackTask; (Exception message: 'Oh no!')"
+assertLogMessage "CallbackExecutionException running task: <CallbackTask /deployments/local/clusters/cluster1/nodes/node2 - _cb_fail:  [Running]>; (Exception message: 'Oh no!')"

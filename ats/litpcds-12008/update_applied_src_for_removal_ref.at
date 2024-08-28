@@ -1,0 +1,95 @@
+## LITPCDS-12008: Test REST API
+## Update Applied source with ForRemoval reference
+runLitpScript ../include/two_nodes.at
+litp create -p /software/items/foo -t mock-package -o name=original_foo version=1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo \
+    -s /software/items/foo
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Non overwritten reference properties
+
+# TC1: Update source with applied properties -> ref update
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /software/items/foo Applied
+
+litp update -p /software/items/foo -o name=original_foo
+
+assertState -p /software/items/foo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo Applied
+assertProperty /software/items/foo -o name=original_foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=original_foo
+
+# TC2: Update source item with new properties -> updates ref
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /software/items/foo Applied
+
+litp update -p /software/items/foo -o name=new_foo
+
+assertState -p /software/items/foo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo Updated
+assertProperty /software/items/foo -o name=new_foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=new_foo
+
+
+# Reset model (for overwritten reference properties test)
+litp restore_model
+
+# Overwritten reference properties
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=ref_overwrites_foo
+
+# TC3: Update source with applied properties -> no ref update
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /software/items/foo Applied
+
+litp update -p /software/items/foo -o name=original_foo
+
+assertState -p /software/items/foo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertProperty /software/items/foo -o name=original_foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=ref_overwrites_foo
+
+# TC4: Update source with new properties -> no ref update
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /software/items/foo Applied
+
+litp update -p /software/items/foo -o name=new_foo
+
+assertState -p /software/items/foo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertProperty /software/items/foo -o name=new_foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=ref_overwrites_foo
+
+# Reset model (for APD test)
+litp restore_model
+
+litp update -p /software/items/foo -o name=original_foo_2
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp run_plan
+assertPlanState failed
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/foo False
+
+litp update -p /software/items/foo -o name=original_foo
+
+assertState -p /software/items/foo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo Updated
+assertProperty /software/items/foo -o name=original_foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=original_foo
+
+# TC5: Update applied source with applied properties, APD=False ref to Updated
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /software/items/foo Applied
+
+litp update -p /software/items/foo -o name=original_foo
+
+assertState -p /software/items/foo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo Updated
+assertProperty /software/items/foo -o name=original_foo
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=original_foo

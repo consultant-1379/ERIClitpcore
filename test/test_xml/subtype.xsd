@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:include schemaLocation="basic.xsd"/>
+  <xs:complexType name="extends-basic-type">
+    <xs:annotation>
+      <xs:documentation>Extends Basic Type.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="basic-type">
+        <xs:sequence>
+            <xs:element name="element_d" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>element_d description.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="extends-basic" type="extends-basic-type"/>
+</xs:schema>

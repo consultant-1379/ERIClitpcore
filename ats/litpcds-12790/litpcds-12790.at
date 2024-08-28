@@ -1,0 +1,38 @@
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/
+
+# Create a second cluster
+litp create -p /deployments/local/clusters/cluster2 -t cluster
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node1 -t node -o hostname='node21'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node1/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node2 -t node -o hostname='node22'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node2/system -s /infrastructure/systems/system2
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node2/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=cluster2
+litp create_plan
+# call_type is set in plugin as the expected order of clusters
+assertConfigTask node22 cluster2,cluster1 call_id /deployments/local
+
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=
+litp create_plan
+# call_type is set in plugin as the expected order of clusters
+assertConfigTask node22 cluster1,cluster2 call_id /deployments/local
+
+# Assert there's going to be a validation error on an invalid cluster name
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=cluster2,invalid_cluster
+let __err = --err_type=ValidationError --err_message="Ensure dependency_list property is correct"
+assertError __err create_plan
+
+# Make sure cluster cannot depend on itself
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=cluster1
+let __err = --err_type=ValidationError --err_message="A cluster cannot depend on itself."
+assertError __err create_plan

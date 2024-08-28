@@ -1,0 +1,22 @@
+add-plugins plugin
+
+litp create -p /software/items/pkg -t mock-package -o name="file"
+litp create -p /infrastructure/networking/networks/ms_network -t network -o name='ms_net' subnet='10.10.10.0/24'
+litp create -p /ms/network_interfaces/net -t network-interface -o network_name='ms_net' ipaddress='10.10.10.100'
+litp inherit -p /ms/items/pkg -s /software/items/pkg
+
+litp create_plan
+#show show_plan
+assertConfigTask ms1 package package-1 /ms/items/pkg param=1
+assertConfigTask ms1 iface iface-1 /ms/network_interfaces/net param='true'
+
+litp run_plan
+#show show_plan
+
+litp create_plan
+#show show_plan
+assertNoConfigTask ms1 package package-1 /ms/items/pkg param=1
+assertConfigTask ms1 iface iface-1 /ms/network_interfaces/net param='false'
+
+assertLogMessage "PlanBuilder previously successful task reused: <ConfigTask ms1 /ms/items/pkg - package: package-1 [Success]; id=ms1__package__package_2d1, req_id=set(['ms1__iface__iface_2d1'])>"
+

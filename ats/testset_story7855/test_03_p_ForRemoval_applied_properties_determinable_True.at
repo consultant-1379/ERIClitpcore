@@ -1,0 +1,101 @@
+# Test Case 03
+# Description:
+# (covers ACs 14-22)
+# Tests the applied_properties_determinable flag when model
+# items transitions from state "Applied" to "ForRemoval"
+# to "ForRemoval", flag=True to "Applied"
+
+# Prerequisite - LITP Deployment
+runLitpScript ../include/two_nodes.at
+
+# Test setup
+# a. Create model items
+litp create -p /software/items/finger -t mock-package -o name=finger
+litp inherit -p /ms/items/finger -s /software/items/finger
+
+# b. Check they are in Initial state and their APD flag is set to True
+assertState -p /software/items/finger Initial
+assertState -p /ms/items/finger Initial
+assertAppliedPropertiesDeterminable -p /software/items/finger True
+assertAppliedPropertiesDeterminable -p /ms/items/finger True
+
+# c. Create plan
+litp create_plan
+
+# d. Run plan
+litp run_plan
+
+# e. Wait for plan to succeed
+assertPlanState successful
+
+# f. Check model items are in applied state and the APD flag is True
+assertState -p /software/items/finger Applied
+assertState -p /ms/items/finger Applied
+assertAppliedPropertiesDeterminable -p /software/items/finger True
+assertAppliedPropertiesDeterminable -p /ms/items/finger True
+
+#1. Remove a model item that is in state, "Applied"
+litp remove -p /ms/items/finger
+litp remove -p /software/items/finger
+
+#2. Check that the removed item is in state, "ForRemoval"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/finger ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/finger True
+assertState -p /ms/items/finger ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/finger True
+
+#3. Recreate removed item using it's original properties
+litp create -p /software/items/finger -t mock-package -o name=finger
+
+#4. Check that the item is in state, "Applied"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/finger Applied
+assertAppliedPropertiesDeterminable -p /software/items/finger True
+assertState -p /ms/items/finger Applied
+assertAppliedPropertiesDeterminable -p /ms/items/finger True
+
+#5. Remove a model item in state, "Applied"
+litp remove -p /ms/items/finger
+litp remove -p /software/items/finger
+
+#6. Check that the removed item is in state, "ForRemoval"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/finger ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/finger True
+assertState -p /ms/items/finger ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/finger True
+
+#7. Create plan
+litp create_plan
+
+#8. Run plan
+runPlanUntil 0
+assertPlanState running
+
+#9. Fail plan at the removed items associated task
+failConfigTask package ms1 /ms/items/finger
+runPlanEnd
+assertPlanState failed
+
+#10.Check that the item is in state, "ForRemoval"
+#   and the applied_properties_determinable flag is set to False
+#show show -p /software/items/finger
+#show show -p /ms/items/finger
+assertState -p /software/items/finger ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/finger True
+assertState -p /ms/items/finger ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/finger False
+
+#11.Create plan after fixing model/test to ensure plan passes
+litp create_plan
+
+#12.Run plan
+litp run_plan
+
+assertPlanState successful
+ 
+#13.Check that the item has been removed
+assertNone -p /software/items/finger
+assertNone -p /ms/items/finger
+

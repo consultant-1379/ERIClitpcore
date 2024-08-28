@@ -1,0 +1,34 @@
+#test_n_test_03_manifest_no_backup_callback_task_fail
+
+#Description:
+#Test that when a plan fails due to a callback task failure,
+#a copy of all the puppet manifests are not saved to
+#/opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/*.pp
+
+# Test Setup
+runLitpScript ../include/two_nodes.at
+add-extensions plugins/foo_package
+add-plugins plugins/foo_package
+
+# 1. Create model items and reference them
+litp create -p /software/items/foo -t foo-package -o name=foo
+litp create -p /software/items/bar -t foo-package -o name=bar
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar -s /software/items/bar
+
+# Setup required to check that a failed callback task doesn't overwrite the manifests
+add-plugins ../plugins/failed_callback
+
+# 2. Create plan
+litp create_plan
+
+disableCallbackMock cb_fail /deployments/local/clusters/cluster1/nodes/node1
+
+# 3. Run plan
+litp run_plan
+
+# 4. Wait for the plan to fail due to a callback task failure
+assertPlanState failed
+
+# 5. Check that a copy of all the puppet manifests were not saved to the backup directory 
+assertDirectoryContents manifests/empty /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/

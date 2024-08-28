@@ -1,0 +1,14 @@
+runLitpScript setup_two_nodes.inc
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/x -s /software/items/x
+litp create_plan
+litp run_plan
+
+# now try to update each prop of the os-profile
+assertError update -p /software/profiles/osprofile1 -o name=pepe
+assertError update -p /software/profiles/osprofile1 -o arch=pepe
+assertError update -p /software/profiles/osprofile1 -o breed=pepe
+assertError update -p /software/profiles/osprofile1 -o path=/pepe
+assertError update -p /software/profiles/osprofile1 -o kopts_post=pepe=pipi
+

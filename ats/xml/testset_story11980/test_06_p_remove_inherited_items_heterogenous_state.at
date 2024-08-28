@@ -1,0 +1,403 @@
+## test_06_p_remove_inherited_items_heterogenous_state
+## Description:
+## Remove inherited items in heterogeneous state
+## Verify that when source items in the inheritance tree and corresponding
+## inherited items are in a heterogeneous state and I run load --replace <file.xml>
+## where the inherited items are omitted on the xml file then I do not
+## get an error msg and inherited items are in ForRemoval state
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## AC 2.3
+
+## 1. Create a parent child and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 2. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+## 3. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 4. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 5. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 6. Execute "create_plan"
+litp create_plan
+
+## 7. Successful child task for node1, fail child task for node2,run plan and assert plan failed
+disableCallbackMock _fail_child_callback /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+litp run_plan
+assertPlanState failed
+
+
+## 8. Assert all source items Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 9. node1 items Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 10. node2 items Applied and Initial with AppliedPropertiesDeterminable False and Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+
+## 11. mark for removal the parent of node 1 and assert parent, child and grandchild are marked ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+
+## 12.  Run  xml load --replace where grandchildren are omitted
+litp load -p / -f xml/inherited_grandchildren_omitted.xml --replace
+
+## 13. assert granchildren are ForRemoval
+# source items Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node1 child and parent are Aplied and grandchild are ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node2 child(Initial APD=False), parent is Aplied and grandchild is ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# reset everything back to get all back to initial
+clearLandscape
+
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 14. Create a parent child and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 15. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+
+## 16. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 17. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 18. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 19. Execute "create_plan"
+litp create_plan
+
+## 20. Successful child task for node1, fail child task for node2,run plan and assert plan failed
+disableCallbackMock _fail_child_callback /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+litp run_plan
+assertPlanState failed
+
+
+## 21. Assert all source items in Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 22. node1 items Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 23. node2 items Applied and Initial with AppliedPropertiesDeterminable False and Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+
+## 24. mark for removal the parent of node 1 and assert parent, child and grandchild are marked ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+
+## 25.  Run  xml load --replace where grandchildren are omitted
+litp load -p / -f xml/inherited_children_omitted.xml --replace
+
+## 26. assert all Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node1 parent is Applied and child and grandchild are ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node2 parent is Applied, child(ForRemoval APD=False) and grandchild is ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# reset everything back to get all back to initial
+clearLandscape
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 27. Create a parent child  and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 28. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+
+## 29. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 30. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 31. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 32. Execute "create_plan"
+litp create_plan
+
+## 33. Successful child task for node1, fail child task for node2,run plan and assert plan failed
+disableCallbackMock _fail_child_callback /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+litp run_plan
+assertPlanState failed
+
+
+## 34. Assert all source items in Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 35. node1 items Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 36. node2 items Applied and Initial with AppliedPropertiesDeterminable False and Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+
+## 37. mark for removal the parent of node 1 and assert parent, child and grandchild are marked ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+
+## 38.  Run  xml load --replace where grandchildren are omitted
+litp load -p / -f xml/inherited_parents_omitted.xml --replace
+
+## 39. assert all Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node1 parent, child and grandchild are ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node2 parent is ForRemoval, child(ForRemoval APD=False) and grandchild is ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# reset everything back to get all back to initial
+clearLandscape
+
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 40. Create a parent child and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 41. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+
+## 42. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 43. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 44. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 45. Execute "create_plan"
+litp create_plan
+
+## 46. Successful child task for node1, fail child task for node2,run plan and assert plan failed
+failCallbackTask _pass_callback /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+litp run_plan
+assertPlanState failed
+
+
+## 47. Assert all source items in Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 48. node1 items Applied and Initial with AppliedPropertiesDeterminable False and Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+## 49. node2 items Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 True
+
+
+## 50.  Run  xml load --replace where grandchildren are omitted
+litp load -p / -f xml/inherited_children_omitted.xml --replace
+
+## 51. assert all Initial
+assertState -p /software/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1 True
+assertState -p /software/services/parent1/childs/child1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1 True
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertAppliedPropertiesDeterminable -p /software/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node1 parent is Applied, child is (ForRemoval APD=False) and grandchild are ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 True
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 False
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 True
+
+# assert node2 parent is Initial and child and grandchild are removed
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 True
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1

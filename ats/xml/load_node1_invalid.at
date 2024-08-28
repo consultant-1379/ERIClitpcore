@@ -1,0 +1,8 @@
+
+litp create -p /deployments/local_vm -t deployment
+litp create -p /deployments/local_vm/clusters/cluster1 -t cluster
+
+assertError load -p /deployments/local_vm/clusters/cluster1/nodes -f node1_missinghostname.xml
+assertError load -p /deployments/local_vm/clusters/cluster1/nodes -f node1_invalidhostname.xml
+#this will fail until we can do XSD processing in AT Runner
+#assertError load -p /deployments/local_vm/clusters/cluster1/nodes -f node1_missingipaddresses.xml

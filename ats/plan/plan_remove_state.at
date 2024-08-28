@@ -1,0 +1,51 @@
+
+litp create -p /software/profiles/osprofile1 -t os-profile -o name="node-iso" path="/cobbler/ks_mirror/node-iso-x86_64"
+litp create -p /infrastructure/systems/sys1 -t system -o system_name="sys1"
+
+litp create -p /infrastructure/networking/networks/mgmt_iprange2 -t network -o name="mgmt" subnet="10.10.10.0/24"
+
+litp create -p /deployments/site1 -t deployment
+litp create -p /deployments/site1/clusters/cluster1 -t cluster
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/os -s /software/profiles/osprofile1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/sys1
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create -p /software/items/package_file -t mock-package -o name="file"
+litp create -p /software/items/package_telnet -t mock-package -o name="telnet"
+litp create -p /software/items/package_finger -t mock-package -o name="finger"
+litp create -p /software/items/package_finger2 -t mock-package -o name="finger2"
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file -s /software/items/package_file
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet -s /software/items/package_telnet
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger -s /software/items/package_finger
+
+litp create_plan
+litp run_plan
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet Applied
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet ForRemoval
+
+litp create_plan
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_telnet Initial
+litp run_plan
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Applied
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file ForRemoval
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file ForRemoval
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger Applied
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger -o name="finger2"
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger Updated
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger ForRemoval
+
+litp create_plan
+litp run_plan
+
+assertNone -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_finger

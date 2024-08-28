@@ -1,0 +1,41 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+runLitpScript ../include/two_nodes.at
+
+# Test updating is_locked property on node in Initial state
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+
+assertError --err_type InvalidRequestError --err_message 'Unable to modify readonly property: is_locked' update -p /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=true
+assertError --err_type InvalidRequestError --err_message 'Unable to modify readonly property: is_locked' update -p /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=true
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+
+# Test updating is_locked property on node in Applied state
+litp create -t mock-package -p /software/items/telnet -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /software/items/telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet -s /software/items/telnet
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+
+assertError --err_type InvalidRequestError --err_message 'Unable to modify readonly property: is_locked' update -p /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=true
+assertError --err_type InvalidRequestError --err_message 'Unable to modify readonly property: is_locked' update -p /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=true
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied

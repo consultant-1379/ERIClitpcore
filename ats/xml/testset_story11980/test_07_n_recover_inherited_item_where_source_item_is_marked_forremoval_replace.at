@@ -1,0 +1,107 @@
+## test_07_n_recover_inherited_item_where_source_item_is_marked_forremoval_replace
+## Description
+## Recover inherited item where corresponding source item is marked ForRemoval
+## Verify that when the inherited item in the inheritance tree
+## has been removed and the corresponding source item is in ForRemoval
+## state then when I run load --replace <file.xml>
+## where corresponding source item is missing and all other items are present
+## on the xml file then I get a validation error msg
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## AC 3.1
+
+## 1. Create a parent child and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 2. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+
+## 3. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 4. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 5. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 6. Execute "create_plan"
+litp create_plan
+litp run_plan
+
+assertPlanState successful
+
+## 7. Assert model in state Applied
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+
+## 8. remove grandchildren
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+## 9. Execute "create_plan"
+litp create_plan
+litp run_plan
+
+assertPlanState successful
+
+## 10. assert grandchildren have been removed and other model items in applied
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+
+
+## 11. load model and expect error with source grandchild marked forremoval
+
+let __err_1 --err_type "MethodNotAllowedError" --err_vpath /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 --err_message "Can't inherit item that is marked for removal"
+let __err_2 --err_type "MethodNotAllowedError" --err_vpath /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 --err_message "Can't inherit item that is marked for removal"
+
+
+assertError --errors_length 2 __err_1 __err_2 load -p / -f  xml/source_grandchild_omitted.xml --replace
+
+
+## 12. check no changes to the model were applied
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1

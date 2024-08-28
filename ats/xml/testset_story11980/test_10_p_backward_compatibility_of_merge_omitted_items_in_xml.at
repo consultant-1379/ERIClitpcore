@@ -1,0 +1,205 @@
+## test_10_p_backward_compatibility_of_merge_omitted_items_in_xml.at
+## Description:
+## Verify backward compatibility of "merge" when items exist in current inheritance tree but inherited item is not in xml file
+## Verify when I run load --merge <file.xml>
+## where inherited items are omittyed and all other items are present on the xml file then no items are removed and
+## the model remains unchanged.
+
+## AC 4.1
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 1. Obtain the test model structure
+#
+# /X/.../Ps(Applied)/Cs(Applied)/Gs(Applied)
+# ~/Y/.../Pd(Applied)/Cd(Applied)/Gd(Applied)
+# ~/Z/.../Pd(Applied)/Cd(Applied)/Gd(Applied)
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 2. Load an xml file where only (X-Ps) item is present using the --merge argument.
+
+litp load -p / --merge -f xml/source_parent_only.xml
+
+## 3. Assert that expected model structure
+
+#     /X/.../Ps(Applied)/Cs(Applied)/Gs(Applied)
+#     ~/Y/.../Pd(Applied)/Cd(Applied)/Cd(Applied)
+#     ~/Z/.../Pd(Applied)/Cd(Applied)/Cd(Applied)
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 4. Reset model structure
+
+#     /X/.../Ps(Applied)/Cs(Applied)/Gs(Applied)
+#     ~/Y/.../Pd(Applied)/Cd(Applied)/Gd(Applied)
+#     ~/Z/.../Pd(Applied)/Cd(Applied)/Gd(Applied)
+
+clearLandscape
+add-extensions ../testset_story11980/extensions/test_11980_extension
+add-plugins ../testset_story11980/plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 5. Load an xml file where only (X-Ps,X-Cs) item is present, using the --merge argument
+
+litp load -p / --merge -f xml/source_parent_and_child_only.xml
+
+## 6. Assert that all the items in the model are as expected
+
+#     /X/.../Ps(Applied)/Cs(Applied)/Gs(Applied)
+#     ~/Y/.../Pd(Applied)/Cd(Applied)/Cd(Applied)
+#     ~/Z/.../Pd(Applied)/Cd(Applied)/Cd(Applied)
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 7. Reset model structure
+
+#     /X/.../Ps(Applied)/Cs(Applied)/Gs(Applied)
+#     ~/Y/.../Pd(Applied)/Cd(Applied)/Gd(Applied)
+#     ~/Z/.../Pd(Applied)/Cd(Applied)/Gd(Applied)
+clearLandscape
+add-extensions ../testset_story11980/extensions/test_11980_extension
+add-plugins ../testset_story11980/plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 8. Load an xml file where only (X-Ps,X-Cs,X-Gs) item is present, using the --merge argument.
+
+litp load -p / --merge -f xml/inherited_parents_omitted.xml
+
+## 9. Assert that all the items in the model are as expected
+
+#     /X/.../Ps(Applied)/Cs(Applied)/Gs(Applied)
+#     ~/Y/.../Pd(Applied)/Cd(Applied)/Cd(Applied)
+#     ~/Z/.../Pd(Applied)/Cd(Applied)/Cd(Applied)
+
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied

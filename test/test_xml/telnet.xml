@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="telnet">
+  <name>telnet</name>
+</litp:package> 

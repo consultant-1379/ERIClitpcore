@@ -1,0 +1,7 @@
+add-extensions xsd_load.etc
+
+litp load -p /software/items -f xsd_load_package.xml
+
+assertProperty /software/items/entity1 -o name=entity1
+assertProperty /software/items/entity1/packages/item1 -o name=package1
+assertProperty /software/items/entity1/packages/item2 -o name=misterpackage version=1.1

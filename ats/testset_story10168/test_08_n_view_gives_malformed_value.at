@@ -1,0 +1,28 @@
+#test_08_n_view_gives_malformed_value
+#=========================================
+#Description:
+#Test that on a cluster whose item type provides a node_upgrade_ordering view, when that view yields a malformed value, plan creation will fail.
+
+#Actions:
+#1. Follow install instructions
+#2. Create a deployment model that includes a cluster of a type that implements a {{node_upgrade_ordering}} view
+#3. Change the behaviour of the view so that it returns a malformed value (eg. a dictionary or a list of integers)
+#4. Execute "create_plan" command
+#5. Check that a ViewError is raised and the command fails
+#
+#Result:
+#Plan creation fails.
+
+
+#1. Follow install instructions
+#2. Create a deployment model that includes a cluster of a type that implements a {{node_upgrade_ordering}} view
+add-extensions ../plugins/dummy_10168
+add-plugins ../plugins/dummy_10168
+runLitpScript misc/create_multi_node_deployment.inc
+
+#3. Change the behaviour of the view so that it returns a malformed value (eg. a dictionary or a list of integers)
+litp update -p /deployments/litpcds_10168/clusters/cluster_1 -o ordering_behaviour=non_list_object
+
+#4. Execute "create_plan" command
+#5. Check that a ViewError is raised and the command fail
+assertError --err_type InternalServerError --err_message "\"node_upgrade_ordering\" must return a list. <type 'dict'> returned" create_plan

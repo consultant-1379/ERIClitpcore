@@ -1,0 +1,30 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp load -p / -f blade.xml --merge
+litp load -p / -f exported_root.xml --replace
+
+assertError --err_message "Cannot merge from storage-profile-base to storage-profile" load -p / -f blade.xml --merge
+
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system1/disks/disk1 -t disk -o name='disk1' size='2G' uuid='bar'
+litp create -p /infrastructure/systems/system2 -t system -o system_name='SYS2'
+litp create -p /infrastructure/systems/system2/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+
+litp create -p /infrastructure/systems/system3 -t blade -o system_name='SYS3' 
+litp create -p /infrastructure/systems/system3/disks/bmc_1 -t disk -o name='bmc_disk_1' size='1G' uuid='foo_bmc'
+litp create -p /infrastructure/systems/system3/disks/bmc_2 -t disk -o name='bmc_disk_2' size='2G' uuid='bar_bmc'
+litp create -p /infrastructure/systems/system3/bmc -t bmc-base 
+
+litp create -p /infrastructure/networking/networks/ms_network -t network -o name='nodes' subnet='10.10.10.0/24'
+litp create -p /infrastructure/storage/storage_providers/nfs_service -t nfs-service -o service_name="nfs_service" user_name="ala" password="makota" 
+litp create -p /infrastructure/storage/storage_providers/nfs_service/ip_addresses/nfs_ip -t nfs-virtual-server -o name="nfs-vs" address="1.2.3.4"
+litp create -p /infrastructure/storage/storage_providers/nfs_service/exports/nfs_export -t nfs-export -o name="nfs-export" 
+litp create -p /infrastructure/storage/nfs_mounts/nfs_fs -t nfs-file-system -o name='nfs_fs' mount_point='/opt/test' network_name="some_network"
+
+litp create -p /software/items/a_package -t mock-package -o name='a_package' 
+
+litp load -p /deployments/local_vm/clusters -f cluster_no_node2.xml --replace
+
+litp export -p / -f /tmp/root.xml
+assertFileContents blade_no_node2.xml /tmp/root.xml

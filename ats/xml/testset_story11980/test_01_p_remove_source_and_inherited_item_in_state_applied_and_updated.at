@@ -1,0 +1,273 @@
+## test_01_p_remove_source_and_inherited_item_in_state_applied_and_updated
+## Description:
+## Verify that when all items in the inheritance tree are in
+## Applied state and I run load --replace
+## where source and corresponding inherited items are
+## omitted on the xml file  then I do not get an error msg
+## both source and inherited items are in ForRemoval state
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## AC 1.1
+
+## 1. Create a parent child and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 2. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 3. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 4. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 5. Execute "create_plan"
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='grandchild1Prime'
+
+## 6. Assert model in state Applied and property set for node 2 grandchild
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 7. Run  xml load --replace where grandchild are omitted
+litp load -p / -f xml/all_grandchildren_omitted.xml --replace
+
+## 8. Assert grandchild are ForRemoval
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='grandchild1Prime'
+
+## 9. Restore model to all applied and assert all applied
+litp restore_model
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 10. Run  xml load --replace where grandchild and children are omitted
+litp load -p / -f xml/all_children_omitted.xml --replace
+
+## 11. Assert grandchild and children are ForRemoval
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='grandchild1Prime'
+
+## 12.  Restore model to all applied and assert all applied
+litp restore_model
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 13. Run  xml load --replace where grandchild, children and parents are omitted
+litp load -p / -f xml/all_parents_omitted.xml --replace
+
+## 14. Assert grandchild, children and parents are ForRemoval
+assertState -p /software/services/parent1 ForRemoval
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='grandchild1Prime'
+
+
+###make changes to model to all updated###
+
+## 15. Restore model to all applied and assert all applied
+litp restore_model
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 16. Set Model to all updated and assert all updated
+litp update -p /software/services/parent1 -o name=Updated_Parent_Source
+litp update  -p /software/services/parent1/childs/child1 -o name=Updated_Child_Source
+litp update  -p /software/services/parent1/childs/child1/grand_children/grandchild1 -o name=Updated_Grandchild_Source
+litp update  -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=Updated_Grandchild_Inherited_2
+
+assertProperty   /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Source'
+assertProperty   /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Inherited_2'
+
+## 17. assert all items updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Updated
+
+## 18.  Run  xml load --replace where grandchildren are omitted
+litp load -p / -f xml/all_grandchildren_omitted.xml --replace
+
+## 19. Assert grandchildren are ForRemoval
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertProperty   /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Source'
+assertProperty   /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Inherited_2'
+
+## 20. Restore model to all applied and assert all applied
+litp restore_model
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 21. Set Model to all updated and assert all updated
+litp update -p /software/services/parent1 -o name=Updated_Parent_Source
+litp update  -p /software/services/parent1/childs/child1 -o name=Updated_Child_Source
+litp update  -p /software/services/parent1/childs/child1/grand_children/grandchild1 -o name=Updated_Grandchild_Source
+litp update  -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=Updated_Grandchild_Inherited_2
+assertProperty   /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Source'
+assertProperty   /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Inherited_2'
+
+## 22. assert all items updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Updated
+
+## 23.  Run  xml load --replace where grandchildren and children are omitted
+litp load -p / -f xml/all_children_omitted.xml --replace
+
+## 24. Assert grandchildren and children are ForRemoval
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertProperty   /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Source'
+assertProperty   /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Inherited_2'
+
+## 25. Restore model to all applied and assert all applied
+litp restore_model
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+## 26. Set Model to all updated and assert all updated
+litp update -p /software/services/parent1 -o name=Updated_Parent_Source
+litp update  -p /software/services/parent1/childs/child1 -o name=Updated_Child_Source
+litp update  -p /software/services/parent1/childs/child1/grand_children/grandchild1 -o name=Updated_Grandchild_Source
+litp update  -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=Updated_Grandchild_Inherited_2
+assertProperty   /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Source'
+assertProperty   /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Inherited_2'
+
+## 27. assert all items updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -o name='Updated_Parent_Source'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Updated
+
+## 28. Run  xml load --replace where grandchildren,children and parents are omitted
+litp load -p / -f xml/all_parents_omitted.xml --replace
+
+## 29. Assert grandchildren,children and parents are ForRemoval
+assertState -p /software/services/parent1 ForRemoval
+assertProperty /software/services/parent1 -o name='Updated_Parent_Source'
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -o name='Updated_Parent_Source'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertProperty   /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Source'
+assertProperty   /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name='Updated_Grandchild_Inherited_2'

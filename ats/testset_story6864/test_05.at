@@ -1,0 +1,18 @@
+# test_05_n_restore_model_running_plan
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /ms/items/y -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/y -s /software/items/x -o name=y
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/y -s /software/items/x
+
+litp create_plan
+
+assertConfigTask ms1 package x /ms/items/y ensure='installed'
+assertConfigTask node1 package y /deployments/local/clusters/cluster1/nodes/node1/items/y ensure='installed'
+assertConfigTask node2 package x /deployments/local/clusters/cluster1/nodes/node2/items/y ensure='installed'
+
+# While plan is still running, try to restore model
+runPlanUntil 1
+assertError restore_model --err_message "Operation not allowed while plan is running/stopping" --err_type "InvalidRequestError" --err_vpath "/litp/restore_model"

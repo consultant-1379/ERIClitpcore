@@ -1,0 +1,30 @@
+# test_07_n_dependency_list_self_dependency
+# =============================================
+# Description:
+# -Test that a cluster cannot have itselfs as a dependency
+#
+# Actions:
+# 1. Create a deploymemt with 2 clusters
+# 2. Add clusters to the "dependency_list" property
+# to create a circular dependency as follows:
+# CX is dependent on CX
+# 3. Follow upgrade steps
+# 4. After upgrade plan is created, check that
+# an appropriate ValidationError is returned
+#
+# Result:
+# Correct validation Errors are returned
+
+# 1. Create multi cluster deployment
+add-extensions ../plugins/dummy_9657
+add-plugins ../plugins/dummy_9657
+runLitpScript misc/create_multi_cluster_deployment.inc
+
+# 2. Update the "dependency_list" property to create a circular dependency
+litp update -p /deployments/litpcds_9657/clusters/cluster_1 -o dependency_list='cluster_zulu','cluster_1','cluster_alpha'
+
+# 3. Create tasks for clusters
+# See step 1
+
+# 4. Create plan and check for error
+assertError --err_type "ValidationError" --err_message "A cluster cannot depend on itself. Please ensure dependency_list property is correct" create_plan

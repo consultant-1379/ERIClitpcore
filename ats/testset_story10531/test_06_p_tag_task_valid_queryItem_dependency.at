@@ -1,0 +1,57 @@
+# Test Case 06.
+# Description:
+# Test that on creating a plan with the deployment ruleset defined with tasks
+# tag set and valid 'query item' dependency for tasks in different groups but
+# with valid group order dependency, the tasks are in the correct order and phase
+#
+# Actions:
+# 1. Query item dependency based on valid group order dependency
+#    Create model items that lead to the generation of tasks associated with valid
+#    task's tags and a 'queryItem' dependency resolved as tasks dependency for tasks
+#    in different groups but with valid group order dependency
+# 2. Execute "create_plan" command
+# 3. Check that tagged tasks are in correct phase
+# 4. Check Order of Plan
+# 4.1 Check that tasks are in correct order in the plan to reflect dependency
+#   Task tagged as node 'requires' a query item which is resolved as config and
+#   callback tasks tagged as boot
+#
+# Result:
+# On plan creation, tagged tasks, with 'query_item' dependencies with tasks
+# associated with different groups but with valid group order dependency, are in the correct phase
+# and sequenced in the correct order as per the deployment ruleset
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+add-plugins plugins/story10531_plugin_2
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Query item dependency based on valid group order dependency
+#   Create model items that lead to the generation of tasks associated with valid
+#   task's tags and a 'queryItem' dependency resolved as tasks dependency for tasks
+#   in different groups but with valid group order dependency
+litp create -p /software/items/item1 -t foo6 -o name='item1' task_dependency_type='query_item'
+litp create -p /software/items/item2 -t foo6 -o name='item2' task_dependency_type='query_item'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp inherit -s /software/items/item2 -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 2. Execute "create_plan" command
+litp create_plan
+
+# 3. Check that tagged tasks are in correct phase
+assertTask 1 tc6_res_boot node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertTask 2 tc6_res_node node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertCallbackTask _mock_function /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 4. Check Order of Plan
+let __tag_task_boot_c1_n1 ConfigTask node1 tc6_res_boot tc6_res_boot_title /deployments/local/clusters/cluster1/nodes/node1/items/item2
+let __tag_task_node_c1_n1 ConfigTask node1 tc6_res_node tc6_res_node_title /deployments/local/clusters/cluster1/nodes/node1/items/item1
+let __tag_task_cb_boot CallbackTask _mock_function /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 4.1 Check that tasks are in correct order in the plan to reflect dependency
+# Task tagged as node 'requires' a query item which is resolved as config and
+# callback tasks tagged as boot
+assertTaskBeforeTask __tag_task_boot_c1_n1 __tag_task_node_c1_n1
+assertTaskBeforeTask __tag_task_cb_boot __tag_task_node_c1_n1

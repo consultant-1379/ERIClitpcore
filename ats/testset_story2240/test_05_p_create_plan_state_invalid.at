@@ -1,0 +1,8 @@
+runLitpScript misc/common_test_methods.at
+
+#litp update -p /software/items/story_2240 -o version=10 release=39.el6
+litp update -p /software/items/story_2240 -o version=10
+assertPlanState invalid
+
+litp create_plan
+assertPlanState initial

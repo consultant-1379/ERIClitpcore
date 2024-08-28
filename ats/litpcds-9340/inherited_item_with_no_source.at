@@ -1,0 +1,35 @@
+# LITPCDS-9340: Source item can be removed during a running plan.
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /ms/items/telnet
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp remove -p /ms/items/telnet
+litp remove -p /software/items/telnet
+
+litp create_plan
+
+# Tasks should be ordered as follows:
+# Phase 1:
+#   remove /ms/items/telnet -> Success
+# Phase 2:
+#   remove /node1 /deployments/local/clusters/cluster1/nodes/node1/items/telnet -> Failed
+# Phase 3:
+#   remove /software/items/telnet -> Initial
+
+#show show_plan
+
+# Fail removal task for inherited item on node1
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp run_plan
+assertPlanState failed
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet ForRemoval
+
+# Even though this task was successful, its item should not be removed
+# as it has an inherited item that is not removed yet (as that task failed)
+assertState -p /ms/items/telnet ForRemoval
+assertLogMessage "Item /ms/items/telnet cannot be deleted from the model because item /deployments/local/clusters/cluster1/nodes/node1/items/telnet which inherits from it has not been removed."

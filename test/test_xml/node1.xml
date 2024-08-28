@@ -1,0 +1,12 @@
+<litp:node id="node1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+    <hostname>node1</hostname>
+    <litp:node-network_interfaces-collection id="network_interfaces">
+        <litp:network-interface id="ip1">
+            <network_name>nodes</network_name>
+        </litp:network-interface>
+    </litp:node-network_interfaces-collection>
+    <litp:os-profile2-inherit source_path="/software/profiles/rhel_6_4" id="os">
+        <name>sample-profile</name>
+        <version>rhel6</version>
+    </litp:os-profile2-inherit>
+</litp:node>

@@ -1,0 +1,60 @@
+runLitpScript ../setup_two_nodes.inc
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/x -s /software/items/x 
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/x -s /software/items/x
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Initial
+
+litp create_plan
+
+assertState -p /software/items/x Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Initial
+
+litp run_plan
+
+assertState -p /software/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Applied
+
+litp update -p /software/items/x -o name=y
+assertState -p /software/items/x Updated
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Updated
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Updated
+
+litp update -p /software/items/x -o name=x
+assertState -p /software/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Applied
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node2/items/x -o name=w
+assertState -p /software/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Updated
+
+litp update -p /software/items/x -o name=w
+assertState -p /software/items/x Updated
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Updated
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Updated
+
+litp update -p /software/items/x -o name=x
+assertState -p /software/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x Updated
+
+# below to cover for obsolete testset_story2498
+# test_01_p_remove_a_link_to_a_profile_from_a_node
+# test_02_p_remove_a_profile_linked_to_multiple_nodes
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/x
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x ForRemoval
+litp create_plan
+assertTaskInPlan package /deployments/site1/clusters/cluster1/nodes/node1/items/x
+assertTaskInPlan package /deployments/site1/clusters/cluster1/nodes/node2/items/x
+
+# LITPCDS-12018: Allow remmoval of source, source and inherited ForRemoval
+litp remove -p /software/items/x
+assertState -p /software/items/x ForRemoval
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/x ForRemoval
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/x ForRemoval

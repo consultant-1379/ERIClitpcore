@@ -1,0 +1,9 @@
+compress
+
+/var/log/litp/metrics.log {
+    missingok
+    notifempty
+    rotate 5
+    copytruncate
+    daily
+}

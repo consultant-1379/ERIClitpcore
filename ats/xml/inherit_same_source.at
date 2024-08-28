@@ -1,0 +1,9 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp create -p /software/items/telnet -t mock-package -o name='telnet' 
+litp inherit -p /ms/items/telnet -s /software/items/telnet -o name='telnet' 
+
+assertError --err_message "Item /software/items/telnet already exists" load -p /software/items -f mock_package.xml  
+
+litp load -p /ms/items -f mock_package.xml --replace

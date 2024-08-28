@@ -1,0 +1,7 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp load -p / -f blade.xml --replace
+litp show -p / -rl
+assertError --err_message "Cannot merge from storage-profile to storage-profile-base" load -p / -f blade_changed.xml --merge
+litp load -p / -f blade_changed.xml --replace

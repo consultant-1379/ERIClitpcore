@@ -1,0 +1,52 @@
+#Description: Test to verify that the state transition of the LITP items works correctly following the update of non-configuration properties only on an item in state Initial and Applied.
+# Covers test cases 01, 02 and 03
+# Test steps:
+# 1. Create a storage-profile and a dummy-filesystem item
+# 2. update all of the non-configuration properties
+# 3. ensure the items are in state Initial.
+# 4. Run plan and ensure items are in state Applied
+# 5. Update non-configuration property and ensure item is still in a state of Applied
+# 6. Run a plan and ensure no plan is generated
+
+add-extensions ../testset_story200916/extensions/dummy_200916_extension
+runLitpScript ../testset_story200916/include/two_nodes_torf200916.at
+
+litp create -t storage-profile -p /infrastructure/storage/storage_profiles/sp
+litp create -t dummy-filesystem     -p /infrastructure/storage/storage_profiles/sp/file_systems/fs1     -o path='/var/log' size='5G' req_non_config_prop='required'
+litp create -t dummy-filesystem     -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2  -o path='/home' size='5G' snap_size='10' backup_policy='snapshot' req_non_config_prop='required'
+litp inherit -p /deployments/d1/clusters/c1/nodes/n1/storage_profile -s /infrastructure/storage/storage_profiles/sp
+litp inherit -p /deployments/d1/clusters/c1/nodes/n2/storage_profile -s /infrastructure/storage/storage_profiles/sp
+
+# Test case 01
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs1 Initial
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Initial
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs1 -o path='/var/log' size='5G' req_non_config_prop='required'
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='10' path='/home' size='5G' backup_policy='snapshot' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Initial
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' path='/home' size='5G' backup_policy='snapshot' non_config_default='non-config'
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o backup_policy='direct'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Initial
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' path='/home' size='5G' backup_policy='direct' non_config_default='non-config'
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs1 -o path='/var/log' size='5G' req_non_config_prop='required'
+
+litp create_plan
+litp run_plan
+
+# Test case 03
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' path='/home' size='5G' backup_policy='direct' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='25'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='25' path='/home' size='5G' backup_policy='direct' non_config_default='non-config'
+
+# Test case 02
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/foo'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='25' path='/foo' size='5G' backup_policy='direct' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='35'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='35' path='/foo' size='5G' backup_policy='direct' non_config_default='non-config'

@@ -1,0 +1,81 @@
+litp create -p /infrastructure/networking/networks/ip-range1 -t network -o name=sample-ip-range subnet=10.10.10.0/24
+litp create -p /software/profiles/os-profile1 -t os-profile -o name=sample-os-profile path=/var/www/cobbler/ks_mirror/node-iso-x86_64
+litp create -p /infrastructure/storage/storage_profiles/storage-profile1 -t storage-profile-base
+litp create -p /infrastructure/systems/system1 -t system -o system_name=sample-system1
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+litp create -p /infrastructure/systems/system2 -t system -o system_name=sample-system2
+litp create -p /infrastructure/systems/system2/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+litp create -p /infrastructure/systems/system3 -t system -o system_name=sample-system3
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+
+litp create -p /deployments/local_vm1 -t deployment
+litp create -p /deployments/local_vm1/clusters/cluster1 -t cluster
+
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node2 -t node -o hostname=node2
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/system2
+
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node3 -t node -o hostname=node3
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/system -s /infrastructure/systems/system3
+
+litp update -p /deployments/local_vm1/clusters/cluster1 -o ha_manager="cmw"
+
+assertError create_plan
+
+add-extensions ../../plugins/dummy_baz
+add-plugins ../../plugins/dummy_baz
+
+litp create -p /software/items/baz1 -t baz -o name=baz1
+
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/baz1 -s /software/items/baz1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/items/baz1 -s /software/items/baz1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/items/baz1 -s /software/items/baz1
+
+litp create_plan
+# no node lock for nodes in Initial state
+litp run_plan
+
+litp create -p /software/items/baz2 -t baz -o name=baz2
+
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/baz2 -s /software/items/baz2
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node2/items/baz2 -s /software/items/baz2
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node3/items/baz2 -s /software/items/baz2
+
+litp create_plan
+assertProperty /deployments/local_vm1/clusters/cluster1/nodes/node1 -o is_locked=false
+assertProperty /deployments/local_vm1/clusters/cluster1/nodes/node2 -o is_locked=false
+assertProperty /deployments/local_vm1/clusters/cluster1/nodes/node3 -o is_locked=false
+
+failConfigTask baz node1 /deployments/local_vm1/clusters/cluster1/nodes/node1/items/baz2
+
+litp run_plan
+
+assertProperty /deployments/local_vm1/clusters/cluster1/nodes/node1 -o is_locked=true
+assertProperty /deployments/local_vm1/clusters/cluster1/nodes/node2 -o is_locked=false
+assertProperty /deployments/local_vm1/clusters/cluster1/nodes/node3 -o is_locked=false
+
+assertState -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/baz2 Initial
+assertState -p /deployments/local_vm1/clusters/cluster1/nodes/node2/items/baz2 Initial
+assertState -p /deployments/local_vm1/clusters/cluster1/nodes/node3/items/baz2 Initial
+
+litp create_plan
+
+runPlanUntil 9
+litp stop_plan
+assertPlanState stopping
+runPlanEnd
+assertPlanState stopped
+
+litp create_plan
+litp run_plan

@@ -1,0 +1,27 @@
+# Verify that the Named Snapshot item can be removed with the 'litp remove' command.
+
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot
+litp remove_snapshot
+
+litp create_snapshot -n backup
+litp remove -p /snapshots/backup
+assertError  --err_type "InvalidLocationError" show -p /snapsshots/backup
+
+
+litp create_snapshot -n snapshot
+litp remove_snapshot -n snapshot
+
+
+litp create -p /snapshots/snapshot -t snapshot-base
+litp remove -p /snapshots/snapshot
+
+litp create -p /snapshots/backup -t snapshot-base
+litp remove -p /snapshots/backup

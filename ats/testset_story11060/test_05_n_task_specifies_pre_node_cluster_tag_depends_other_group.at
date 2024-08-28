@@ -1,0 +1,90 @@
+# test_05_n_task_specifies_pre_node_cluster_tag_depends_other_group
+# Description:
+# Test that a plugin task with the tag DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+# specified, and there is a dependency on a task specified in a task group
+# that this task's group requires, a validation error will be raised
+# during create_plan
+
+# Result:
+# An IternalServerError is raised during create_plan
+
+# Presequite:
+# - Create a plugin that generates a task with the
+#   tag DEPLOYMENT_PRE_NODE_CLUSTER_TAG that creates an invalid
+#   'task-to-task' dependency
+add-extensions extensions/failure_extension_11060
+add-plugins plugins/failure_plugin_11060
+
+# - Deployment model in state, "Applied"
+# - Clusters of type vcs-cluster
+runLitpScript ../include/two_nodes.at
+litp create -p /infrastructure/systems/system3 -t system -o system_name='SYS3'
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system3/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/systems/system4 -t system -o system_name='SYS4'
+litp create -p /infrastructure/systems/system4/disks/disk0 -t disk -o name='sdb' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system4/controllers/c1 -t controller-base
+
+litp create -p /deployments/local/clusters/cluster2 -t cluster -o ha_manager=vcs
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node3 -t node -o hostname='node3'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node4 -t node -o hostname='node4'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create -p /deployments/local/clusters/cluster3 -t cluster -o ha_manager=vcs
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node5 -t node -o hostname='node5'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node5/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node6 -t node -o hostname='node6'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node6/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+#litp create_plan
+#litp run_plan
+
+# Actions:
+# 1. Create a model item that generates a task with the
+#    tag, DEPLOYMENT_PRE_NODE_CLUSTER_TAG and and invalid
+#    task-to-task' dependency
+litp create -t litpcds-11060a -p /software/items/foo -o prop='arbitrary_property'
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster2/nodes/node3/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster2/nodes/node4/items/foo
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster3/nodes/node5/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster3/nodes/node6/network_interfaces/ip1 -o network_name='updated'
+
+litp create -t litpcds-11060b -p /software/items/bar -o prop='another_property'
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node2/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster2/nodes/node3/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster2/nodes/node4/items/bar
+
+# 2. Check that a task InternalServerError is raised and that
+#    an error message is logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Task for item /software/items/bar in group DEPLOYMENT_MS_GROUP and its \
+dependent task for item /deployments/local/clusters/cluster1/nodes/node1/items/foo in \
+group DEPLOYMENT_NODE_GROUP are in different groups"

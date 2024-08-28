@@ -1,0 +1,192 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp create -p /software/profiles/rhel_6_2 -t os-profile -o name='sample-profile' path='/profiles/node-iso/'
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system1/disks/disk1 -t disk -o name='disk1' size='2G' uuid='bar'
+litp create -p /infrastructure/systems/system2 -t system -o system_name='SYS2'
+litp create -p /infrastructure/systems/system2/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+
+litp create -p /infrastructure/systems/system3 -t blade -o system_name='SYS3' 
+litp create -p /infrastructure/systems/system3/disks/bmc_1 -t disk -o name='bmc_disk_1' size='1G' uuid='foo_bmc'
+litp create -p /infrastructure/systems/system3/disks/bmc_2 -t disk -o name='bmc_disk_2' size='2G' uuid='bar_bmc'
+litp create -p /infrastructure/systems/system3/bmc -t bmc-base 
+
+litp create -p /infrastructure/networking/networks/ms_network -t network -o name='nodes' subnet='10.10.10.0/24'
+litp create -p /infrastructure/storage/storage_providers/nfs_service -t nfs-service -o service_name="nfs_service" user_name="ala" password="makota" 
+litp create -p /infrastructure/storage/storage_providers/nfs_service/ip_addresses/nfs_ip -t nfs-virtual-server -o name="nfs-vs" address="1.2.3.4"
+litp create -p /infrastructure/storage/storage_providers/nfs_service/exports/nfs_export -t nfs-export -o name="nfs-export" 
+litp create -p /infrastructure/storage/nfs_mounts/nfs_fs -t nfs-file-system -o name='nfs_fs' mount_point='/opt/test' network_name="some_network"
+litp inherit -p /infrastructure/storage/nfs_mounts/nfs_fs/export -s /infrastructure/storage/storage_providers/nfs_service/exports/nfs_export
+litp inherit -p /infrastructure/storage/nfs_mounts/nfs_fs/vip -s /infrastructure/storage/storage_providers/nfs_service/ip_addresses/nfs_ip
+
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile
+litp create -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1 -t volume-group -o volume_group_name=vg_root
+litp create -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/root -t file-system -o mount_point=/ size=8G snap_size=100 type=ext4
+litp create -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/swap -t file-system -o mount_point=swap size=2G snap_size=100 type=swap
+litp create -p /infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices/internal -t physical-device -o device_name=hd0
+litp create -p /ms/network_interfaces/ip1 -t network-interface -o network_name='nodes' ipaddress='10.10.10.100'
+litp create -p /deployments/local -t deployment
+litp create -p /deployments/local/clusters/cluster1 -t cluster
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node1 -t node -o hostname='node1'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs -s /infrastructure/storage/nfs_mounts/nfs_fs
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/os -s /software/profiles/rhel_6_2 -o name='sample-profile-newname'
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp export -p /infrastructure/storage/nfs_mounts/nfs_fs
+litp export -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node2 -t node -o hostname='node2'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/system2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node3 -t node -o hostname='node3' 
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node3/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node3/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster1/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create -p /software/items/a_package -t mock-package -o name=a_package
+
+#####
+litp create -p /software/items/b_package -t mock-package -o name=b_package
+litp create -p /software/items/c_package -t mock-package -o name=c_package
+litp create -p /software/items/d_package -t mock-package -o name=d_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package -s /software/items/a_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -s /software/items/b_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package -s /software/items/c_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package -s /software/items/d_package
+
+litp create_plan
+litp run_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Applied
+
+assertState -p /infrastructure/systems/system3/bmc Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node3/system Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs/export Applied
+
+litp export -p / -f /tmp/root.xml
+assertFileContents blade2.xml /tmp/root.xml
+
+litp create -p /software/items/x_package -t mock-package -o name=x_package
+assertState -p /software/items/x_package Initial
+
+#We no longer allow the update of non-updateable properties, unless updated to same
+#assertError --err_type InvalidRequestError load -p / -f /tmp/root.xml --replace
+litp load -p / -f /tmp/root.xml --replace
+
+assertState -p / Applied
+assertState -p /software Applied
+assertState -p /software/items Applied
+assertNone  -p /software/items/x_package
+assertState -p /deployments Applied
+assertState -p /deployments/local Applied
+assertState -p /deployments/local/clusters Applied
+assertState -p /deployments/local/clusters/cluster1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Applied
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -o name=b_package_newname
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Updated
+
+litp remove -p /deployments/local
+litp remove -p /infrastructure/systems/system1
+litp remove -p /infrastructure/systems/system2
+litp remove -p /infrastructure/systems/system3
+litp remove -p /infrastructure/networking/networks/ms_network
+litp create_plan
+litp run_plan
+litp load -p / -f /tmp/root.xml --replace
+
+assertState -p / Applied
+assertState -p /software Applied
+assertState -p /software/items Applied
+assertNone -p /software/items/x_package
+assertState -p /deployments Applied
+assertState -p /deployments/local Initial
+assertState -p /deployments/local/clusters Initial
+assertState -p /deployments/local/clusters/cluster1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Initial
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -o name=b_package_newname
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Initial
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 -o size='2G'
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Initial
+
+litp export -p / -f /tmp/root.xml
+litp load -p / -f /tmp/root.xml --replace
+
+assertState -p /software/items/a_package Applied
+assertState -p /software/items/b_package Applied
+assertState -p /software/items/c_package Applied
+assertState -p /software/items/d_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Initial
+
+litp update -p /software/items/d_package -o name=d_package_newname
+assertState -p /software/items/d_package Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Initial
+
+litp export -p / -f /tmp/root.xml
+assertFileContents exported_root_states.xml /tmp/root.xml
+litp load -p / -f /tmp/root.xml --replace
+
+assertState -p /software/items/a_package Applied
+assertState -p /software/items/b_package Applied
+assertState -p /software/items/c_package Applied
+assertState -p /software/items/d_package Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Initial
+
+litp export -p / -f /tmp/root.xml
+assertFileContents exported_root_states.xml /tmp/root.xml
+litp load -p / -f /tmp/root.xml --merge
+
+assertState -p /software/items/a_package Applied
+assertState -p /software/items/b_package Applied
+assertState -p /software/items/c_package Applied
+assertState -p /software/items/d_package Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Initial
+
+litp create_plan
+litp run_plan

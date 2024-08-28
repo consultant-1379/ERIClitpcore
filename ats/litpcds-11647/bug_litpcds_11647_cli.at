@@ -1,0 +1,61 @@
+# Test updating with empty string via CLI
+runLitpScript ../include/two_nodes.at
+add-extensions ../testset_story11331/extensions/dummy_11270_extension/
+add-plugins ../testset_story11331/plugins/dummy_11331_plugin
+
+litp create -p /software/items/yum_repo -t yum-repository -o name='yum' \
+    empty_string_prohibited='original_pro' empty_string_allowed='original_al'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -s /software/items/yum_repo
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+let __err_1 --err_type "ValidationError" --err_message "Invalid value ''." \
+    --err_property "empty_string_prohibited"
+
+# Regex basic_string will not permit empty string
+# Inherited item
+assertError --errors_length 1 __err_1 update -p \
+    /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_prohibited=''
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_prohibited='original_pro'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Applied
+# Source item
+assertError --errors_length 1 __err_1 update -p \
+    /software/items/yum_repo -o empty_string_prohibited=''
+assertProperty /software/items/yum_repo -o empty_string_prohibited='original_pro'
+assertState -p /software/items/yum_repo Applied
+
+# Regex any_string will permit empty string
+# Inherited item
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_allowed=''
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_allowed=''
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Updated
+# Alternative empty string update: property_name=
+# Unset the property first (reverts to source value)
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -d empty_string_allowed
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_allowed='original_al'
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_allowed=
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_allowed=''
+# Source item
+litp update -p /software/items/yum_repo -o empty_string_allowed=''
+assertProperty /software/items/yum_repo -o empty_string_allowed=''
+assertState -p /software/items/yum_repo Updated
+# Alternative empty string update
+litp update -p /software/items/yum_repo -o empty_string_allowed='blah'
+litp update -p /software/items/yum_repo -o empty_string_allowed=
+assertProperty /software/items/yum_repo -o empty_string_allowed=''
+# Delete source property, it goes but ref property stays as its overwritten
+litp update -p /software/items/yum_repo -d empty_string_allowed
+assertPropertyUnset -p /software/items/yum_repo -o empty_string_allowed
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo \
+    -o empty_string_allowed=''

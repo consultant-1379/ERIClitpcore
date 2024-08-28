@@ -1,0 +1,81 @@
+<litp:root id="root" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+  <litp:root-deployments-collection id="deployments">
+    <litp:deployment id="site1">
+      <litp:deployment-clusters-collection id="clusters">
+        <litp:cluster id="cluster2">
+          <litp:cluster-nodes-collection id="nodes">
+            <litp:node id="nodea">
+              <hostname>nodea</hostname>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <ipaddress>10.10.10.1</ipaddress>
+                  <network_name>mgmt</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-link id="os">
+                <name>node-iso</name>
+              </litp:os-profile-link>
+              <litp:storage-profile-base-link id="storage_profile">
+              </litp:storage-profile-base-link>
+              <litp:system-link id="system">
+                <system_name>sys1</system_name>
+              </litp:system-link>
+            </litp:node>
+            <litp:node id="nodeb">
+              <hostname>nodeb</hostname>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <ipaddress>10.10.10.2</ipaddress>
+                  <network_name>mgmt</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-link id="os">
+                <name>node-iso</name>
+              </litp:os-profile-link>
+              <litp:storage-profile-base-link id="storage_profile">
+              </litp:storage-profile-base-link>
+              <litp:system-link id="system">
+                <system_name>sys2</system_name>
+              </litp:system-link>
+            </litp:node>
+          </litp:cluster-nodes-collection>
+          <litp:cluster-services-collection id="services" />
+        </litp:cluster>
+      </litp:deployment-clusters-collection>
+    </litp:deployment>
+  </litp:root-deployments-collection>
+ <litp:infrastructure id="infrastructure">
+    <litp:infrastructure-items-collection id="items" />
+    <litp:networking id="networking">
+      <litp:networking-networks-collection id="networks">
+        <litp:network id="iprange1">
+          <name>nodes</name>
+          <subnet>10.10.10.0/24</subnet>
+        </litp:network>
+      </litp:networking-networks-collection>
+    </litp:networking>
+    <litp:storage id="storage">
+      <litp:storage-storage_profiles-collection id="storage_profiles" />
+    </litp:storage>
+  </litp:infrastructure>
+  <litp:ms id="ms">
+    <hostname>ms1</hostname>
+  </litp:ms>
+  <litp:software id="software">
+    <litp:software-deployables-collection id="deployables" />
+    <litp:software-items-collection id="items" />
+    <litp:software-profiles-collection id="profiles">
+      <litp:os-profile id="rhel_6_4">
+        <arch>x86_64</arch>
+        <breed>redhat</breed>
+        <kopts_post>console=ttyS0,115200</kopts_post>
+        <name>sample-profile</name>
+        <path>/tmp</path>
+        <version>rhel6</version>
+      </litp:os-profile>
+    </litp:software-profiles-collection>
+    <litp:software-runtimes-collection id="runtimes" />
+  </litp:software>
+
+</litp:root>
+

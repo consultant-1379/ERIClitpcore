@@ -1,0 +1,9 @@
+litp create -p /deployments/deployment1 -t deployment
+
+assertError create -p /deployments/deployment1/nodes/node1 -t node
+litp create -p /deployments/deployment1/clusters/cluster1 -t cluster
+litp create -p /deployments/deployment1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+assertProperty /deployments/deployment1/clusters/cluster1/nodes/node1 -o hostname="node1"
+
+litp update -p /deployments/deployment1/clusters/cluster1/nodes/node1 -o hostname="node1updated"
+assertProperty /deployments/deployment1/clusters/cluster1/nodes/node1 -o hostname="node1updated"

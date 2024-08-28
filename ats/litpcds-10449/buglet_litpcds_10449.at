@@ -1,0 +1,23 @@
+add-plugins plugins/dummy_10449_plugin
+add-extensions ../extensions/dummy_linuxfirewall_extensions
+runLitpScript ../include/two_nodes.at
+
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp create -p /ms/configs/fw_config -t firewall-node-config
+litp create -p /ms/configs/fw_config/rules/fw_basetcp -t firewall-rule -o name=0testrule
+
+litp create_plan
+#show show_plan
+
+let __purge_task CallbackTask _cb /ms/system/disks/disk0
+let __net_task ConfigTask ms1 network::config nodes /ms/network_interfaces/ip1 bootproto='static' ensure='present' nozeroconf='yes' userctl='no' onboot='yes'
+let __firewall_task ConfigTask ms1 firewalls::rules 0 /ms/configs/fw_config/rules/fw_basetcp test='test'
+
+assertConfigTask ms1 firewalls::rules 0 /ms/configs/fw_config/rules/fw_basetcp test='test'
+assertCallbackTask _cb /ms/system/disks/disk0
+assertConfigTask ms1 network::config nodes /ms/network_interfaces/ip1 bootproto='static' ensure='present' nozeroconf='yes' userctl='no' onboot='yes'
+
+litp run_plan
+
+assertTaskBeforeTask __firewall_task __purge_task
+assertTaskBeforeTask __net_task __purge_task

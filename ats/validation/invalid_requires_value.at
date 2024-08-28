@@ -1,0 +1,6 @@
+# Plugin will add 'None' type to task's "requires" set - this should be discovered and rejected by core.
+runLitpScript ../include/two_nodes.at
+add-plugins ../plugins/invalid_requires_value
+
+assertError create_plan --err_type InternalServerError
+assertLogMessage "invalid data type (\"<type 'NoneType'>\") in its \"requires\" set"

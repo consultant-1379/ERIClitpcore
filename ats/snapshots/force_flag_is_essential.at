@@ -1,0 +1,12 @@
+# Verify that when updating a snapshpot the "force" flag is essential.
+
+add-plugins ../plugins/mock_volmgr_plugin
+#litp remove_snapshot -n snapshot
+
+litp create_snapshot
+assertError --err_type=InvalidRequestError  --err_message="Property 'force' must be specified" update -p /snapshots/snapshot -o state=restore
+assertError --err_type=InvalidRequestError  --err_message="Invalid value for force specified: 'hello'" update -p /snapshots/snapshot -o state=restore force=hello
+assertError --err_type=InvalidRequestError  --err_message="Unsupported snapshot for restore" update -p /snapshots/snapshotERROR -o force=false
+litp update -p /snapshots/snapshot -o state=restore force=True
+
+litp restore_snapshot -f

@@ -1,0 +1,39 @@
+add-plugins plugin/
+runLitpScript ../include/two_nodes.at
+
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+litp create -t mock-package -p /software/items/telnet -o name=telner
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet
+
+litp create_plan
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked="false"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked="false"
+
+# The nodes are now applied and subsequent plans will feature lock/unlock tasks
+litp create -t mock-package -p /software/items/vim -o name=vim
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node1/items/vim
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node2/items/vim
+litp create_plan
+
+assertCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node1
+
+assertCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node2
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node2
+
+runPlanStart
+runPlanUntil 5
+litp stop_plan
+runPlanEnd
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked="true"
+
+litp create_plan
+
+# We should have an unlock task in there!!!
+assertPlanLength 1
+assertPhaseLength 0 1
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node2

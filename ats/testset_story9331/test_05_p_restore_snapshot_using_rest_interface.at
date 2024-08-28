@@ -1,0 +1,22 @@
+# Test verifies that a user can restore snapshots using
+# the REST interface
+
+add-plugins ../plugins/mock_volmgr_plugin
+add-plugins ../plugins/initial_node_tasks_only
+
+## 1. Create deployment snapshot using REST
+litp create -p /snapshots/snapshot  -t snapshot-base
+
+## 2. Restore deployment snapshot using REST
+litp update -p /snapshots/snapshot -o state=restore force=false
+
+## 3. Force restore deployment snapshot using REST
+litp update -p /snapshots/snapshot -o state=restore force=true
+
+# make sure a deployment plan was run (required to generate named snapshots)
+litp create_plan
+litp run_plan
+
+## 4. Attempt to restore a named snapshot using REST
+litp create -p /snapshots/9331 -t snapshot-base
+assertError update -p /snapshots/9331 -o state=restore force=true

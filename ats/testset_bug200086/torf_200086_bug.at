@@ -1,0 +1,112 @@
+## TORF-200086
+add-extensions extensions/dummy_200086_extension
+add-plugins plugins/dummy_200086_plugin
+runLitpScript ../include/two_nodes.at
+
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager='vcs'
+
+litp create -t parent -p /software/items/test_1 -o name="remove_parent"
+litp create -t parent -p /software/items/test_2 -o name="remove_children"
+litp create -t parent -p /software/items/test_3 -o name="remove_collection"
+
+litp create -t child -p /software/items/test_1/childs/child_a -o name="bar"
+litp create -t child -p /software/items/test_2/childs/child_a -o name="bar"
+litp create -t child -p /software/items/test_3/childs/child_a -o name="bar"
+
+
+# Test case 1: the parent item is transitioned to Remove, then back to Applied
+litp inherit -s /software/items/test_1 -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1
+
+litp create_plan
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs/child_a Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs/child_a Applied
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1
+litp create_plan
+
+failCallbackTask _unlock_callback /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+
+show show_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs/child_a ForRemoval
+
+unfailCallbackTask _unlock_callback /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan --resume
+show show_plan
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs/child_a
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1/childs
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_1
+
+#
+# Test case 2: the child item is transitioned to Remove, then back to Applied
+litp inherit -s /software/items/test_2 -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2
+
+litp create_plan
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2/childs Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2/childs/child_a Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2/childs/child_a Applied
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2
+litp create_plan
+
+failCallbackTask _unlock_callback /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+
+show show_plan
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2/childs/child_a
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2/childs ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2 ForRemoval
+
+unfailCallbackTask _unlock_callback /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan --resume
+show show_plan
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2/childs
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_2
+
+#
+# Test case 3: the child collection is transitioned to Remove, then back to Applied
+litp inherit -s /software/items/test_3 -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3
+
+litp create_plan
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs/child_a Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs/child_a Applied
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3
+litp create_plan
+
+failCallbackTask _unlock_callback /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+
+show show_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs/child_a ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3 ForRemoval
+
+unfailCallbackTask _unlock_callback /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan --resume
+show show_plan
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs/child_a
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3/childs
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test_3

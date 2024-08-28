@@ -1,0 +1,18 @@
+add-plugins plan_show_plan_reflects_dependencies
+# Basic 2 node deployment setup
+runLitpScript two-node-std.inc
+
+litp create_plan
+
+let __configs ConfigTask ms1 ms::configs 4 /ms/configs
+let __items ConfigTask ms1 ms::items 1 /ms/items
+let __routes ConfigTask ms1 ms::routes 2 /ms/routes
+let __services ConfigTask ms1 ms::services 3 /ms/services
+let __file_systems ConfigTask ms1 ms::file_systems 5 /ms/file_systems
+let __network_interfaces ConfigTask ms1 ms::network_interfaces 6 /ms/network_interfaces
+
+assertTaskBeforeTask __file_systems __configs
+assertTaskBeforeTask __routes __configs
+assertTaskBeforeTask __network_interfaces __routes
+assertTaskBeforeTask __routes __items  # in-plugin requirement
+assertTaskBeforeTask __network_interfaces __services

@@ -1,0 +1,108 @@
+## test_02_p_set_persist_flag_on_existing_task
+
+## Description:
+## Test if the persist flag is set to False on a Task that is
+## currently persisted, the now non-persisted task will appear in
+## subsequent plans
+
+# Actions:
+# 1.Create a plug-in that generates a persisted "ConfigTask"
+# (i.e. no task persist flag is set)
+# 2.Create items that results in task being generated
+# 3.Execute "create_plan"
+# 4.Check that the task appears in the plan
+# 5.Execute "run_plan"
+# 6.Create items that generate tasks unrelated to
+# previous item
+# 7.Execute "create_plan"
+# 8.Check that the persisted task does not appear in the plan
+# 9.Update the item associated with the task, so that the
+# persist flag of the task is set to False
+# 10.Execute "create_plan"
+# 11.Check that the task appears in the plan
+# 12.Execute "run_plan"
+# 13.Create items that generate tasks unrelated to
+# previous item
+# 14.Execute "create_plan"
+# 15.Check that the non-persisted task appears in the plan
+# 16.Update the item associated with the task, so that the
+# persist flag of the task is set to True
+# 17.Execute "create_plan"
+# 18.Check that the task appears in the plan
+# 19.Create items that generate tasks unrelated to
+# previous item
+# 20.Execute "create_plan"
+# 21.Check that the now persisted task does not appear in the plan
+
+# 1.
+add-plugins plugins/dummy_12781_plugin
+add-extensions extensions/dummy_12781_extension
+runLitpScript ../include/two_nodes.at
+
+# 2.
+litp create -p /software/services/one -t test_12781_tc02 -o name=test_12781_tc02
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/one -s /software/services/one
+
+# 3.
+litp create_plan
+
+# 4. Check the persisted task is in the plan
+assertConfigTask node1 one test_12781_tc02 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# 5. 
+litp run_plan
+assertPlanState successful
+
+# 6 - 7. Recreate the plan (plugin returns same persisted task)
+# 8. Plan is empty as persisted task is filtered out
+assertError --errors_length 1 create_plan --err_type DoNothingPlanError
+
+# 9. Return same task but with different persist attribute
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/one -o name=up
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/one Updated
+
+# 10.
+litp create_plan
+
+# 11. Task not filtered by core
+assertConfigTask node1 one test_12781_tc02 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# 12.
+litp run_plan
+assertPlanState successful
+
+# 13 - 14. Recreate plan (plugin returns same non persisted task)
+litp create_plan
+
+# 15. Non persisted task not filtered by core
+assertConfigTask node1 one test_12781_tc02 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# 16. Return same task but different persist attribute (True)
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/one -o name=up_two
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/one Updated
+
+# 17.
+litp create_plan
+
+# 18.
+assertConfigTask node1 one test_12781_tc02 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# 19 - 20.
+litp run_plan
+assertPlanState successful
+
+# 21. Recreate same plan with exact same task
+# Persisted task is filtered from plan (persist not swapped)
+assertError --errors_length 1 create_plan --err_type DoNothingPlanError
+
+# Result:
+# When the persist flag of a task is set to False,
+# this task will appear in subsequent plans

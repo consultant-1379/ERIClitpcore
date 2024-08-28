@@ -1,0 +1,64 @@
+# test_02_tagged_tasks_post_cluster_task_multiple_clusters.at
+
+# Description:
+#   Test that plugin tasks with the tag POST_CLUSTER_TAG
+#   specified are assigned to the appropriate task 
+#   group(based on the ruleset defined in core) in a
+#   deployment plan with tasks generated for multiple clusters.
+
+# Result:
+#  The tasks are assigned to the appropriate task group
+
+# Prerequisite:
+#   Create a plugin that generates tasks with the
+#   tag CLUSTER_TAG and tasks with the tag POST_CLUSTER_TAG
+add-extensions extensions/dummy_107214_extension
+add-plugins plugins/dummy_107214_plugin
+
+# Create model items
+runLitpScript ../include/two_nodes.at
+
+litp create -p /infrastructure/systems/system3 -t system -o system_name='SYS3'
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system3/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/systems/system4 -t system -o system_name='SYS4'
+litp create -p /infrastructure/systems/system4/disks/disk0 -t disk -o name='sdb' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system4/controllers/c1 -t controller-base
+
+litp create -p /deployments/local/clusters/cluster2 -t cluster -o ha_manager=vcs
+litp update -p /deployments/local/clusters/cluster2 -o dependency_list=cluster1
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node3 -t node -o hostname='node3'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node4 -t node -o hostname='node4'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Create dummy tasks
+litp create -t litpcds-107214 -p /software/items/foo -o prop='arbitrary_property'
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster2/nodes/node3/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster2/nodes/node4/items/foo
+
+# Create plan
+litp create_plan
+
+# Assert that the tasks are returned in the correct order
+let __cluster_task_c1 CallbackTask _cluster_cb /deployments/local/clusters/cluster1
+let __post_cluster_task_c1 CallbackTask _post_cluster_cb /deployments/local/clusters/cluster1
+
+let __cluster_task_c2 CallbackTask _cluster_cb /deployments/local/clusters/cluster2
+let __post_cluster_task_c2 CallbackTask _post_cluster_cb /deployments/local/clusters/cluster2
+
+assertTaskBeforeTask __cluster_task_c1 __post_cluster_task_c1
+assertTaskBeforeTask __cluster_task_c2 __post_cluster_task_c2
+

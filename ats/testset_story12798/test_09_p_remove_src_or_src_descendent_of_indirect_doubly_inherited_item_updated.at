@@ -1,0 +1,255 @@
+## Description:
+## When a source item or a source descendent of a indirect doubly inherited item with a state
+## "Updated" is removed, the item and its descendants
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+## Inherited Items in state initial are be directly removed
+## when their progeny and inherited progeny are in state initial
+##
+## Preconditions: (Indirect Double inheritance)
+## Source item itemA: /software/items/itemA
+## Source item itemB: /software/services/itemB
+## Inherited item item1 (source is itemA): /software/services/itemB/packages/item1
+## Inherited item item3 (source is itemA): /software/services/itemB/packages/item3
+## Inherited item item4 (source is itemA): /software/services/itemB/packages/item4
+## Inherited item item2 (source is itemB) : /deployments/d1/clusters/c1/nodes/n1/services/item2
+## The doubly indirectly inherited item1X is implicitly inherited from /software/services/itemB/packages/Item1
+## The doubly indirectly inherited item3X is implicitly inherited from /software/services/itemB/packages/Item3
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_09
+runLitpScript ../include/two_nodes.at
+
+# 1,7 Create itemA with a child
+litp create -t 'parent' -p /software/items/itemA -o name=parentA
+litp create -t 'child' -p /software/items/itemA/childs/child1 -o name=childA
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+
+# 2,7 Create itemB
+litp create -t 'parent-b' -p /software/services/itemB -o service_name=serviceB name=parentB
+
+assertState -p /software/services/itemB Initial
+
+# 3,7 Inherit itemA to item1
+
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+
+assertState -p /software/services/itemB/packages/item1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1 Initial
+
+# 4,7 Inherit itemA to item3
+
+litp inherit -p /software/services/itemB/packages/item3 -s /software/items/itemA
+
+assertState -p /software/services/itemB/packages/item3 Initial
+assertState -p /software/services/itemB/packages/item3/childs/child1 Initial
+
+# 5,7 Inherit itemB to item2
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 -s /software/services/itemB
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+# 6,7 Check that item1X and item3X and their descendents have been created
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Initial
+
+#8,9 create and run plan
+litp create_plan
+litp run_plan
+
+# 10. Check all items are in "Applied" state
+
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/services/itemB Applied
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Applied
+
+# 11. Update itemA, itemA child
+litp update -p /software/items/itemA -o name=parentA_updated
+litp update -p /software/items/itemA/childs/child1 -o name=childA_updated
+
+# 12. Check that all descendants on itemA, item1, item3, item1X and item3X are in state, "Updated"
+assertState -p /software/items/itemA Updated
+assertState -p /software/items/itemA/childs/child1 Updated
+assertState -p /software/services/itemB/packages/item1 Updated
+assertState -p /software/services/itemB/packages/item1/childs/child1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Updated
+
+# 13. Update itemB
+litp update -p /software/services/itemB -o name=parentB_updated
+
+# 14. Check that itemB and item2 are in state, "Updated"
+assertState -p /software/services/itemB Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Updated
+
+# 15. Inherit itemA to item4
+litp inherit -p /software/services/itemB/packages/item4 -s /software/items/itemA
+
+# 16. Check that item4 is in "Initial" state
+assertState -p /software/services/itemB/packages/item4 Initial
+assertState -p /software/services/itemB/packages/item4/childs/child1 Initial
+
+# 17. Check that the doubly inherited item4X (descendent of item2) and its descendents are in "Initial" state
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item4 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item4/childs/child1 Initial
+
+# 18. Remove the source item itemB
+litp remove -p /software/services/itemB
+
+# 19. Check that the itemB and its descendents are in state "ForRemoval"
+assertState -p /software/services/itemB ForRemoval
+assertState -p /software/services/itemB/packages/item1 ForRemoval
+assertState -p /software/services/itemB/packages/item1/childs/child1 ForRemoval
+
+# 20. Check that item4, item4X and all descendents have been removed since they were in "Initial" state
+assertNone -p /software/services/itemB/packages/item4
+assertNone -p /software/services/itemB/packages/item4/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item4
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item4/childs/child1
+
+# 21. Check that inherited item2 and its descendents are in state "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 ForRemoval
+
+# 22. Check that the source itemA and its descendent remain in "Updated" state
+assertState -p /software/items/itemA Updated
+assertState -p /software/items/itemA/childs/child1 Updated
+
+# 23,24 create and run plan
+litp create_plan
+litp run_plan
+
+#25. Check that source itemB and its descendents have been removed
+assertNone -p /software/services/itemB
+assertNone -p /software/services/itemB/packages/item1
+assertNone -p /software/services/itemB/packages/item1/childs/child1
+
+#26. Check inherited item2 and its descendents have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+
+#27. Recreate the source itemB and inherited items item1, item2 and item3
+litp create -t 'parent-b' -p /software/services/itemB -o service_name=serviceB name=parentB
+assertState -p /software/services/itemB Initial
+
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+assertState -p /software/services/itemB/packages/item1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1 Initial
+
+litp inherit -p /software/services/itemB/packages/item3 -s /software/items/itemA
+assertState -p /software/services/itemB/packages/item3 Initial
+assertState -p /software/services/itemB/packages/item3/childs/child1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 -s /software/services/itemB
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+#28. Update itemA, itemA child back to their original property values
+litp update -p /software/items/itemA -o name=parentA
+litp update -p /software/items/itemA/childs/child1 -o name=childA
+
+assertState -p /software/items/itemA Updated
+assertState -p /software/items/itemA/childs/child1 Updated
+
+# 29,30 create and run plan
+litp create_plan
+litp run_plan
+
+# 31. Check all items are in "Applied" state
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/services/itemB Applied
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Applied
+assertState -p /software/services/itemB/packages/item3 Applied
+assertState -p /software/services/itemB/packages/item3/childs/child1 Applied
+
+# 32. Update itemA, itemA child
+litp update -p /software/items/itemA -o name=parentA_updated_again
+litp update -p /software/items/itemA/childs/child1 -o name=childA_updated_again
+
+# 33. Check that all descendants on itemA, item1, item3, item1X and item3X are in state, "Updated"
+assertState -p /software/items/itemA Updated
+assertState -p /software/items/itemA/childs/child1 Updated
+
+assertState -p /software/services/itemB/packages/item1 Updated
+assertState -p /software/services/itemB/packages/item1/childs/child1 Updated
+
+assertState -p /software/services/itemB/packages/item3 Updated
+assertState -p /software/services/itemB/packages/item3/childs/child1 Updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Updated
+
+# 34. Remove the inherited item1
+litp remove -p /software/services/itemB/packages/item1
+
+# 35. Check that item1 descendents (child of item1) and the indirectly inherited item1X and its descendent are in state "ForRemoval"
+assertState -p /software/services/itemB/packages/item1 ForRemoval
+assertState -p /software/services/itemB/packages/item1/childs/child1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 ForRemoval
+
+# 36. Remove the item3's child
+litp remove -p /software/services/itemB/packages/item3/childs/child1
+
+# 37. Check that item3's child and the descendent of indirectly inherited item3X are in state "ForRemoval"
+assertState -p /software/services/itemB/packages/item3/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 ForRemoval
+
+# 38. Check that itemA, itemA child and item3 and item3X remain in "Updated" state
+assertState -p /software/items/itemA Updated
+assertState -p /software/items/itemA/childs/child1 Updated
+
+assertState -p /software/services/itemB/packages/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Updated
+
+# 39. Check that itemB and item2 remain in "Applied" state
+assertState -p /software/services/itemB Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+
+# 40,41 create and run plan
+litp create_plan
+litp run_plan
+
+# 42. Check that item1 and its descendent (child of item1) and the indirectly inherited item1X and its descendent have been removed
+assertNone -p /software/services/itemB/packages/item1
+assertNone -p /software/services/itemB/packages/item1/childs/child1
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+
+# 43. Check that child of item3 and child of the indirectly inherited item3X have been removed
+assertNone -p /software/services/itemB/packages/item3/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1
+
+# Result:
+# The source item or source descendent of a doubly inherited item
+# with state "Updated" and its descendants
+# (which encompasses inherited progeny and double inherited progeny)
+# will move to "ForRemoval" state
+# when the item is removed and can be successfully
+# removed by executing a plan
+# Inherited Items in state initial are directly removed
+# without running a plan
+# when their progeny and inherited progeny are in state initial
+# a plan

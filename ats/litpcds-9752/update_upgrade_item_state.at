@@ -1,0 +1,21 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /ms/items/x -s /software/items/x
+
+litp upgrade -p /deployments/local/
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/upgrade Initial
+
+litp create_plan
+litp run_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/upgrade Applied
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/upgrade
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/upgrade ForRemoval
+
+litp upgrade -p /deployments/local/
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/upgrade Updated

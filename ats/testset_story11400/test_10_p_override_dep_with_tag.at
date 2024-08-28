@@ -1,0 +1,83 @@
+## test_10_p_override_dep_with_tag
+## Description:
+## Ensure that by generating a task and by tagging this task with a deployment tag,
+## the current sibling dependencies which are defined on the "ms" and "node" item types
+## can be overwritten
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types
+##    on the MS and Peer Node:
+## "system" Item-Type
+## "os" profile Item-Type
+## "network_interfaces" Item-Type
+## "storage profile" Item-Type
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/test_10_plugin
+
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+## "software-item" item type
+litp create -p /software/items/item -t mock-package -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+litp inherit -p /ms/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /software/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+litp create -p /ms/services/service -t service-base
+
+## "node-config" item type
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+litp create -p /ms/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+litp inherit -p /ms/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "routes" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+litp inherit -p /ms/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Check the resulting plan order
+let __configs_ms ConfigTask ms1 ms::configs 4 /ms/configs/config
+let __services_ms ConfigTask ms1 ms::services 3 /ms/services/service
+let __items_ms ConfigTask ms1 package foo /ms/items/item
+let __file_systems_ms ConfigTask ms1 ms::file_systems 5 /ms/file_systems/file_system
+let __routes_ms ConfigTask ms1 ms::routes 2 /ms/routes/route
+let __network_interfaces_ms ConfigTask ms1 ms::network_interfaces 6 /ms/network_interfaces
+let __storage_profile_ms ConfigTask ms1 ms::storage_profile 7 /ms/storage_profile
+let __os_ms ConfigTask ms1 ms::os 8 /ms/os
+let __system_ms ConfigTask ms1 ms::system 9 /ms/system
+let __item_boot_ms ConfigTask ms1 ms::items plugin_sw_item /ms/items/item
+
+let __configs_node1 ConfigTask node1 node::configs 12 /deployments/local/clusters/cluster1/nodes/node1/configs/config
+let __services_node1 ConfigTask node1 node::services 11 /deployments/local/clusters/cluster1/nodes/node1/services/service
+let __items_node1 ConfigTask node1 node::items 10 /deployments/local/clusters/cluster1/nodes/node1/items/item
+let __file_systems_node1 ConfigTask node1 node::file_systems 13 /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system
+let __routes_node1 ConfigTask node1 node::routes 14 /deployments/local/clusters/cluster1/nodes/node1/routes/route
+let __network_interfaces_node1 ConfigTask node1 node::network_interfaces 15 /deployments/local/clusters/cluster1/nodes/node1/network_interfaces
+let __storage_profile_node1 ConfigTask node1 node::storage_profile 16 /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __os_node1 ConfigTask node1 node::os 17 /deployments/local/clusters/cluster1/nodes/node1/os
+let __system_node1 ConfigTask node1 node::system 18 /deployments/local/clusters/cluster1/nodes/node1/system
+
+## Result:
+## The peer node service item-type task has a "MS" deployment tag which overwrites the defined sibling dependency
+## so this task appears in the first phase of the plan
+assertTaskBeforeTask  __services_node1 __configs_node1
+assertTaskBeforeTask __configs_node1 __items_node1
+assertTaskBeforeTask __routes_node1 __configs_node1
+## Overwritten sibling dependency "services" Item-type task before "system" Item-types before "os" Item-types
+## before "network_interfaces" Item-types before "storage_profile" Item-types before "routes" Item-type
+## before "file_systems" Item-types before "configs" Item-types before "items" Item-types
+assertTaskBeforeTask  __services_node1 __system_node1 __os_node1 __network_interfaces_node1 __routes_node1 __storage_profile_node1 __file_systems_node1 __configs_node1 __items_node1
+
+## The plug-in generated ms software item-type task has a "BOOT" deployment tag which overwrites the defined sibling dependency
+### so this task in the plan after all "ms" Item-types
+assertTaskBeforeTask __system_ms __os_ms __network_interfaces_ms __routes_ms __storage_profile_ms __file_systems_ms __configs_ms __items_ms __services_ms __item_boot_ms

@@ -1,0 +1,10 @@
+# LITPCDS-10434 Tests the reload of a plugin
+# This test must be run along with bug_litpcds-10434_2
+
+runLitpScript ../include/two_nodes.at
+
+add-plugins plugins/plugin_a
+
+litp create_plan
+
+assertConfigTask node1 PluginA.task_1 1 /deployments/local/clusters/cluster1/nodes/node1

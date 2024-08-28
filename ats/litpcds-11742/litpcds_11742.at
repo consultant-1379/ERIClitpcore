@@ -1,0 +1,19 @@
+add-plugins plugins
+
+runLitpScript ../include/two_nodes.at
+litp update -p /infrastructure/networking/networks/ms_network -o litp_management="true"
+
+litp create_plan
+disableCallbackMock _failing_cb /ms
+
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 False
+
+
+# 2nd plan
+litp create_plan
+disableCallbackMock _failing_cb /ms
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 False

@@ -1,0 +1,57 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+# litp load -p / -f blade.xml --replace
+litp load -p / -f blade_updated_readonly_property.xml --replace
+
+# Test updating is_locked property on node in Initial state via xml load
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Initial
+
+let __err_1 --err_type InvalidRequestError --err_message "Unable to modify readonly property: is_locked"
+let __err_2 --err_type ValidationError --err_message "Invalid value: '123' is digit"
+let __err_3 --err_type ItemExistsError --err_message "Item / already exists"
+let __err_4 --err_type InvalidRequestError --err_message "Unable to modify readonly property: hostname"
+
+# Test 8748 - Load xml node with invalid hostname and try to update is_locked property
+assertError __err_2 --errors_length 1 load -p / -f blade_readonly_with_invalid_values.xml --merge
+assertError __err_2 --errors_length 1 load -p / -f blade_readonly_with_invalid_values.xml --replace
+# Check for ItemExistsError and InvalidRequestError (readonly property)
+assertError __err_3 load --errors_length 1 -p / -f blade_updated_readonly_property.xml
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Initial
+
+# Test updating is_locked property on node in Applied state via xml load
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Applied
+
+# Test 8748 - Load xml node with invalid hostname and try to update is_locked property
+# 'hostname' is now an Applied readonly property, so check for readonly validation
+assertError __err_2 __err_4 --errors_length 2 load -p / -f blade_readonly_with_invalid_values_disk_part.xml --replace
+assertError __err_2 __err_4 --errors_length 2 load -p / -f blade_readonly_with_invalid_values_disk_part.xml --merge
+# Check for ItemExistsError and InvalidRequestError (readonly property)
+assertError __err_3 load -p / -f blade_updated_readonly_property.xml
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Applied

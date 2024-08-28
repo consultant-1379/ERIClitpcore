@@ -1,0 +1,9 @@
+compress
+
+/var/log/litp/litpd_access.log {
+    missingok
+    notifempty
+    rotate 28
+    copytruncate
+    daily
+}

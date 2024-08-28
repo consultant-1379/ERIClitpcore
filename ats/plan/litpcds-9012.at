@@ -1,0 +1,23 @@
+runLitpScript ../include/two_nodes.at
+
+add-extensions ../plugins/dummy_9012
+add-plugins ../plugins/dummy_9012
+add-plugins ../plugins/dummy_9012_dep
+
+litp create -p /ms/configs/test_item_01 -t story-7721a -o name=test_04_cfg_01
+litp create -p /ms/configs/test_item_02 -t story-7721b -o name=test_04_cfg_02
+
+litp create_plan
+assertConfigTask ms1 notify call_id_test_04_cfg_01 /ms/configs/test_item_01 message=test_04_cfg_01
+assertConfigTask ms1 notify call_id_test_04_cfg_02 /ms/configs/test_item_02 message=test_04_cfg_02
+
+litp run_plan
+assertPlanState successful
+
+assertState -p /ms/configs/test_item_01 Applied
+assertState -p /ms/configs/test_item_02 Applied
+
+litp create -p /software/items/test_04_sw -t depend-story-7721 -o name=test_04_sw
+litp inherit -p /ms/items/test_04_sw -s /software/items/test_04_sw
+
+assertError --err_type InternalServerError --err_message "Create plan failed: See logs for details." create_plan

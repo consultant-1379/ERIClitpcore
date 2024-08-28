@@ -1,0 +1,71 @@
+## test_09_p_non_persisted_task_replaces_persisted_task_using_attribute
+
+## Description:
+## Test that when a non-persisted task replaces a persisted task,
+## the replacement task will appear in the plan
+
+# Actions:
+# 1.Create a plug-in that generates a persisted "ConfigTask"
+# (i.e. task persist flag is not set)
+# 2.Create an item that results in the task being generated
+# 3.Execute "create_plan"
+# 4.Check that the task appear in the plan
+# 5.Execute "run_plan"
+# 6.Create/Update an item that generates a non-persisted task,
+# (i.e. task persist flag = False) that
+# uses the replaces attribute with the "ResourceType" and
+# "ResourceID" of the persisted task, that it is replacing
+# 7.Execute "create_plan"
+# 8.Check that the non-persisted task appears in the plan
+# 9.Create items that generate tasks unrelated to
+# previous item
+# 10.Execute "create_plan"
+# 11.Check that the replacement task will appear in the plan
+# again
+
+# 1.
+add-plugins plugins/dummy_12781_plugin
+add-extensions extensions/dummy_12781_extension
+runLitpScript ../include/two_nodes.at
+
+# 2.
+litp create -p /software/services/one -t test_12781_tc09 -o name=test_12781_tc09
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/one -s /software/services/one
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/one -o name=initial
+
+# 3.
+litp create_plan
+
+# 4.
+assertConfigTask node1 one test_12781_tc09 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# 5.
+litp run_plan
+assertPlanState successful
+
+# 6.
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/one -o name=updated
+
+# 7.
+litp create_plan
+
+# 8.
+assertConfigTask node1 one test_12781_tc09 /deployments/local/clusters/cluster1/nodes/node1/services/one
+assertPlanLength 1  # one phase in plan
+assertPhaseLength 0 1  # that phase has 1 task
+
+# 9.
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/two -s /software/services/one
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/services/two -o name=unrelated_item
+
+# 10.
+litp create_plan
+
+# 11.
+assertConfigTask node1 one test_12781_tc09 /deployments/local/clusters/cluster1/nodes/node1/services/one
+
+# Result:
+# When the persist flag of a task is set to False,
+# this task will appear in subsequent plans

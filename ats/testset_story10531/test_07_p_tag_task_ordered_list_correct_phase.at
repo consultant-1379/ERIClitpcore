@@ -1,0 +1,52 @@
+# Test Case 07.
+
+# Description:
+# Test that on creating a plan with default deployment ruleset defined and a
+# valid ordered task list is set with tagged tasks, the tasks will be in the
+# correct order and phase.
+#
+# Actions:
+# 1. Create a model item that generates tasks associated with all valid task's
+#    tags in an ordered task list
+# 2. Execute "create_plan" command
+# 3. Check that tagged tasks are in the correct phase of the plan
+# 4. Check that tasks from Ordered tasks list are in correct order in plan
+# 5. Execute "run_plan" command
+# 6. Check manifest file for ordered tasks dependencies 
+#
+# Result:
+# On plan creation, ordered tasks with tags from same group are in
+# the correct phase and sequenced in the correct order as per the deployment ruleset
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Create a model item that generates tasks associated with all valid task's
+#    tags in an ordered task list
+litp create -p /software/items/item1 -t foo7 -o name='item1'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 2. Execute "create_plan" command
+litp create_plan
+
+# 3. Check that tagged tasks are in the correct phase of the plan
+assertTask 0 res_1_node node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 res_2_node node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 res_3_node node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+
+# 4. Check that tasks from Ordered tasks list are in correct order in plan
+let __task_1_node_c1_n1 ConfigTask node1 res_1_node res_1_node_title /deployments/local/clusters/cluster1/nodes/node1/items/item1
+let __task_2_node_c1_n1 ConfigTask node1 res_2_node res_2_node_title /deployments/local/clusters/cluster1/nodes/node1/items/item1
+let __task_3_node_c1_n1 ConfigTask node1 res_3_node res_3_node_title /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+assertTaskBeforeTask __task_1_node_c1_n1 __task_2_node_c1_n1
+assertTaskBeforeTask __task_2_node_c1_n1 __task_3_node_c1_n1
+
+# 5. Execute "run_plan" command
+litp run_plan
+
+# 6. Check manifest file for ordered tasks dependencies 
+assertFileContents manifests/plugins/ordered_tasks_node1.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

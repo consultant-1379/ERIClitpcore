@@ -1,0 +1,17 @@
+
+add-extensions extensions/dummy_224354_extension
+add-plugins plugins/dummy_224354
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t litpcds-224354 -p /software/items/foo -o prop='arbitrary_property'
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+
+litp create_plan
+
+let __pre_cluster_task CallbackTask _pre_cluster_cb /deployments/local/clusters/cluster1
+let __cluster_task CallbackTask _cluster_cb /deployments/local/clusters/cluster1
+let __post_cluster_task CallbackTask _post_cluster_cb /deployments/local/clusters/cluster1
+
+assertTaskBeforeTask __pre_cluster_task __cluster_task __post_cluster_task

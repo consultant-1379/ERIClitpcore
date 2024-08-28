@@ -1,0 +1,105 @@
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /infrastructure/systems/system3 -t system -o system_name='SYS3'
+litp create -p /software/items/foo -t mock-package -o name="foo"
+litp create -p /software/items/tree -t mock-package -o name="tree"
+
+litp create -p /software/items/vim -t mock-package -o name="vim"
+litp inherit -p /ms/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/vim -s /software/items/vim
+
+# install a vim package
+litp create_plan
+litp run_plan
+
+# 1. test normal removal
+litp remove -p /ms/items/vim
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/vim
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/vim
+assertState -p /ms/items/vim ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/vim ForRemoval
+
+litp create_plan
+assertTask 0 package ms1 /ms/items/vim Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/vim Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/vim Initial
+
+litp run_plan
+assertTask 0 package ms1 /ms/items/vim Success
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/vim Success
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/vim Success
+
+assertNone -p /ms/items/vim
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/vim
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/vim
+
+# 2. test cannot stop cleanup phase if last phase to run
+litp create -p /software/items/ping -t mock-package -o name=ping
+litp inherit -p /ms/items/ping -s /software/items/ping
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ping -s /software/items/ping
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/ping -s /software/items/ping
+
+# install ping package
+litp create_plan
+litp run_plan
+
+litp remove -p /ms/items/ping
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/ping
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/ping
+assertState -p /ms/items/ping ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/ping ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/ping ForRemoval
+
+litp remove -p /software/items/foo
+litp create_plan
+assertTask 0 package ms1 /ms/items/ping Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/ping Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/ping Initial
+
+# run plan upto cleanup phase and then stop it
+assertPlanState initial
+runPlanStart
+assertPlanState running
+runPlanUntil 2
+litp stop_plan
+assertPlanState stopping
+runPlanEnd
+assertPlanState stopped
+
+# 3. test removing infrastructure item removal which no plugins care about
+litp remove -p /infrastructure/systems/system3 
+assertState -p /infrastructure/systems/system3 ForRemoval
+
+litp create_plan
+assertCleanupTask 0 /infrastructure/systems/system3 Initial
+
+litp run_plan
+assertCleanupTask 0 /infrastructure/systems/system3 Success
+assertNone -p /infrastructure/systems/system3
+
+# 4. test software item removal which has no references
+litp remove -p /software/items/tree
+assertState -p /software/items/tree ForRemoval
+
+litp create_plan
+assertCleanupTask 0 /software/items/tree Initial
+
+litp run_plan
+assertCleanupTask 0 /software/items/tree Success
+assertNone -p /software/items/tree
+
+# 5. test node removal should wipe manifest file
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 ForRemoval
+litp create_plan
+
+assertCleanupTask 0 /deployments/local/clusters/cluster1/nodes/node1 Initial
+litp run_plan
+
+assertCleanupTask 0 /deployments/local/clusters/cluster1/nodes/node1 Success
+assertNone  /deployments/local/clusters/cluster1/nodes/node1
+
+assertDirectoryContents cleanup_phase_mainfests /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/

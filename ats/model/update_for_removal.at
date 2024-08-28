@@ -1,0 +1,41 @@
+runLitpScript setup_two_nodes.inc
+
+litp create -p /software/items/x -t mock-package -o name=x
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+
+assertState -p /software/items/x Initial
+assertState -p /ms/items/y Initial
+
+litp run_plan
+
+assertState -p /software/items/x Applied
+assertState -p /ms/items/y Applied
+
+# update removed item but dont change any properties
+litp remove -p /software/items/x
+assertState -p /software/items/x ForRemoval
+litp update -p /software/items/x -o name=x
+assertState -p /software/items/x Applied
+
+# update removed item with new properties
+litp remove -p /software/items/x
+assertState -p /software/items/x ForRemoval
+litp update -p /software/items/x -o version=1
+assertState -p /software/items/x Updated
+
+# update 2 removes
+litp remove -p /software/items/x
+litp remove -p /software/items/x
+assertState -p /software/items/x ForRemoval
+litp update -p /software/items/x -o version=1
+assertState -p /software/items/x Updated
+
+# update initial item - no state change
+litp create -p /software/items/mock -t mock-package -o name=mock
+assertState -p /software/items/mock Initial
+litp update -p /software/items/mock -o version=1
+assertState -p /software/items/mock Initial

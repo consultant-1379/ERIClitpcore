@@ -1,0 +1,59 @@
+## test_02_p_pn_chk_entire_dependency_tree_config_tasks
+## Description:
+## Ensure the graph of the current sibling dependencies
+## which are defined on the "node" item types are as defined when
+## ConfigTasks are hanging off a ModelItem for the Peer Node
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types:
+## "os" profile Item-Type
+## "storage profile" Item-Type
+## "system" Item-Type
+## "network" Item-Type
+#plug-in generates ConfigTasks for required Item-Types
+add-plugins plugins/initial_install_plugin
+runLitpScript ../include/two_nodes.at
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+## "software-item" item type
+litp create -p /software/items/item -t software-item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /software/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+
+## "node-config" item type
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Check the resulting plan order
+let __configs_node1 ConfigTask node1 node::configs id_node_config /deployments/local/clusters/cluster1/nodes/node1/configs
+let __services_node1 ConfigTask node1 node::services id_node_service /deployments/local/clusters/cluster1/nodes/node1/services
+let __items_node1 ConfigTask node1 node::items id_node_item  /deployments/local/clusters/cluster1/nodes/node1/items
+let __file_systems_node1 ConfigTask node1 node::file_systems id_node_file /deployments/local/clusters/cluster1/nodes/node1/file_systems
+let __routes_node1 ConfigTask node1 node::routes id_node_route /deployments/local/clusters/cluster1/nodes/node1/routes
+let __network_interfaces_node1 ConfigTask node1 node::network_interfaces id_node_net /deployments/local/clusters/cluster1/nodes/node1/network_interfaces
+let __storage_profile_node1 ConfigTask node1 node::storage_profile id_node_storage /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __os_node1 ConfigTask node1 node::os id_node_os /deployments/local/clusters/cluster1/nodes/node1/os
+let __system_node1 ConfigTask node1 node::system id_node_system /deployments/local/clusters/cluster1/nodes/node1/system
+
+## Result:
+## "items" and "services" Item-types appear before "configs" Item-types
+assertTaskBeforeTask __configs_node1 __services_node1
+assertTaskBeforeTask __configs_node1 __items_node1
+## "configs" Item-types appear after "file_systems" Item-types after "storage_profile" Item-types after "routes" Item-types
+## after "network_interfaces" Item-types after "os" Item-types after "system" Item-types
+assertTaskBeforeTask __system_node1 __os_node1 __network_interfaces_node1 __routes_node1 __storage_profile_node1 __file_systems_node1 __configs_node1

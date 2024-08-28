@@ -1,0 +1,16 @@
+add-extensions extensions/9946_extension
+
+# 'service' used instead of 'mysql-server' <litp:service-inherit source_path="/software/services/mysql"
+let __err_1 --err_type "InvalidXMLError" --err_message 'An inherited item is not allowed to reference a source item of type "mysql-server" using item type "service"'
+let __err_2 --err_type "ItemExistsError" --err_message "Item / already exists"
+let __err_3 --err_type "InvalidXMLError" --err_message "Cannot merge from mysql-server to service-inherit"
+
+assertError --errors_length 1 __err_1 load -p / -f xml/bad_9946.xml --merge
+assertError --errors_length 1 __err_1 load -p / -f xml/bad_9946.xml --replace
+assertError --errors_length 2 __err_1 __err_2 load -p / -f xml/bad_9946.xml
+
+# Assert load works with correct xml ('mysql-server' type used instead)
+litp load -p / -f xml/9946.xml --merge
+litp load -p / -f xml/9946.xml --merge
+
+assertError --errors_length 2 __err_1 __err_3 load -p / -f xml/bad_9946.xml --merge

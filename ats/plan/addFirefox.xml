@@ -1,0 +1,3 @@
+<litp:mock-package id="firefiox" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+    <name>firefox</name>
+</litp:mock-package>

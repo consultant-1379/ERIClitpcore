@@ -1,0 +1,63 @@
+## test_02_p_double_inherit_create_overwrite
+## Description:
+## On double inheritance via CLI, overwriting properties
+## is possible on reference creation. Double inheritance
+## of Applied item must follow the same rules as single inheritance.
+## Requirements id: TORF-107260
+
+add-plugins plugins
+add-extensions extensions
+runLitpScript two-node-std.inc
+
+litp create -p /software/items/bug7725_tc_02 -t bug7725-sw-item -o name='tc_02'
+
+
+litp inherit -p /ms/items/bug7725_tc_02 -s /software/items/bug7725_tc_02 -o name='tc_02_overwrite_src'
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_02 -s /software/items/bug7725_tc_02
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_02 -s /ms/items/bug7725_tc_02 -o name='tc_02_overwrite_ms'
+
+litp create_plan
+litp run_plan
+
+
+#check state Applied for all paths and properties overwritten
+
+assertState -p /software/items/bug7725_tc_02 Applied
+assertProperty /software/items/bug7725_tc_02 -o name='tc_02'
+
+
+assertState -p /ms/items/bug7725_tc_02 Applied
+assertProperty /ms/items/bug7725_tc_02 -o name='tc_02_overwrite_src'
+
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_02 Applied
+assertProperty /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_02 -o name='tc_02'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_02 Applied
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_02 -o name='tc_02_overwrite_ms'
+
+#Update parent item
+
+litp update -p /software/items/bug7725_tc_02 -o name='tc_02_updated'
+
+#Check only non-overwritten paths updated
+
+assertState -p /software/items/bug7725_tc_02 Updated
+assertProperty /software/items/bug7725_tc_02 -o name='tc_02_updated'
+
+
+assertState -p /ms/items/bug7725_tc_02 Applied
+assertProperty /ms/items/bug7725_tc_02 -o name='tc_02_overwrite_src'
+
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_02 Updated
+assertProperty /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_02 -o name='tc_02_updated'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_02 Applied
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_02 -o name='tc_02_overwrite_ms'
+
+
+
+
+
+

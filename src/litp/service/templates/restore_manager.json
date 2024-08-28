@@ -1,0 +1,4 @@
+{
+    "success": $getVar('success', ''),
+    "messages": $getVar('messages', [])
+}

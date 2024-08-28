@@ -1,0 +1,10 @@
+<litp:mock-software-entity-inherit 
+  id="mock_pkg_list" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd"
+  source_path="/software/items/mock_pkg_list/packages/item1">
+    <name>item1</name>
+    <litp:mock-software-entity-packages-collection-inherit source_path="/software/items/packages/mock_pkg_list" id="packages">
+      <litp:mock-item-inherit id="item1" source_path="/software/items/sshd">
+            <name>package1</name>
+        </litp:mock-item-inherit>
+    </litp:mock-software-entity-packages-collection-inherit>
+</litp:mock-software-entity-inherit>

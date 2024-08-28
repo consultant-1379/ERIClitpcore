@@ -1,0 +1,29 @@
+
+runLitpScript setup_twonodes.inc
+
+# Add software
+litp create -p /software/items/wget -t mock-package -o name="wget"
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/wget -s /software/items/wget
+
+litp create_plan
+
+
+litp run_plan
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/wget Applied
+
+assertState -p /software/items/wget Applied
+
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/items/wget
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/wget ForRemoval
+
+litp create_plan
+
+
+litp run_plan
+
+assertState -p /software/items/wget Applied
+
+assertNone /deployments/site1/clusters/cluster1/nodes/node1/items/wget

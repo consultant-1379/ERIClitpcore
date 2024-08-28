@@ -1,0 +1,23 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -t mock-package -p /software/items/story_2498 -o name=finger
+litp inherit -s /software/items/story_2498 -p /ms/items/story_2498
+litp inherit -s /software/items/story_2498 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_2498
+litp inherit -s /software/items/story_2498 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_2498
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# The manifests for the MS and the two nodes all have a package resource
+# definition
+assertDirectoryContents manifests/test_03_applied_manifests /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+litp remove -p /ms/items/story_2498
+
+assertState -p /ms/items/story_2498 ForRemoval
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertDirectoryContents manifests/test_03_removed_manifests /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/

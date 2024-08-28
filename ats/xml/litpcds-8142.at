@@ -1,0 +1,17 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+let __err_create_0 --err_type InvalidLocationError --err_message "Source item /infrastructure/systems/system1/disks/disk0 doesn't exist"
+assertError __err_create_0 load -p / -f no_source_item.xml --replace
+
+litp load -p / -f exported_root_states.xml --replace
+
+let __err_create_1 --err_type ChildNotAllowedError --err_message "'finger' must be an inherited item" 
+assertError __err_create_1 create -p /deployments/local/clusters/cluster1/nodes/node1/items/finger -t mock-package -o name=finger
+
+let __err_create_2 --err_type MethodNotAllowedError --err_message "Can't create items under inherited items" 
+assertError __err_create_2 create -p /deployments/local/clusters/cluster1/nodes/node1/storage_profile/volume_groups/vg2 -t volume-group -o volume_group_name=vg_root
+
+let __err_create_3 --err_type InvalidXMLError --err_message "This element is not expected."
+assertError __err_create_3 load -p / -f exported_root_create_under_inherit.xml --replace
+

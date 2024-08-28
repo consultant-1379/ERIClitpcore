@@ -1,0 +1,38 @@
+# Assert that prepare_restore sets inherit/source items APD to True
+
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/items/A -t mock-package -o name=A
+litp inherit -p /ms/items/A -s /software/items/A
+litp create_plan
+litp run_plan
+
+
+# Create items
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /software/items/telnet
+# Double inherit - so node1 item is a source too
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet -s /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+
+litp create_plan
+
+# Fail task both tasks in plan so their APD = False
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+failConfigTask package node2 /deployments/local/clusters/cluster1/nodes/node2/items/telnet
+litp run_plan
+assertPlanState failed
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet False
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet False
+
+litp remove_plan
+litp create_plan
+litp run_plan
+
+# Issue prepare_restore command to reset all APD flags to true
+litp update -p /litp/prepare-restore -o path='/'
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet True
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet Initial

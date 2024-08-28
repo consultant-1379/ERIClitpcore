@@ -1,0 +1,21 @@
+runLitpScript ../include/two_nodes.at
+add-extensions extensions/dummy_11270_extension
+add-plugins plugins/dummy_11270_plugin
+
+litp create -p /software/items/yum_repo -t yum-repository -o name='yum'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -s /software/items/yum_repo
+
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -o checksum
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Initial
+
+litp create_plan
+litp run_plan
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -o checksum='a767c030fe3d1cab264e77d28e94812e'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Applied
+
+litp create_plan
+litp run_plan
+
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo -o checksum
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo Applied

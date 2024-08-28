@@ -1,0 +1,23 @@
+## test_01_p_merge_doubly_inherited_items
+## Description:
+## Merge a full inheritance definition from xml
+
+add-extensions extensions/test_12798_extension
+add-plugins plugins/test_12798_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 1. Run  xml load --merge with source parent name updated
+litp load -p / -f xml/model.xml --merge
+
+## 2. Assert expected states
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial

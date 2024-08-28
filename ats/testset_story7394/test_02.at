@@ -1,0 +1,26 @@
+runLitpScript two-node-std.inc
+add-extensions extensions/dummy_extension
+add-plugins plugins/dummy_plugin
+
+litp create -t dummy-package -p /software/items/foo_02
+litp inherit -s /software/items/foo_02 -p /ms/items/foo_02
+
+litp create_plan
+assertConfigTask ms1 call_type_1 foo /ms/items/foo_02
+assertCallbackTask _cb1 /ms/items/foo_02
+assertConfigTask ms1 call_type_2 foo /ms/items/foo_02
+assertCallbackTask _cb2 /ms/items/foo_02
+# Fail config task hanging off node, all other tasks will succeed
+failConfigTask node_call_type node2 /deployments/site1/clusters/cluster1/nodes/node2
+
+litp run_plan
+assertPlanState failed
+
+# Update /ms/items/foo_02 to get all tasks from plugin again
+litp update -p /ms/items/foo_02 -o name=something_else
+litp create_plan
+assertNoConfigTask ms1 call_type_1 foo /ms/items/foo_02
+assertCallbackTask _cb1 /ms/items/foo_02
+assertNoConfigTask ms1 call_type_2 foo /ms/items/foo_02
+assertCallbackTask _cb2 /ms/items/foo_02
+assertConfigTask node2 node_call_type node_id /deployments/site1/clusters/cluster1/nodes/node2

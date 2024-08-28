@@ -1,0 +1,21 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/story4347_list -t mock-package-list -o name='story4347'
+litp create -p /software/items/story4347_list/packages/story4347_2 -t mock-package -o name='tftp'
+litp inherit -p /ms/items/story4347 -s /software/items/story4347_list -o name='story4347_overwrite'
+
+litp export -p /ms/items/story4347/packages/story4347_2 -f /tmp/story4347_child.xml
+litp export -p /ms/items/story4347 -f /tmp/story4347_export_full.xml
+assertFileContents story4347.xml /tmp/story4347_export_full.xml
+
+litp update -p /ms/items/story4347/packages/story4347_2 -o name='firefox'
+assertProperty /ms/items/story4347/packages/story4347_2 -o name="firefox"
+litp load -p /ms/items/story4347/packages/ -f /tmp/story4347_child.xml --replace
+litp export -p /ms/items/story4347 -f /tmp/story4347_export_full.xml
+assertFileContents story4347.xml /tmp/story4347_export_full.xml
+
+litp update -p /ms/items/story4347/packages/story4347_2 -o name='firefox'
+assertProperty /ms/items/story4347/packages/story4347_2 -o name="firefox"
+litp load -p /ms/items/ -f /tmp/story4347_export_full.xml --replace
+litp export -p /ms/items/story4347 -f /tmp/story4347_export_full.xml
+assertFileContents story4347.xml /tmp/story4347_export_full.xml

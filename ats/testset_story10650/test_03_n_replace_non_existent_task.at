@@ -1,0 +1,64 @@
+## test_03_n_replace_non_existent_task
+## Description:
+## Test that an attempt to replace a non-existing task to be replaced on the same node,
+## results in core logging a debug level message and continuing to process the replacement
+## Config Task as a normal Config Task
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates persisted ConfigTasks
+## 2. Create Plan
+## 3. Run plan
+## 4. Check manifest is as expected
+## 5. Update model items so plug-in will generate replacement tasks
+##    plug-in original persisted tasks: (foo1, bar1),(foo2, bar2), (foo3, bar3)
+##    plug-in replacement task4: (foo4, bar4), replaces: (foo1, bar1)
+##    plug-in replacement task5: (foo5, bar5), replaces: (foo2, bar2), (foo6, bar6)
+## 6. Create plan
+## 7. Run plan
+## 8. Check that a debug message has been logged
+## 9. Check the manifest contains the expected tasks
+
+## Results:
+## Core will log a debug message and continue to process the replacement Config Task as a normal Config Task
+## when the Config Task to be replaced does not exist on the same node.
+
+#Prerequisite:
+#Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates persisted ConfigTasks
+litp create -p /software/items/item1 -t story10650 -o name="tc03_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create Plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+#4. Check manifest is as expected
+assertFileContents manifests/expected/tc03/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#5. Update model items so plug-in will generate replacement tasks
+#plug-in original persisted tasks: (foo1, bar1),(foo2, bar2), (foo3, bar3)
+#plug-in replacement task4: (foo4, bar4), replaces: (foo1, bar1)
+#plug-in replacement task5: (foo5, bar5), replaces: (foo2, bar2), (foo6, bar6)
+litp update -p /software/items/item1 -o name="tc03_foobar2"
+
+#6. Create plan
+litp create_plan
+
+#7. Run plan
+litp run_plan
+
+#8. Check that a debug message has been logged
+assertLogMessage "DEBUG - A task is trying to replace a non-persisted task"
+
+#9. Check the manifest contains the expected tasks
+assertFileContents manifests/expected/tc03/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

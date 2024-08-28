@@ -1,0 +1,30 @@
+runLitpScript two-node-std.inc
+add-extensions 8545_extension
+
+litp create -t yum-repository -p /software/items/yum_repo_unique -o ro_name="yum_ro_name" name="yum"
+litp inherit -p /ms/items/yum_repo_unique -s /software/items/yum_repo_unique
+litp create_plan
+litp run_plan
+
+# Test update twice as that is what bug describes
+assertError --err_type "InvalidRequestError" --err_message "Unable to modify readonly property: ro_name" update -p /software/items/yum_repo_unique -o ro_name='not_unique'
+assertError --err_type "InvalidRequestError" --err_message "Unable to modify readonly property: ro_name" update -p /software/items/yum_repo_unique -o ro_name='not_unique'
+assertState -p /software/items/yum_repo_unique Applied
+
+assertError --err_type "InvalidRequestError" --err_message "Unable to modify readonly property: ro_name" update -p /ms/items/yum_repo_unique -o ro_name='not_unique1'
+assertError --err_type "InvalidRequestError" --err_message "Unable to modify readonly property: ro_name" update -p /ms/items/yum_repo_unique -o ro_name='not_unique1'
+assertState -p /ms/items/yum_repo_unique Applied
+
+# Test updating an inherited item with updatable_rest=False, who's sorce is also inherited
+litp inherit -p /ms/items/yum_repo_unique2 -s /ms/items/yum_repo_unique
+litp create_plan
+litp run_plan
+assertError --err_type "InvalidRequestError" --err_message "Unable to modify readonly property: ro_name" update -p /ms/items/yum_repo_unique2 -o ro_name='not_really2'
+assertState -p /ms/items/yum_repo_unique2 Applied
+
+# 3rd layer of inheritance
+litp inherit -p /ms/items/yum_repo_unique3 -s /ms/items/yum_repo_unique2
+litp create_plan
+litp run_plan
+assertError --err_type "InvalidRequestError" --err_message "Unable to modify readonly property: ro_name" update -p /ms/items/yum_repo_unique3 -o ro_name='not_unique3'
+assertState -p /ms/items/yum_repo_unique3 Applied

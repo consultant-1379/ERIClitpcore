@@ -1,0 +1,104 @@
+## test_01_p_remove_source_item_and_descendant_initial
+## Description:
+## When a source item in state, "Initial"
+## is removed, then the item and its descendants
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will be removed from the model
+## When the descendant of a source item
+## in state, "Initial" is removed
+## then the item and its descendants
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will be removed from the model
+
+## Preconditions:
+## Source item itemA: /software/services/itemA
+## Inherited item1 (source is itemA): /deployments/local/clusters/cluster1/nodes/node1/services/item1
+## Doubly inherited item2 (source is grandchild of item1): /deployments/local/clusters/cluster1/services/item2
+
+add-extensions extensions/test_12798_extension_test_01
+runLitpScript ../include/two_nodes.at
+
+# Actions:
+# 1. Create an itemA that has a child item and a grandchild item
+litp create -t 'parent' -p /software/services/itemA
+litp create -t 'child' -p /software/services/itemA/childs/child1
+litp create -t 'service-base' -p /software/services/itemA/childs/child1/grand_children/grandchild1
+
+assertState -p /software/services/itemA Initial
+assertState -p /software/services/itemA/childs/child1 Initial
+assertState -p /software/services/itemA/childs/child1/grand_children/grandchild1 Initial
+
+# 2. Inherit itemA to item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item1 -s /software/services/itemA
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item1 Initial
+
+# 3. Inherit grandchild of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 \
+-s /deployments/local/clusters/cluster1/nodes/node1/services/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+# 4. Remove itemA
+litp remove -p /software/services/itemA
+
+# 5. Check that items on itemA, item1 and item2 have been removed
+assertNone -p /software/services/itemA
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2
+
+# 6. Recreate the itemA that has a child item, and a grandchild item
+litp create -t 'parent' -p /software/services/itemA
+litp create -t 'child' -p /software/services/itemA/childs/child1
+litp create -t 'service-base' -p /software/services/itemA/childs/child1/grand_children/grandchild1
+
+assertState -p /software/services/itemA Initial
+assertState -p /software/services/itemA/childs/child1 Initial
+assertState -p /software/services/itemA/childs/child1/grand_children/grandchild1 Initial
+
+# 7. Recreate inherited item1 and item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item1 -s /software/services/itemA
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 \
+-s /deployments/local/clusters/cluster1/nodes/node1/services/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+# 8. Remove the descendant of the source item, itemA (child item)
+litp remove -p /software/services/itemA/childs/child1
+
+# 9. Check that the child items on itemA, and item1 have been removed
+assertNone -p /software/services/itemA/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item1/childs/child1
+
+# 10. Check that the grandchild items on itemA and item1 have been removed
+assertNone -p /software/services/itemA/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item1/childs/child1/grand_children/grandchild1
+
+# 11. Check that the item2 has been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2
+
+# 12.Recreate removed items
+litp create -t 'child' -p /software/services/itemA/childs/child1
+litp create -t 'service-base' -p /software/services/itemA/childs/child1/grand_children/grandchild1
+
+assertState -p /software/services/itemA/childs/child1 Initial
+assertState -p /software/services/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item1/childs/child1/grand_children/grandchild1 Initial
+
+
+# 13. Remove the descendant of a source item, itemA (grandchild item)
+litp remove -p /software/services/itemA/childs/child1/grand_children/grandchild1
+
+# 14. Check that the grandchild items on itemA and item1 have been removed
+assertNone -p /software/services/itemA/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item1/childs/child1/grand_children/grandchild1
+
+# Result:
+# When an inherit source item in state "Initial",
+# is removed, the item and its descendents
+# and all its corresponding inherited progeny
+# (which encompasses inherited progeny and double inherited progeny)
+# will be removed from the model

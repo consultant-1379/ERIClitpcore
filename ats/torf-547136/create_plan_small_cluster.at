@@ -1,0 +1,109 @@
+## Description: Verify Lock/Unlock tasks by cluster size
+## With 1 and then >1 nodes in a cluster, verify the creation of Lock/Unlock tasks.
+## Step 1: Create telnet package and inherit telnet package to cluster 1 node 1
+## Step 2: litp create_plan --initial-lock-tasks
+## Step 3: litp run_plan
+## Verification 1: Verify no lock/unlock tasks created for single-node cluster and node is in state Applied.
+## Step 4: Set up second cluster - cluster 2 with nodes 2 and 3
+##         Inherit the telnet package to both new nodes in new cluster 2 so tasks will be generated for the new nodes
+##         in state Initial.
+## Step 6: litp create_plan --initial-lock-tasks
+## Step 7: litp run_plan
+## Verification 2: Verify lock/unlock tasks created for nodes 2 & 3 in cluster 2 and nodes are in state Applied
+
+add-plugins ../torf-388708/plugin/dummy_388708_lock
+runLitpScript ../include/one_node.at
+
+litp update -p /deployments/d1/clusters/c1 -o ha_manager='vcs'
+
+litp create -t mock-package -p /software/items/i1 -o name='telnet'
+litp inherit -s /software/items/i1 -p /deployments/d1/clusters/c1/nodes/n1/items/i1
+
+# ----
+# Single node 1 is initial
+litp create_plan
+
+assertNoCallbackTask _lock /deployments/d1/clusters/c1/nodes/n1
+assertNoCallbackTask _unlock /deployments/d1/clusters/c1/nodes/n1
+assertState -p /deployments/d1/clusters/c1/nodes/n1 Initial
+assertProperty /deployments/d1/clusters/c1/nodes/n1 -o is_locked='false'
+
+# ----
+# Single node 1 is still initial
+
+litp create_plan --initial-lock-tasks
+litp run_plan
+
+assertNoCallbackTask _lock /deployments/d1/clusters/c1/nodes/n1
+assertNoCallbackTask _unlock /deployments/d1/clusters/c1/nodes/n1
+assertState -p /deployments/d1/clusters/c1/nodes/n1 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n1 -o is_locked='false'
+
+# ----
+# Single node 1 has been applied, let us update it . . .
+litp update -p /deployments/d1/clusters/c1/nodes/n1/system/disks/d1 -o size='2G'
+litp create_plan
+litp run_plan
+
+assertCallbackTask _lock /deployments/d1/clusters/c1/nodes/n1
+assertCallbackTask _unlock /deployments/d1/clusters/c1/nodes/n1
+assertState -p /deployments/d1/clusters/c1/nodes/n1 Applied
+assertProperty /deployments/d1/clusters/c1/nodes/n1 -o is_locked='false'
+
+# ----
+# Create a 2nd cluster with nodes 2 and 3
+
+litp create -t cluster -p /deployments/d1/clusters/c2 -o ha_manager='vcs'
+
+litp create -t system -p /infrastructure/systems/s2 -o system_name='sys2'
+litp create -t disk -p /infrastructure/systems/s2/disks/d1 -o name='disk1' size='1G' uuid='foo'
+litp create -t controller-base -p /infrastructure/systems/s2/controllers/c1
+
+litp create -t node -p /deployments/d1/clusters/c2/nodes/n2 -o hostname='node2'
+litp inherit -s /infrastructure/systems/s2 -p /deployments/d1/clusters/c2/nodes/n2/system
+litp inherit -s /software/profiles/rhel_7_9 -p /deployments/d1/clusters/c2/nodes/n2/os
+litp create -t network-interface -p /deployments/d1/clusters/c2/nodes/n2/network_interfaces/ni1 -o network_name='nodes'
+litp inherit -s /infrastructure/storage/storage_profiles/sp1 -p /deployments/d1/clusters/c2/nodes/n2/storage_profile
+litp inherit -s /software/items/i1 -p /deployments/d1/clusters/c2/nodes/n2/items/i1
+
+litp create -t system -p /infrastructure/systems/s3 -o system_name='sys3'
+litp create -t disk -p /infrastructure/systems/s3/disks/d1 -o name='disk1' size='1G' uuid='foo'
+litp create -t controller-base -p /infrastructure/systems/s3/controllers/c1
+
+litp create -t node -p /deployments/d1/clusters/c2/nodes/n3 -o hostname='node3'
+litp inherit -s /infrastructure/systems/s3 -p /deployments/d1/clusters/c2/nodes/n3/system
+litp inherit -s /software/profiles/rhel_7_9 -p /deployments/d1/clusters/c2/nodes/n3/os
+litp create -t network-interface -p /deployments/d1/clusters/c2/nodes/n3/network_interfaces/ni1 -o network_name='nodes'
+litp inherit -s /infrastructure/storage/storage_profiles/sp1 -p /deployments/d1/clusters/c2/nodes/n3/storage_profile
+litp inherit -s /software/items/i1 -p /deployments/d1/clusters/c2/nodes/n3/items/i1
+
+# ----
+# Create plan should not have lock tasks for initial node 2 and 3, nor for applied single node 1
+
+litp create_plan
+assertNoCallbackTask _lock /deployments/d1/clusters/c1/nodes/n1
+assertNoCallbackTask _unlock /deployments/d1/clusters/c1/nodes/n1
+
+assertNoCallbackTask _lock /deployments/d1/clusters/c2/nodes/n2
+assertNoCallbackTask _unlock /deployments/d1/clusters/c2/nodes/n2
+
+assertNoCallbackTask _lock /deployments/d1/clusters/c2/nodes/n2
+assertNoCallbackTask _unlock /deployments/d1/clusters/c2/nodes/n2
+
+# ---
+# Create plan should have lock tasks for initial node 2 and 3, not for applied single node 1
+
+litp create_plan --initial-lock-tasks
+litp run_plan
+
+assertNoCallbackTask _lock /deployments/d1/clusters/c1/nodes/n1
+assertNoCallbackTask _unlock /deployments/d1/clusters/c1/nodes/n1
+assertState -p /deployments/d1/clusters/c1/nodes/n1 Applied
+
+assertCallbackTask _lock /deployments/d1/clusters/c2/nodes/n2
+assertCallbackTask _unlock /deployments/d1/clusters/c2/nodes/n2
+assertState -p /deployments/d1/clusters/c2/nodes/n2 Applied
+
+assertCallbackTask _lock /deployments/d1/clusters/c2/nodes/n3
+assertCallbackTask _unlock /deployments/d1/clusters/c2/nodes/n3
+assertState -p /deployments/d1/clusters/c2/nodes/n3 Applied

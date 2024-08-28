@@ -1,0 +1,84 @@
+## test_16_n_reinherit_inherited_descendent_source
+## Description:
+## When an attempt to re-inherit an inherited item or
+## the descendent of an inherited Item
+## and its v-path is not a descendent of the inherit
+## source v-path then a MethodNotAllowedError is raised
+
+# Actions:
+add-extensions extensions/test_12018_extension
+add-plugins plugins/test_12018_plugin
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA that has a child item,
+#   c1 and a grandchild item, gc1
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+# 2. Create a second that has a child item,
+#    and a grandchild item to be used later in test
+litp create -p /software/services/parent2 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent2/childs/child2 -t child -o name=child2
+litp create -p /software/services/parent2/childs/child2/grand_children/grandchild2 -t grand-child -o name=grandchild1
+
+# 3. Inherit itemA to item1 and item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+# 4. Execute "create_plan" command
+litp create_plan
+
+# 5. Execute "run_plan" command
+litp run_plan
+
+# 6. Check all items are in "Applied" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /software/services/parent2 Applied
+assertState -p /software/services/parent2/childs/child2 Applied
+assertState -p /software/services/parent2/childs/child2/grand_children/grandchild2 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 7. Remove a descendent of an inherited item
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+
+# 8. Check that the inherited item, item1
+#    and its descendent are in "ForRemoval" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 9. Attempt to execute litp "inherit" command to recover
+#    an inherited item with a v-path is not a descendent
+#    of the inherit source v-path
+# 10.MethodNotAllowedError raised indicating that the
+#    corresponding source item is in "ForRemoval" state
+let __err_1 --err_type  MethodNotAllowedError --err_message "Cannot re-inherit item from different source"
+assertError __err_1 inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 -s /software/services/parent2/childs/child2
+
+assertError __err_1 inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 -s /software/services/parent1
+
+assertError __err_1 inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 -s /software/services/parent1
+
+# Result:
+# The expected MethodNotAllowedError is seen when an
+# attempt is made to recover the descendent of an inherited item
+# when its v-path is not a descendent of the inherit source v-path

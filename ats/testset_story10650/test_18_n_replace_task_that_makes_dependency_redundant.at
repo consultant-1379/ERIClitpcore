@@ -1,0 +1,49 @@
+## test_18_n_replace_task_that_makes_dependency_redundant
+## Description:
+## Ensure that when a non-persisted task with a direct task-to-task dependency
+## and another non-persisted task with a configTask dependency are replaced,
+## in the same plan, an Error is raised
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates ConfigTasks
+##    with the following dependency:
+##    task1(foo1, bar1) (direct task-to-task dependency)-> task2(foo2, bar2)
+##    task3(foo3, bar3) (configTask dependency) -> task4(foo4, bar4)
+##    and will generate the following replacement tasks:
+##    for the non-persisted tasks, task1 and task3:
+##    taskA(fooA, barA) replaces task1(foo1, bar1)
+##    taskB(fooA, barA) replaces task3(foo3, bar3)
+## 2. Create plan
+## 3. Check "InternalServerError" is raised
+
+## Result:
+## A non-persisted task with a ConfigTask dependency and
+## a non-persisted task with
+## a direct 'task-to-task' dependency
+## cannot be replaced by a task in the same plan
+
+#Prerequisite:
+#Create a plugin that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+##1. Create a model item that generates ConfigTasks
+##   with the following dependencies:
+##   task1(foo1, bar1) (direct task-to-task dependency)-> task2(foo2, bar2)
+##   task3(foo3, bar3) (configTask dependency) -> task4(foo4, bar4)
+##   and will generate the following replacement tasks:
+##   for the non-persisted tasks, task1 and task3:
+##   taskA(fooA, barA) replaces task1(foo1, bar1)
+##   taskB(fooA, barA) replaces task3(foo3, bar3)
+litp create -p /software/items/item1 -t story10650 -o name="tc18_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+#2. Create plan
+#3. Check "InternalServerError" is raised
+assertError create_plan --err_type "InternalServerError" --err_message "Create plan failed: Task validation errors occurred."
+assertLogMessage 'ERROR - A task is trying to replace another task ("foo1", "bar1") for node "node1" defined in current plan'
+assertLogMessage 'ERROR - A task is trying to replace another task ("foo3", "bar3") for node "node1" defined in current plan'

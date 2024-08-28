@@ -1,0 +1,37 @@
+# LITPCDS-9406/9069: If model item's sibling has APD=False, then when you remove
+# the model_item in initial state, it should go to ForRemoval instead of
+# being removed directly.
+
+# Note: Expecting container task at top of plan in own phase
+
+add-extensions ../extensions/bug9406_extension
+add-plugins ../plugins/dummy_plugin
+runLitpScript ../../include/two_nodes.at
+
+# Create container and child
+litp create -t container -p /software/profiles/container -o hostname=container
+litp create -t child-item -p /software/profiles/container/child
+
+# Create reference
+litp create -p /infrastructure/storage/storage_profiles/profile_3 -t storage-profile-base
+litp inherit -p /software/profiles/container/ref -s /infrastructure/storage/storage_profiles/profile_3
+
+# Create nested container item and its sub-items
+litp create -t container -p /software/profiles/container/child/container_two -o hostname=container_two
+litp create -t child-item -p /software/profiles/container/child/container_two/child
+litp inherit -p /software/profiles/container/child/container_two/ref -s /infrastructure/storage/storage_profiles/profile_3
+
+litp create_plan
+
+# Fail a model item which has a sibling
+failConfigTask child_call node1 /software/profiles/container/child
+litp run_plan
+
+# Child is in initial state with APD=False
+assertState -p /software/profiles/container/child Initial
+assertAppliedPropertiesDeterminable -p /software/profiles/container/child False
+
+# Remove sibling, item goes to ForRemoval
+assertState -p /software/profiles/container/ref Initial
+litp remove -p /software/profiles/container/ref
+assertState -p /software/profiles/container/ref ForRemoval

@@ -1,0 +1,9 @@
+let __err_1 --err_type ValidationError --err_message "Invalid IPv4 subnet value '1.1.1./24'"
+assertError __err_1 create -t network -p /infrastructure/networking/networks/net1 -o name=foo subnet='1.1.1./24'
+let __err_1 --err_type ValidationError --err_message "Invalid IPv4 subnet value '1111.1.1.1/24'"
+assertError __err_1 create -t network -p /infrastructure/networking/networks/net1 -o name=foo subnet='1111.1.1.1/24'
+let __err_1 --err_type ValidationError --err_message "Invalid IPv4 subnet value '1.1.1./'"
+assertError __err_1 create -t network -p /infrastructure/networking/networks/net1 -o name=foo subnet='1.1.1./'
+let __err_1 --err_type ValidationError --err_message "Invalid IPv4 subnet value '1.1.1.1.1/24'"
+assertError __err_1 create -t network -p /infrastructure/networking/networks/net1 -o name=foo subnet='1.1.1.1.1/24'
+

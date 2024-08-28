@@ -1,0 +1,4 @@
+runLitpScript misc/common_test_methods.at
+
+litp create_plan
+assertPlanState initial

@@ -1,0 +1,17 @@
+topicprefix = /topic/
+main_collective = mcollective
+collectives = mcollective
+libdir = /usr/libexec/mcollective
+logfile = /var/log/mcollective.log
+loglevel = info
+daemonize = 1
+direct_addressing = n # NB required for QPID, set to 1 for RabbitMQ, ActiveMQ                                                                                                                                                                 
+registerinterval = 30
+ 
+#Plugins                                                                                                                                                                                                                                     
+securityprovider = psk
+plugin.psk = unset
+connector = qpid
+plugin.qpid.host=<%= @ms_hostname %>
+plugin.qpid.secure=false
+plugin.qpid.timeout=5

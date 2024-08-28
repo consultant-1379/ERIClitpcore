@@ -1,0 +1,19 @@
+litp create -t os-profile -p /software/profiles/rhel_7_9 -o name='rhel79-profile' path='/var/www/html/7.9/os/x86_64/' version='rhel7' breed='redhat' arch='x86_64'
+
+litp create -t system -p /infrastructure/systems/s1 -o system_name='sys1'
+litp create -t disk -p /infrastructure/systems/s1/disks/d1 -o name='disk1' size='1G' uuid='foo'
+litp create -t controller-base -p /infrastructure/systems/s1/controllers/c1
+
+litp create -t network -p /infrastructure/networking/networks/n1 -o name='nodes' subnet='10.10.10.0/24'
+litp create -t storage-profile-base -p /infrastructure/storage/storage_profiles/sp1
+
+litp create -t network-interface -p /ms/network_interfaces/ni1 -o network_name='nodes' ipaddress='10.10.10.100'
+
+litp create -t deployment -p /deployments/d1
+litp create -t cluster -p /deployments/d1/clusters/c1
+
+litp create -t node -p /deployments/d1/clusters/c1/nodes/n1 -o hostname='node1'
+litp inherit -s /infrastructure/systems/s1 -p /deployments/d1/clusters/c1/nodes/n1/system
+litp inherit -p /deployments/d1/clusters/c1/nodes/n1/os -s /software/profiles/rhel_7_9
+litp create -t network-interface -p /deployments/d1/clusters/c1/nodes/n1/network_interfaces/ni1 -o network_name='nodes'
+litp inherit -s /infrastructure/storage/storage_profiles/sp1 -p /deployments/d1/clusters/c1/nodes/n1/storage_profile

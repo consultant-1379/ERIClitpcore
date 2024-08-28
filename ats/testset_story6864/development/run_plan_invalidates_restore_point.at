@@ -1,0 +1,37 @@
+# Test that running a plan deletes the restore model file
+
+assertError restore_model --err_message "The deployment model couldn't be restored" --err_type "InternalServerError" --err_vpath "/litp/restore_model"
+
+runLitpScript ../../include/two_nodes.at
+
+# Create and run successful plan to create restore point
+litp create -p /software/items/nano -t mock-package -o name=nano
+litp inherit -p /ms/items/nano -s /software/items/nano
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/nano -s /software/items/nano -o name=nano
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/nano -s /software/items/nano -o name=nano
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Assert that the litp restore model file exists
+litp restore_model
+
+# Now run another plan and fail it, and assert that the restore model file has been deleted
+add-plugins ../../plugins/mock_volmgr_plugin
+add-plugins ../../plugins/failed_callback
+
+litp create_plan
+
+disableCallbackMock cb_fail /deployments/local/clusters/cluster1/nodes/node1
+failConfigTask foo node1 /deployments/local/clusters/cluster1/nodes/node1
+failConfigTask bar node1 /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+
+assertPlanState failed
+assertTask 1 foo node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 1 bar node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 1 baz node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 0 cb_fail node1 /deployments/local/clusters/cluster1/nodes/node1 Failed
+
+assertError restore_model --err_message "The deployment model couldn't be restored" --err_type "InternalServerError" --err_vpath "/litp/restore_model"

@@ -1,0 +1,92 @@
+#        Description:
+#            Use an OrderedTaskList() of CallbackTasks() to update the plugin
+#            updatable property multiple times throughout the plan and check it
+#            gets updated
+#
+#        Pre-Requisites:
+#            1. A running litpd service
+#            2. An installed and configured cluster
+#
+#        Risks:
+#            1. Once a model item type extension is installed and registered
+#               with the litpd service, it cannot be removed
+#            2. Once a plugin is installed and registered with the litpd
+#               service, it cannot be removed
+#
+#        Pre-Test Steps:
+#            1. Create a new dummy item type extension as described in the
+#               LITP 2 SDK
+#            2. Create a new dummy plugin as described in the LITP 2 SDK
+#            3. Edit the item type extension to make use of plugin updatable
+#               properties
+#            4. Edit the plugin to make use of the item type extension updatable
+#               property
+#            5. Build and install the item type extension
+#            6. Build and install the plugin
+#
+#        Test Steps:
+#            1.  Execute the create command on an item in the model tree
+#            2.  The property value for the item type must have a default value
+#                set on creation
+#            3.  Execute the create_plan command
+#            4.  Check the item's state is set to Initial
+#            5.  Check the property value
+#            6.  Execute the run_plan command
+#            7.  Check the property value is updated by the first CallbackTask()
+#            8.  Check the item's state is still set to Initial
+#            9.  Check the property value is updated by the second
+#                CallbackTask()
+#            10. Check plan completes successfully
+#            11. Check the state is then set to Applied
+#
+#        Restore Steps:
+#            1. Remove the created model item from the model tree
+#            2. Execute the create_plan command
+#
+#        Expected Result:
+#            The property value will change multiple times throughout the plan
+#            execution but the state will be set to Applied only after
+#            successful plan execution
+
+runLitpScript ../include/two_nodes.at
+add-extensions ../plugins/update_property
+add-plugins ../plugins/update_property
+add-plugins ../plugins/mock_volmgr_plugin
+
+#            1.  Execute the create command on an item in the model tree
+#            2.  The property value for the item type must have a default value
+#                set on creation
+litp create -p /software/items/test_item -t test_item -o name=test_item 
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+#            3.  Execute the create_plan command
+litp create_plan
+#            4.  Check the item's state is set to Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Initial
+
+#            5.  Check the property value
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='X.X.X'
+
+#            6.  Execute the run_plan command
+disableCallbackMock cb_update_property /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_do_nothing /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_update_property_again /deployments/local/clusters/cluster1/nodes/node1
+runPlanUntil 1
+
+#            7.  Check the property value is updated by the first CallbackTask()
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Y.Y.Y'
+
+#            8.  Check the item's state is still set to Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Initial
+
+#            9.  Check the property value is updated by the second
+#                CallbackTask()
+runPlanUntil 3
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Z.Z.Z'
+
+#            10. Check plan completes successfully
+runPlanEnd
+assertPlanState successful
+
+#            11. Check the state is then set to Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Applied

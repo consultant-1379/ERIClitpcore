@@ -1,0 +1,10 @@
+add-plugins ../plugins/configtask_deps
+
+runLitpScript ../include/two_nodes.at
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node2 -o hostname="ASecondNode"
+
+litp create_plan
+litp run_plan
+
+assertDirectoryContents expected_manifests /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/

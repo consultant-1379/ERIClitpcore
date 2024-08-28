@@ -1,0 +1,8 @@
+#alias litp='/LITP/git/litp2/ERIClitpcli/bin/litp'
+# create node without any links
+litp create -p /deployments/dep1 -t deployment
+litp create -p /deployments/dep1/clusters/cluster1 -t cluster
+
+# ensure error returned from create_plan
+#show create_plan
+assertError create_plan

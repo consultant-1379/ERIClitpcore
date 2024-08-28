@@ -1,0 +1,12 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+add-extensions xsd_load/xsd_load.etc
+litp create -p /software/items/mock_pkg_list -t mock-package-list -o name="entity1"
+litp create -p /software/items/mock_pkg_list/packages/item1 -t mock-package -o name='item1' 
+litp create -p /software/items/sshd -t mock-package -o name='sshd' 
+litp inherit -s /software/items/mock_pkg_list -p /ms/items/mock_pkg_list
+
+# mock-package using type mock-software-entity, which is a sub-type of mock-package
+let __err_1 --err_type "InvalidXMLError" --err_message 'An inherited item is not allowed to reference a source item of type "mock-package" using item type "mock-software-entity"'
+let __err_2 --err_type "InvalidXMLError" --err_message 'An inherited item is not allowed to reference a source item of type "mock-package" using item type "mock-item"'
+assertError __err_1 __err_2 --errors_length 2 load -p /ms/items -f mock_wrong_type.xml --replace

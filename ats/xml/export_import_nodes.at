@@ -1,0 +1,18 @@
+litp create -p /software/profiles/rhel_6_4 -t os-profile -o name='sample-profile' path='/profiles/node-iso/'
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+
+litp create -p /deployments/local_vm -t deployment
+litp create -p /deployments/local_vm/clusters/cluster1 -t cluster
+
+litp create -p /deployments/local_vm/clusters/cluster1/nodes/node1 -t node -o hostname=node1 
+litp create -p /deployments/local_vm/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=nodes
+litp inherit -p /deployments/local_vm/clusters/cluster1/nodes/node1/os -s /software/profiles/rhel_6_4
+litp inherit -p /deployments/local_vm/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local_vm/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+
+litp export -p /deployments/local_vm/clusters/cluster1/nodes -f /tmp/nodes.xml
+
+assertFileContents exported_nodes.xml /tmp/nodes.xml
+
+litp load -p /deployments/local_vm/clusters/cluster1 -f /tmp/nodes.xml --replace

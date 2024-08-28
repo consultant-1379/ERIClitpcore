@@ -1,0 +1,23 @@
+# Given a LITP MS with a model with a snapshot item
+# WHEN I run "litp prepare_for_restore"
+# THEN I can run create_snapshot and create a new snapshot.
+
+#ls ats/plugins/mock_volmgr_plugin/
+
+
+runLitpScript ../setup_two_nodes.inc
+add-plugins ../../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+
+litp run_plan
+
+litp update -p /litp/prepare-restore -o path='/'
+
+litp create_snapshot 
+assertState -p /snapshots/snapshot Applied
+

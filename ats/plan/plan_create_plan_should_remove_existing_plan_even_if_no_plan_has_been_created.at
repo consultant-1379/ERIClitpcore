@@ -1,0 +1,29 @@
+litp create -p /infrastructure/networking/networks/ip-range1 -t network -o name=sample-ip-range subnet=10.10.10.0/24
+litp create -p /software/profiles/os-profile1 -t os-profile -o name=sample-os-profile path=/var/www/cobbler/ks_mirror/node-iso-x86_64
+litp create -p /infrastructure/storage/storage_profiles/storage-profile1 -t storage-profile-base
+litp create -p /infrastructure/systems/system1 -t system -o system_name=sample-system
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+
+litp create -p /deployments/local_vm1 -t deployment
+litp create -p /deployments/local_vm1/clusters/cluster1 -t cluster
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /software/items/finger -t mock-package -o name=finger
+litp inherit -p /ms/items/finger -s /software/items/finger
+
+litp create_plan
+litp run_plan
+
+litp create -p /software/items/vim1 -t mock-package -o name=vim
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/vim1 -s /software/items/vim1
+litp create_plan
+assertTask 0 package node1 /deployments/local_vm1/clusters/cluster1/nodes/node1/items/vim1
+
+litp remove -p /deployments/local_vm1/clusters/cluster1/nodes/node1/items/vim1
+litp remove -p /software/items/vim1
+assertError create_plan
+assertNoPlan

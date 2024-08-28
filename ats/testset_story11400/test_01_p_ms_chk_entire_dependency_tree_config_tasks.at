@@ -1,0 +1,59 @@
+## test_01_p_ms_chk_entire_dependency_tree_config_tasks
+## Description:
+## Ensure the graph of the current sibling dependencies
+## which are defined on the "ms" item types are as defined when
+## ConfigTasks are hanging off a Model Item for the MS
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types
+#     on the MS:
+## "os" profile Item-Type
+## "storage profile" Item-Type
+## "system" Item-Type
+## "network" Item-Type
+#plug-in generates ConfigTasks for the required Item-Types not in deployment script
+add-plugins plugins/initial_install_plugin
+runLitpScript ../include/two_nodes.at
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+## "software-item" item type
+litp create -p /software/items/item -t software-item
+litp inherit -p /ms/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /ms/services/service -t service-base
+
+## "node-config" item type
+litp create -p /ms/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /ms/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+## 3. Check the resulting plan order
+let __configs_ms ConfigTask ms1 ms::configs id_ms_config /ms/configs
+let __services_ms ConfigTask ms1 ms::services id_ms_service /ms/services
+let __routes_ms ConfigTask ms1 ms::routes id_ms_route /ms/routes
+let __file_systems_ms ConfigTask ms1 ms::file_systems id_ms_file /ms/file_systems
+let __network_interfaces_ms ConfigTask ms1 ms::network_interfaces id_ms_net /ms/network_interfaces
+let __storage_profile_ms ConfigTask ms1 ms::storage_profile id_ms_storage /ms/storage_profile
+let __os_ms ConfigTask ms1 ms::os id_ms_os /ms/os
+let __system_ms ConfigTask ms1 ms::system id_ms_system /ms/system
+let __items_ms ConfigTask ms1 ms::items id_ms_item /ms/items
+
+## Result:
+## "items" and "services" Item-types appear after "configs" Item-types
+assertTaskBeforeTask __configs_ms __services_ms
+assertTaskBeforeTask __configs_ms __items_ms
+## "configs" Item-types task appear after "file_systems" Item-type tasks appear after "storage_profile" Item-type tasks after "routes" Item-type tasks
+## after "network_interfaces" Item-type tasks after "os" Item-type tasks after "system" Item-type tasks
+assertTaskBeforeTask __system_ms __os_ms __network_interfaces_ms __routes_ms __storage_profile_ms __file_systems_ms __configs_ms

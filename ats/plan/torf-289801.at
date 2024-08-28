@@ -1,0 +1,65 @@
+runLitpScript ../include/two_nodes.at
+add-plugins ../testset_story190067/plugin/dummy_190067_lock
+
+# allow lock tasks
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+# make a change and run plan to get
+litp create -p /software/items/nano -t mock-package -o name=nano
+litp inherit -p /ms/items/nano -s /software/items/nano
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# usual use case
+litp create_reboot_plan
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node2
+assertNumberLockTasks node1 1
+assertNumberLockTasks node2 1
+
+# -p argument
+litp create_reboot_plan -p /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node2
+assertNumberLockTasks node1 1
+
+# -p validation
+assertErrorMessage "InvalidLocationError    Create plan failed: Path not found" create_reboot_plan -p /i/dont/exist
+assertErrorMessage "InvalidLocationError    Create plan failed: Path must belong to a node" create_reboot_plan -p /deployments/local/clusters/cluster1/nodes
+
+# node in initial state
+litp create -t node -p /deployments/local/clusters/cluster1/nodes/node3 -o hostname=node3
+litp create_reboot_plan
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node2
+assertNoCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node3
+
+# will not set item to Applied state
+litp create -p /software/items/nanos -t mock-package -o name=nanos
+litp inherit -p /ms/items/nanos -s /software/items/nanos
+assertState -p /ms/items/nanos Initial
+litp create_reboot_plan
+litp run_plan
+assertState -p /ms/items/nanos Initial
+
+# pickling the plan will still not change the item state after a successful reboot plan
+litp create_reboot_plan
+restartLitp
+litp run_plan
+assertState -p /ms/items/nanos Initial
+
+# plan fails, reboot plan is created and runs to completion
+litp remove -p /deployments/local/clusters/cluster1/nodes/node3
+litp create_plan
+failConfigTask package ms1 /ms/items/nanos
+litp run_plan
+assertPlanState failed
+litp create_reboot_plan
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _reboot_node_and_wait /deployments/local/clusters/cluster1/nodes/node2
+assertNumberLockTasks node1 1
+assertNumberLockTasks node2 1
+litp run_plan
+assertPlanState successful
+

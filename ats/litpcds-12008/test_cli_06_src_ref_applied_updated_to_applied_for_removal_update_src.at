@@ -1,0 +1,352 @@
+## LITPCDS-12008: Test CLI
+## Purpose of this test is to check the reference state transition depending on
+## the items' previous state and actions taken on the source and reference.
+## State transition is triggered by CLI 'litp update' command on source item
+## All test cases in this AT are variants of the following steps below.
+## Variations: reference properties are either inherited from source or overwritten with local values
+## and source property is either updated by CLI to a new value or to its original/applied value.
+## Generic test cases steps:
+## 1. Previous state Applied source with Updated reference (Same for all test cases)
+## 2. Action 1: Remove reference, interim state is Applied source with ForRemoval reference
+##    (Same for all test cases)
+## 3. Action 2: Update source property via 'litp update' command
+##    (property value will vary per test case)
+##    For example, if item name is 'prop1_new_repo' then the CLI update command
+##    will update the source item's property called 'myprop1' to the value 'new'
+## 4. Result: Check if reference state remains ForRemoval or is changed
+##    (reference state will vary per test case)
+
+# Prerequisite:
+# Plugin generates dummy tasks when create_plan command is invoked to set items
+# to applied state
+add-extensions ../extensions/update_src_prop_extensions
+add-plugins ../plugins/update_src_prop_plugin
+
+# Set up Model
+runLitpScript ../include/two_nodes.at
+# foo item is used by plugin as a flag to control which source item is updated
+litp create -p /software/items/foo -t mock-package -o name='foo' version=1
+
+litp create -p /software/items/prop1_new_repo -t myrepository -o name='prop1_new_repo' myprop1='orig' myprop2='orig'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -s /software/items/prop1_new_repo
+
+litp create -p /software/items/prop1_orig_repo -t myrepository -o name='prop1_orig_repo' myprop1='orig' myprop2='orig'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -s /software/items/prop1_orig_repo
+
+litp create -p /software/items/prop2_new_repo -t myrepository -o name='prop2_new_repo' myprop1='orig' myprop2='orig'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -s /software/items/prop2_new_repo
+
+litp create -p /software/items/prop2_orig_repo -t myrepository -o name='prop2_orig_repo' myprop1='orig' myprop2='orig'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -s /software/items/prop2_orig_repo
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# tc-06-1
+# Overwritten reference property by update (prop2)
+# Update source with applied property value (prop1)
+# Result: reference state is changed from ForRemoval to Updated
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop2='local_by_update'
+assertState -p /software/items/prop1_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo Updated
+
+assertProperty /software/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop1_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop2='local_by_update'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo
+
+# Interim state
+assertState -p /software/items/prop1_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop1_orig_repo -o myprop1='orig'
+
+# Resulting state
+assertState -p /software/items/prop1_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo Updated
+
+assertProperty /software/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop1_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop2='local_by_update'
+
+# Reset model for next test case
+litp restore_model
+
+# tc-06-2
+# Overwritten reference property by update (prop2)
+# Update source with applied property value (prop2)
+# Result: reference state remains in ForRemoval
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop2='local_by_update'
+assertState -p /software/items/prop2_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo Updated
+
+assertProperty /software/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop2_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop2='local_by_update'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo
+
+# Interim state
+assertState -p /software/items/prop2_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop2_orig_repo -o myprop2='orig'
+
+# Resulting state
+assertState -p /software/items/prop2_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo ForRemoval
+
+assertProperty /software/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop2_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop2='local_by_update'
+
+# Reset model for next test case
+litp restore_model
+
+# tc-06-3
+# Overwritten reference property by update (prop2)
+# Update source with new property value (prop1)
+# Result: reference state is changed from ForRemoval to Updated
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='local_by_update'
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Updated
+
+assertProperty /software/items/prop1_new_repo -o myprop1='orig'
+assertProperty /software/items/prop1_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='local_by_update'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo
+
+# Interim state
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop1_new_repo -o myprop1='new'
+
+# Resulting state
+assertState -p /software/items/prop1_new_repo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Updated
+
+assertProperty /software/items/prop1_new_repo -o myprop1='new'
+assertProperty /software/items/prop1_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop1='new'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='local_by_update'
+
+# Reset model for next test case
+litp restore_model
+
+# tc-06-4
+# Overwritten reference property by update (prop2)
+# Update source with new property value (prop2)
+# Result: reference state remains in ForRemoval
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop2='local_by_update'
+assertState -p /software/items/prop2_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo Updated
+
+assertProperty /software/items/prop2_new_repo -o myprop1='orig'
+assertProperty /software/items/prop2_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop2='local_by_update'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo
+
+# Interim state
+assertState -p /software/items/prop2_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop2_new_repo -o myprop2='new'
+
+# Resulting state
+assertState -p /software/items/prop2_new_repo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo ForRemoval
+
+assertProperty /software/items/prop2_new_repo -o myprop1='orig'
+assertProperty /software/items/prop2_new_repo -o myprop2='new'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop2='local_by_update'
+
+#######################
+# Update deployment plan for
+# Overwritten reference property value
+# when reference item is first inherited
+litp restore_model
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -s /software/items/prop1_new_repo \
+    -o myprop2='local'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -s /software/items/prop1_orig_repo \
+    -o myprop2='local'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -s /software/items/prop2_new_repo \
+    -o myprop2='local'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -s /software/items/prop2_orig_repo \
+    -o myprop2='local'
+
+litp update -p /software/items/foo -o name=do_nothing
+litp create_plan
+litp run_plan
+assertPlanState successful
+#######################
+
+# tc-06-5
+# reference local value (prop2) set when inheriting item and updated to new local value
+# Update source with applied property value (prop1)
+# Result: reference state is changed from ForRemoval to Updated
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop2='local_new'
+assertState -p /software/items/prop1_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo Updated
+
+assertProperty /software/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop1_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop2='local_new'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo
+
+# Interim state
+assertState -p /software/items/prop1_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop1_orig_repo -o myprop1='orig'
+
+# Resulting state
+assertState -p /software/items/prop1_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo Updated
+
+assertProperty /software/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop1_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_orig_repo -o myprop2='local_new'
+
+# Reset model for next test case
+litp restore_model
+
+# tc-06-6
+# reference local value (prop2) set when inheriting item and updated to new local value
+# Update source with applied property value (prop2)
+# Result: reference state remains in ForRemoval
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop2='local_new'
+assertState -p /software/items/prop2_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo Updated
+
+assertProperty /software/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop2_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop2='local_new'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo
+
+# Interim state
+assertState -p /software/items/prop2_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop2_orig_repo -o myprop2='orig'
+
+# Resulting state
+assertState -p /software/items/prop2_orig_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo ForRemoval
+
+assertProperty /software/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /software/items/prop2_orig_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_orig_repo -o myprop2='local_new'
+
+# Reset model for next test case
+litp restore_model
+
+# tc-06-7
+# reference local value (prop2) set when inheriting item and updated to new local value
+# Update source with new property value (prop1)
+# Result: reference state is changed from ForRemoval to Updated
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='local_new'
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Updated
+
+assertProperty /software/items/prop1_new_repo -o myprop1='orig'
+assertProperty /software/items/prop1_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='local_new'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo
+
+# Interim state
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop1_new_repo -o myprop1='new'
+
+# Resulting state
+assertState -p /software/items/prop1_new_repo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Updated
+
+assertProperty /software/items/prop1_new_repo -o myprop1='new'
+assertProperty /software/items/prop1_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop1='new'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='local_new'
+
+# Reset model for next test case
+litp restore_model
+
+# tc-06-8
+# reference local value (prop2) set when inheriting item and updated to new local value
+# Update source with new property value (prop2)
+# Result: reference state remains in ForRemoval
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop2='local_new'
+assertState -p /software/items/prop2_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo Updated
+
+assertProperty /software/items/prop2_new_repo -o myprop1='orig'
+assertProperty /software/items/prop2_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop2='local_new'
+
+# Action 1:
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo
+
+# Interim state
+assertState -p /software/items/prop2_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo ForRemoval
+
+# Action 2:
+# Update source property value
+litp update -p /software/items/prop2_new_repo -o myprop2='new'
+
+# Resulting state
+assertState -p /software/items/prop2_new_repo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo ForRemoval
+
+assertProperty /software/items/prop2_new_repo -o myprop1='orig'
+assertProperty /software/items/prop2_new_repo -o myprop2='new'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop2_new_repo -o myprop2='local_new'
+

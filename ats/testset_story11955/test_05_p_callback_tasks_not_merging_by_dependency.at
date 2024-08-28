@@ -1,0 +1,49 @@
+## Test Case 05.
+## Description:
+## Test that on plan creation, the phases resulting from config and callback
+## tasks segregation does not allow merging of callback tasks with other phases due to dependency
+
+# Prerequisites
+add-plugins plugins/story11955_plugin
+add-extensions extensions/story11955_extension
+
+runLitpScript ../include/two_nodes.at
+
+# Actions:
+# 1. Create the model items
+# 1a.Create a model item 1a
+# 1b.Create a model item 1b that inherits model item 1a and generates two Callback
+#    tasks with direct dependency  (CB2 requires CB1)
+litp create -p /software/items/item1a -t story11955 -o name='item1a' testcase='tc5'
+litp inherit -s /software/items/item1a -p /deployments/local/clusters/cluster1/nodes/node1/items/item1b
+
+# 1c.Create a model item 2a
+# 1d.Create a model item 2b that inherits model item 2a and generates two Config
+#    tasks with no dependency  (Cf1 and Cf2)
+litp create -p /software/items/item2a -t story11955 -o name='item2a' testcase='tc5'
+litp inherit -s /software/items/item2a -p /deployments/local/clusters/cluster1/nodes/node1/items/item2b
+
+# 2. Execute the 'create_plan' command
+# 3. Execute the 'show_plan' command
+litp create_plan
+
+# 4. Check that config tasks and callback tasks are in different phases
+# 4.1 Check that first phase contain only callback task CB1
+assertTask 0 _cb1 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+
+# 4.2 Check that the second phase contains all the config tasks
+assertTask 1 tc5_res_2b_first node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+assertTask 1 tc5_res_2b_second node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+
+# 4.3 Check that the last phase contains the Callback task CB2
+assertTask 2 _cb2 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+
+# 5. Execute the 'run_plan' command
+litp run_plan
+
+# 6. Check that plan is successful
+assertPlanState successful
+# Result:
+# On Plan creation, config and callback tasks are split in different phases and
+# the callback tasks did not merge into the same phase due to dependency
+

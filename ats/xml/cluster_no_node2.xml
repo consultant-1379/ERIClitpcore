@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:cluster xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="cluster1">
+  <litp:cluster-nodes-collection id="nodes">
+    <litp:node id="node1">
+      <hostname>node1</hostname>
+      <litp:node-configs-collection id="configs"/>
+      <litp:node-file_systems-collection id="file_systems">
+        <litp:nfs-file-system-inherit source_path="/infrastructure/storage/nfs_mounts/nfs_fs" id="nfs_fs">
+          <!--<litp:nfs-export-inherit source_path="/infrastructure/storage/nfs_mounts/nfs_fs/export" id="export"/>
+          <litp:nfs-virtual-server-inherit source_path="/infrastructure/storage/nfs_mounts/nfs_fs/vip" id="vip"/>-->
+        </litp:nfs-file-system-inherit>
+      </litp:node-file_systems-collection>
+      <litp:node-items-collection id="items">
+        <litp:mock-package-inherit source_path="/software/items/a_package" id="a_package"/>
+      </litp:node-items-collection>
+      <litp:node-network_interfaces-collection id="network_interfaces">
+        <litp:network-interface id="ip1">
+          <network_name>nodes</network_name>
+        </litp:network-interface>
+      </litp:node-network_interfaces-collection>
+      <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os">
+        <name>sample-profile-newname</name>
+      </litp:os-profile-inherit>
+      <litp:node-routes-collection id="routes"/>
+      <litp:storage-profile-base-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile"/>
+      <litp:system-inherit source_path="/infrastructure/systems/system1" id="system">
+        <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system1/disks" id="disks">
+          <litp:disk-inherit source_path="/infrastructure/systems/system1/disks/disk0" id="disk0"/>
+          <litp:disk-inherit source_path="/infrastructure/systems/system1/disks/disk1" id="disk1"/>
+        </litp:system-disks-collection-inherit>
+      </litp:system-inherit>
+    </litp:node>
+    <litp:node id="node3">
+      <hostname>node3</hostname>
+      <litp:node-configs-collection id="configs"/>
+      <litp:node-file_systems-collection id="file_systems"/>
+      <litp:node-items-collection id="items"/>
+      <litp:node-network_interfaces-collection id="network_interfaces">
+        <litp:network-interface id="ip1">
+          <network_name>nodes</network_name>
+        </litp:network-interface>
+      </litp:node-network_interfaces-collection>
+      <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os"/>
+      <litp:node-routes-collection id="routes"/>
+      <litp:storage-profile-base-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile"/>
+      <litp:blade-inherit source_path="/infrastructure/systems/system3" id="system">
+        <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system3/disks" id="disks">
+          <litp:disk-inherit source_path="/infrastructure/systems/system3/disks/bmc_1" id="bmc_1"/>
+          <litp:disk-inherit source_path="/infrastructure/systems/system3/disks/bmc_2" id="bmc_2"/>
+        </litp:system-disks-collection-inherit>
+        <litp:bmc-base-inherit source_path="/infrastructure/systems/system3/bmc" id="bmc"/>
+      </litp:blade-inherit>
+    </litp:node>
+  </litp:cluster-nodes-collection>
+  <litp:cluster-services-collection id="services"/>
+  <litp:cluster-software-collection id="software"/>
+</litp:cluster>
+

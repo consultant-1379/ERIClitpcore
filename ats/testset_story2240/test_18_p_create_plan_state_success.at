@@ -1,0 +1,20 @@
+runLitpScript misc/common_test_methods.at
+
+assertConfigTask ms1 package finger /ms/items/story_2240 ensure=installed
+assertConfigTask node1 package finger /deployments/local/clusters/cluster1/nodes/node1/items/story_2240 ensure=installed
+assertConfigTask node2 package finger /deployments/local/clusters/cluster1/nodes/node2/items/story_2240 ensure=installed
+
+litp run_plan
+assertPlanState successful
+
+litp create -t mock-package -p /software/items/model_change -o name=story_2240
+litp inherit -s /software/items/model_change -p /ms/items/model_change
+
+litp create_plan
+assertPlanState initial
+
+assertNoConfigTask ms1 package finger /ms/items/story_2240 ensure=installed
+assertNoConfigTask node1 package finger /deployments/local/clusters/cluster1/nodes/node1/items/story_2240 ensure=installed
+assertNoConfigTask node2 package finger /deployments/local/clusters/cluster1/nodes/node2/items/story_2240 ensure=installed
+
+assertConfigTask ms1 package story_2240 /ms/items/model_change ensure=installed

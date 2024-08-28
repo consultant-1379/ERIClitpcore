@@ -1,0 +1,9 @@
+#validate dispatcher
+#404 not found
+assertError --err_type "InvalidLocationError"  show -p /litp/rest/v1/ms/litp/rest/v1/configs/
+#404 not found
+assertError --err_type "InvalidLocationError"  show -p /ms/litp/rest/v1/configs/
+#configs
+litp show -p /ms/configs
+
+

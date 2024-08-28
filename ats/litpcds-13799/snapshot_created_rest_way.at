@@ -1,0 +1,10 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+# should not fail, this is the REST way of doing create_snapshot
+litp create -p /snapshots/snapshot -t snapshot-base
+# should not fail either
+litp remove_snapshot
+
+# these two should fail, slashes are not accepted
+assertError create -p /snapshots/create/snapshot -t snapshot-base
+assertError create -p /snapshots/snapshot/uhoh -t snapshot-base

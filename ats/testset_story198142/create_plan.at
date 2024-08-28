@@ -1,0 +1,10 @@
+add-plugins plugin/dummy_198142
+runLitpScript ../include/two_nodes.at
+
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+litp create_plan
+assertLogMessage "INFO - Creating Plan with lock policy: create_locks"

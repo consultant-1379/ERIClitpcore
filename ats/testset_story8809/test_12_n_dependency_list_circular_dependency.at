@@ -1,0 +1,76 @@
+# test_12_n_dependency_list_circular_dependency
+# =============================================
+
+# Actions:
+# 1. Create a deploymemt with multiple clusters
+# 2. Add clusters to the "dependency_list" property
+# to create a circular dependency as follows:
+# CX is dependent on CY
+# CY is dependent on CZ
+# CZ is dependent on CX
+# 3. Follow upgrade steps
+# 4. After upgrade plan is created, check that
+# a ValidationError is returned indicating that
+# a circular dependency exists
+# 5. Remove the offending cluster from the list
+# 6. Recreate the plan
+# 7. After upgrade plan is created, check that the
+# tasks are ordered as per the order
+# in the "dependency_list" property
+# 8. Run plan
+
+# Result:
+# Correct validation Errors are returned
+
+# 1. Create multi cluster deployment
+add-extensions ../plugins/dummy_8809
+add-plugins ../plugins/dummy_8809
+runLitpScript misc/create_multi_cluster_deployment.inc
+
+# 2. Update the "dependency_list" property to create a circular dependency
+# cluster_1 -> cluster_2 -> cluster_3 -> cluster_1
+litp update -p /deployments/litpcds_8809/clusters/cluster_3 -o dependency_list='cluster_1'
+
+# 3. Create configurations for clusters
+# See step 1
+
+# 4. Create plan and check for error
+assertError --err_type "ValidationError" --err_message 'A circular dependency has been detected between the following clusters: "cluster_1", "cluster_2" and "cluster_3". Check the "dependency_list" property of each cluster item to resolve the issue.' create_plan
+
+# 5. Remove offending cluster
+litp update -p /deployments/litpcds_8809/clusters/cluster_3 -o dependency_list=''
+
+# 6. Recreate the plan, no errors
+litp create_plan
+
+# 7. Check cluster order:
+# cluster_1 depends on cluster_2, cluster_2 depends on cluster_3
+let __task_n1_c3 ConfigTask c3-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/items/ha_node_item
+let __task_n2_c3 ConfigTask c3-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node2/items/ha_node_item
+
+let __task_n1_c2 ConfigTask c2-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/items/ha_node_item
+let __task_n2_c2 ConfigTask c2-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node2/items/ha_node_item
+
+let __task_n1_c1 ConfigTask c1-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/items/ha_node_item
+let __task_n2_c1 ConfigTask c1-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node2/items/ha_node_item
+
+# alpha, no_ha and zulu clusters are not listed so they are at the end and in lexical order
+let __task_n1_ca ConfigTask ca-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node1/items/ha_node_item
+let __task_n2_ca ConfigTask ca-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node2/items/ha_node_item
+
+let __task_n1_cnha ConfigTask c-no-ha-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_no_ha/nodes/node1/items/ha_node_item
+let __task_n2_cnha ConfigTask c-no-ha-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_no_ha/nodes/node2/items/ha_node_item
+
+let __task_n1_cz ConfigTask cz-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node1/items/ha_node_item
+let __task_n2_cz ConfigTask cz-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node2/items/ha_node_item
+
+# Dependency order
+assertTaskBeforeTask __task_n1_c3 __task_n1_c2 __task_n1_c1
+assertTaskBeforeTask __task_n2_c3 __task_n2_c2 __task_n2_c1
+
+# Unlisted tasks in lexical order
+assertTaskBeforeTask __task_n1_c1 __task_n1_ca __task_n1_cnha __task_n1_cz
+assertTaskBeforeTask __task_n2_c1 __task_n2_ca __task_n2_cnha __task_n2_cz
+
+# 8. Run plan, no errors
+litp run_plan

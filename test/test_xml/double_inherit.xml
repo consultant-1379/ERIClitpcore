@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="root">
+  <litp:root-deployments-collection id="deployments"/>
+  <litp:infrastructure id="infrastructure">
+    <litp:infrastructure-items-collection id="items"/>
+    <litp:networking id="networking">
+      <litp:networking-networks-collection id="networks"/>
+      <litp:networking-routes-collection id="routes"/>
+    </litp:networking>
+    <litp:infrastructure-service_providers-collection id="service_providers"/>
+    <litp:storage id="storage">
+      <litp:storage-nfs_mounts-collection id="nfs_mounts"/>
+      <litp:storage-storage_profiles-collection id="storage_profiles"/>
+      <litp:storage-storage_providers-collection id="storage_providers"/>
+    </litp:storage>
+    <litp:infrastructure-system_providers-collection id="system_providers"/>
+    <litp:infrastructure-systems-collection id="systems"/>
+  </litp:infrastructure>
+  <litp:ms id="ms">
+    <hostname>ms1</hostname>
+    <litp:ms-configs-collection id="configs"/>
+    <litp:ms-file_systems-collection id="file_systems"/>
+    <litp:ms-items-collection id="items">
+      <litp:mock-package-inherit source_path="/software/items/p1" id="p1"/>
+      <litp:mock-package-inherit source_path="/ms/items/p1" id="p2"/>
+    </litp:ms-items-collection>
+    <litp:ms-network_interfaces-collection id="network_interfaces"/>
+    <litp:ms-routes-collection id="routes"/>
+    <litp:ms-services-collection id="services"/>
+  </litp:ms>
+  <litp:root-plans-collection id="plans"/>
+  <litp:software id="software">
+    <litp:software-deployables-collection id="deployables"/>
+    <litp:software-images-collection id="images"/>
+    <litp:software-items-collection id="items">
+      <litp:mock-package id="p1">
+        <ensure>installed</ensure>
+        <name>p1</name>
+      </litp:mock-package>
+    </litp:software-items-collection>
+    <litp:software-profiles-collection id="profiles"/>
+    <litp:software-runtimes-collection id="runtimes"/>
+    <litp:software-services-collection id="services"/>
+  </litp:software>
+</litp:root>

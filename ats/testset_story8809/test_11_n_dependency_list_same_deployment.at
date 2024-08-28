@@ -1,0 +1,78 @@
+# test_11_n_dependency_list_same_deployment
+# =========================================
+# Description:
+# Test that clusters list in the property, dependency_list
+# must be part of the same deployment
+ 
+# Actions:
+# 1. Create multiple deploymemts with multiple clusters
+# 2. Add clusters to the "dependency_list" property from deploymentX
+# and a cluster from deploymentY
+# 3. Follow upgrade steps
+# 4. After upgrade plan is created, check that
+# a ValidationError is returned indicating that
+# there is a cluster in the list that is not in the deployment
+# 5. Remove the offending cluster from the list
+# 6. Recreate the plan
+# 7. After upgrade plan is created, check that the
+# tasks are ordered as per the order
+# in the "dependency_list" property
+# 8. Run plan
+ 
+# Result:
+# Correct validation Errors are returned
+
+# 1. Create multi deployments with multi clusters
+add-extensions ../plugins/dummy_8809
+add-plugins ../plugins/dummy_8809
+runLitpScript misc/create_multi_cluster_deployment.inc
+# Deployment_X
+litp create -p /deployments/litpcds_8809_X -t deployment
+litp create -p /deployments/litpcds_8809_X/clusters/cluster_X -t cluster -o ha_manager="cmw"
+litp create -p /deployments/litpcds_8809_X/clusters/cluster_X/nodes/node1 -t node -o hostname=cx-node1
+litp create -p /deployments/litpcds_8809_X/clusters/cluster_X/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809_X/clusters/cluster_X/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809_X/clusters/cluster_X/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809_X/clusters/cluster_X/nodes/node1/system -s /infrastructure/systems/system1
+
+# 2. Add cluster from a different deployment to a dependency list
+litp update -p /deployments/litpcds_8809/clusters/cluster_1 -o dependency_list='cluster_X'
+
+# 3. Create configurations on the clusters
+# Step 1 created the items on the clusters and creating the plan will create tasks
+
+# 4. Create plan and check for error
+assertError --err_type "ValidationError" --err_message "Cluster \"/deployments/litpcds_8809/clusters/cluster_X\" does not exist. Ensure dependency_list property is correct" create_plan
+
+# 5. Remove offending cluster from list
+litp update -p /deployments/litpcds_8809/clusters/cluster_1 -o dependency_list='cluster_2'
+
+# 6. Recreate plan, no errors
+litp create_plan
+
+# 7. Check order of plan
+# cluster_1 depends on cluster_2, cluster_2 depends on cluster_3
+let __task_n1_c3 ConfigTask c3-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/items/ha_node_item
+let __task_n2_c3 ConfigTask c3-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node2/items/ha_node_item
+
+let __task_n1_c2 ConfigTask c2-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/items/ha_node_item
+let __task_n2_c2 ConfigTask c2-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node2/items/ha_node_item
+
+let __task_n1_c1 ConfigTask c1-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/items/ha_node_item
+let __task_n2_c1 ConfigTask c1-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node2/items/ha_node_item
+
+# alpha and zulu clusters have empty dependency list so they come after cluster_1
+let __task_n1_ca ConfigTask ca-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node1/items/ha_node_item
+let __task_n2_ca ConfigTask ca-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node2/items/ha_node_item
+
+let __task_n1_cz ConfigTask cz-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node1/items/ha_node_item
+let __task_n2_cz ConfigTask cz-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node2/items/ha_node_item
+
+assertTaskBeforeTask __task_n1_c3 __task_n1_c2 __task_n1_c1 __task_n1_ca
+assertTaskBeforeTask __task_n2_c3 __task_n2_c2 __task_n2_c1 __task_n2_ca
+
+assertTaskBeforeTask __task_n1_c1 __task_n1_cz
+assertTaskBeforeTask __task_n2_c1 __task_n2_cz
+
+# 8. Run plan, no errors
+litp run_plan

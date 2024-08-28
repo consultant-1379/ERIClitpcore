@@ -1,0 +1,33 @@
+## Test that verifies a user can create/remove named/deployment snapshots using
+## the REST interface
+
+add-plugins ../plugins/mock_volmgr_plugin
+add-plugins ../plugins/initial_node_tasks_only
+
+# make sure a deployment plan was run (required to generate named snapshots)
+litp create_plan
+litp run_plan
+
+## 1. Create deployment snapshot REST
+litp create -p /snapshots/snapshot  -t snapshot-base
+assertState -p /snapshots/snapshot Applied
+
+## 2. Remove deployment snapshot REST
+litp remove -p /snapshots/snapshot
+assertNone -p /snapshots/snapshot
+
+## 3. Create named snapshot REST
+litp create -p /snapshots/9331  -t snapshot-base
+assertState -p /snapshots/9331 Applied
+
+## 4. Removed named snapshot REST
+litp remove -p /snapshots/9331
+assertNone -p /snapshots/9331
+
+## 5. Create named snapshot REST with -n attribute
+litp create -p /snapshots/9331 -o n=9332 -t snapshot-base
+assertState -p /snapshots/9331 Applied
+
+## 6. Removed named snapshot REST
+litp remove -p /snapshots/9331 
+assertNone -p /snapshots/9331

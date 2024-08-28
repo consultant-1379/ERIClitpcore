@@ -1,0 +1,53 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+runLitpScript ../include/two_nodes.at
+litp create -t mock-package -p /software/items/foo -o name=pico
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+
+litp create_plan
+litp run_plan
+
+# Let's create a snapshot
+litp create_snapshot -n litpcds_10209
+assertPlanState successful
+
+assertState -p /snapshots/litpcds_10209 Applied
+assertState -p /snapshots Applied
+
+litp remove_plan
+
+# Let's create and run a failing snapshot removal plan
+failSnapshotPlan
+litp remove_snapshot -n litpcds_10209
+# The plan has failed and there exists a CleanupTask in the Initial state for
+# a snapshot item
+assertPlanState failed
+assertCleanupTask 1 /snapshots/litpcds_10209 Initial
+
+assertState -p /snapshots/litpcds_10209 ForRemoval
+assertState -p /snapshots Applied
+
+litp remove_plan
+
+# This will fail since there are no plugin-generated tasks and the CleanupTask
+# for the snapshot item has been filtered out
+assertError --err_type "DoNothingPlanError" --err_message "Create plan failed: no tasks were generated" create_plan
+
+# Give a standard plan something to do
+litp create -t mock-package -p /software/items/bar -o name=nano
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node2/items/bar
+
+litp create_plan
+assertNoCleanupTask /snapshots/litpcds_10209
+assertPlanLength 1
+
+litp run_plan
+
+assertPlanState successful
+
+assertState -p /snapshots/litpcds_10209 ForRemoval
+litp remove_snapshot -n litpcds_10209
+assertPlanState successful
+assertNone /snapshots/litpcds_10209

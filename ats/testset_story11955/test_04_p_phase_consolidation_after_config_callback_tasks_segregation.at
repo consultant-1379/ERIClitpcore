@@ -1,0 +1,55 @@
+# Test Case 04.
+## Description:
+## Test that on plan creation, the phases resulting from config and callback
+## tasks segregation can be merged with other phases while still keeping config
+## and callback tasks in different phases.
+
+
+# Prerequisites
+add-plugins plugins/story11955_plugin
+add-extensions extensions/story11955_extension
+
+runLitpScript ../include/two_nodes.at
+
+# Actions:
+# 1. Create the model items
+# 1a.Create a model item 1a
+# 1b.Create a model item 1b that inherits model item 1a and generates one Config
+#    task (Cf-1A) and 1 ordered tasks list with one callback task and one config task
+#    [CB-1B, Cf-1C]
+litp create -p /software/items/item1a -t story11955 -o name='item1a' testcase='tc4'
+litp inherit -s /software/items/item1a -p /deployments/local/clusters/cluster1/nodes/node1/items/item1b
+
+# 1c.Create a model item 2a
+# 1d.Create a model item 2b that inherits model item 2a and generates one Config
+#    task (Cf-2A) and 1 ordered tasks list with one callback task and one config task
+#    [CB-2B, Cf-2C]
+litp create -p /software/items/item2a -t story11955 -o name='item2a' testcase='tc4'
+litp inherit -s /software/items/item2a -p /deployments/local/clusters/cluster1/nodes/node1/items/item2b
+
+# 2. Execute the 'create_plan' command
+# 3. Execute the 'show_plan' command
+litp create_plan
+
+# 4. Check that config tasks and callback tasks are in different phases
+# 4.1 Check that first phase contains only callback tasks for items 1b and 2b
+assertTask 0 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 0 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+
+# 4.2 Check that the second phase has consolidated all the config tasks in the same phase
+assertTask 1 tc4_res_1b node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 1 tc4_res_1b_ordered node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 1 tc4_res_2b node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+assertTask 1 tc4_res_2b_ordered node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+
+# 5. Execute the 'run_plan' command
+litp run_plan
+
+# 6. Check that plan is successful
+assertPlanState successful
+
+# Result:
+# On Plan creation, config and callback tasks are split in different phases and
+# the seperated config tasks are consolidated with subsequent phase
+
+

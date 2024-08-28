@@ -1,0 +1,111 @@
+## Description:
+## When an attempt to re-inherit a doubly inherited item or
+## the descendent of a doubly inherited Item
+## when its v-path is a not descendent of the inherit
+## source v-path then a MethodNotAllowedError is raised
+##
+## Preconditions:
+## Source itemA: /software/items/itemA
+## Inherited item1 (source is itemA): /ms/items/item1
+## Doubly inherited item2 (source is child of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item2
+## Note that child of item2 is a reference to the grandchild of item1
+## Inherited item3 (source is itemA): /ms/items/item3
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_12
+runLitpScript ../include/two_nodes.at
+
+# 1,5 Create an itemA with a child item a grandchild item and a grand-grandchild
+
+litp create -t parent -p /software/items/itemA -o name=parent1
+litp create -t child -p /software/items/itemA/childs/child1 -o name=child1
+litp create -t g-child -p /software/items/itemA/childs/child1/grand_children/grandchild1 -o name=grandchild1
+litp create -t g-g-child -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 -o name=grand_grandchild1
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 2,5 Inherit itemA to item1
+litp inherit -p /ms/items/item1 -s /software/items/itemA
+
+assertState -p /ms/items/item1 Initial
+assertState -p /ms/items/item1/childs/child1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 3,5 Inherit itemA to item3
+
+litp inherit -p /ms/items/item3 -s /software/items/itemA
+
+assertState -p /ms/items/item3 Initial
+assertState -p /ms/items/item3/childs/child1 Initial
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 4,5 Inherit child of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -s /ms/items/item1/childs/child1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 6,7 create and run plan
+litp create_plan
+litp run_plan
+
+# 8. Check all items are in "Applied" state
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /ms/items/item3 Applied
+assertState -p /ms/items/item3/childs/child1 Applied
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 9. Remove a descendent of a doubly inherited item (child of item2)
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 ForRemoval
+
+# 11. Attempt to execute litp "inherit" command to recover a doubly inherited item with a v-path is not a descendent of the inherit source v-path
+
+# 11.1 source v-path is itemA child, attempt to recover child of item2
+assertError --err_type MethodNotAllowedError inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /software/items/itemA/childs/child1
+
+# 11.2 source v-path is item1 child, attempt to recover child of item2
+assertError --err_type MethodNotAllowedError inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /ms/items/item1/childs/child1
+
+# 11.3 source v-path is item1, attempt to recover child of item2
+assertError --err_type MethodNotAllowedError inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /ms/items/item1
+
+# 11.4 source v-path is item3 grandchild, attempt to recover child of item2
+assertError --err_type MethodNotAllowedError inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /ms/items/item3/childs/child1/grand_children/grandchild1
+
+# 11.5 source v-path is item1 child, attempt to recover grandchild of item2
+assertError --err_type MethodNotAllowedError inherit -p \
+ /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 \
+ -s /ms/items/item1/childs/child1
+
+
+# Result:
+# The expected MethodNotAllowedError is seen when an
+# attempt is made to recover the descendent of a doubly inherited item
+# when its v-path is not a descendent of the inherit source v-path

@@ -1,0 +1,143 @@
+# test_03_p_clear_property_from_plugin_inheritance
+# Description:
+# Test that while invoking queryItem.clear_property("<property>")
+# inherited items and their properites work as expected, e.g. local values are not
+# overwritten
+
+# Prerequisite:
+# Create a plugin that generates the ability to clear a property
+add-extensions extensions/dummy_11331_extension
+add-plugins plugins/test01_11331_plugin
+
+# Set up Model
+runLitpScript ../include/two_nodes.at
+
+# Actions:
+# 1a.Create a source item and multiple inherited model items with a valid optional property that is plugin-updatable, has no default and is not a read-only property
+# and that has required properties and the inherited items on nodes have local values of properties
+litp create -p /software/items/yum_repo3a -t yum-repository -o name='test03a' required_prop1="test_03a" optional_prop1="old" ac2_prop="hello" ac3_prop="world" ac9_prop="val1"
+litp inherit -p /ms/items/yum_repo3a -s /software/items/yum_repo3a
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -s /software/items/yum_repo3a -o name="t3_a" ac3_prop="ac3_world"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -s /software/items/yum_repo3a -o name="t3_b" optional_prop1="new_n1"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -s /software/items/yum_repo3a -o name="t3_c" optional_prop1="new_n2"
+
+# 1b.Create plan 
+litp create_plan
+
+# 1c.Run plan
+litp run_plan
+
+# 1d. Update the parent optional property which has a local value on some of the inherited paths
+litp update -p /software/items/yum_repo3a -o optional_prop1="old_update"
+
+# 1e.Create plan invokes the queryItem.clear_property("<property>")
+# and clears an optional property on one of the inherited paths 
+litp create_plan
+
+# 1f.Check that the model items are in the correct state
+assertState -p /software/items/yum_repo3a Updated
+assertState -p /ms/items/yum_repo3a Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a Applied
+
+# 1g.Check that the model items have the expected properties with the expected values
+assertProperty /software/items/yum_repo3a -o name="test03a"
+assertProperty /software/items/yum_repo3a -o required_prop1="test_03a"
+assertProperty /software/items/yum_repo3a -o optional_prop1="old_update"
+assertProperty /software/items/yum_repo3a -o ac2_prop="hello"
+assertProperty /software/items/yum_repo3a -o ac3_prop="world"
+assertProperty /software/items/yum_repo3a -o ac9_prop="val1"
+
+assertProperty /ms/items/yum_repo3a -o name="test03a"
+assertProperty /ms/items/yum_repo3a -o required_prop1="test_03a"
+assertProperty /ms/items/yum_repo3a -o optional_prop1="old_update"
+assertProperty /ms/items/yum_repo3a -o ac2_prop="hello"
+assertProperty /ms/items/yum_repo3a -o ac3_prop="world"
+assertProperty /ms/items/yum_repo3a -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -o name="t3_a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -o required_prop1="test_03a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -o optional_prop1="old_update"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -o ac3_prop="world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3a -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -o name="t3_b"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -o required_prop1="test_03a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -o optional_prop1="new_n1"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -o ac3_prop="world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo3b -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -o name="t3_c"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -o required_prop1="test_03a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -o optional_prop1="new_n2"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -o ac3_prop="world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo3a -o ac9_prop="val1"
+
+# 2a.Create a source item and multiple inherited model items with a valid optional property that is plugin-updatable, has no default and is not a read-only property
+# and that has required properties and the inherited items on nodes have local values of properties
+litp create -p /software/items/yum_repo4a -t yum-repository -o name='test04a' required_prop1="test_04a" optional_prop1="old" ac2_prop="hello" ac3_prop="world" ac9_prop="val1"
+litp inherit -p /ms/items/yum_repo4a -s /software/items/yum_repo4a
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -s /software/items/yum_repo4a -o name="t4_a" ac3_prop="ac3a_world"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -s /software/items/yum_repo4a -o name="t4_b" ac3_prop="ac3b_world"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -s /software/items/yum_repo4a -o name="t4_c" ac3_prop="ac3c_world"
+
+# 2b.Create plan
+litp create_plan
+
+# 2c.Run plan
+litp run_plan
+
+# 2d.Update a property on the source item and one of the inherited paths  
+litp update -p /software/items/yum_repo4a -o ac3_prop="world_update"
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o ac3_prop="world_n1_update"
+
+# 2e.Create plan invokes the queryItem.clear_property("<property>")
+# and clears an optional property on the source item
+litp create_plan
+
+# 2f.Check that the model items are in the correct state
+assertState -p /software/items/yum_repo4a Updated
+assertState -p /ms/items/yum_repo4a Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a Updated
+
+assertProperty /software/items/yum_repo4a -o name="test04a"
+assertProperty /software/items/yum_repo4a -o required_prop1="test_04a"
+assertProperty /software/items/yum_repo4a -o optional_prop1="old"
+assertProperty /software/items/yum_repo4a -o ac2_prop="hello"
+assertProperty /software/items/yum_repo4a -o ac3_prop="world_update"
+assertProperty /software/items/yum_repo4a -o ac9_prop="val1"
+
+assertProperty /ms/items/yum_repo4a -o name="test04a"
+assertProperty /ms/items/yum_repo4a -o required_prop1="test_04a"
+assertProperty /ms/items/yum_repo4a -o optional_prop1="old"
+assertProperty /ms/items/yum_repo4a -o ac2_prop="hello"
+assertProperty /ms/items/yum_repo4a -o ac3_prop="world_update"
+assertProperty /ms/items/yum_repo4a -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o name="t4_a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o required_prop1="test_04a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o optional_prop1="old"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o ac3_prop="world_n1_update"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4a -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -o name="t4_b"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -o required_prop1="test_04a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -o optional_prop1="old"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -o ac3_prop="ac3b_world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo4b -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -o name="t4_c"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -o required_prop1="test_04a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -o optional_prop1="old"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -o ac2_prop="hello"
+# queryItem.clear_property("<property>") invoked to clear this property on this inherited path, so local value is reverted to latest updated source value
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -o ac3_prop="world_update"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/yum_repo4a -o ac9_prop="val1"

@@ -1,0 +1,78 @@
+# Test Case 01.
+
+# Three model items are successfully applied as follows:
+# - item1: has 2 Puppet resources associated and the plugin generates 2
+#          deconfigure tasks for them.
+# - item2: has 2 Puppet resources associated and the plugin does not generate
+#          deconfigure tasks for them.
+# - item3: has no Puppet resources associated.
+# The three items are marked for removal and the plan succeeds. As a result of
+# the successful plan execution, the associated Puppet resources are removed
+# from the Puppet manifest.
+
+# Prerequisites
+add-plugins plugins/story10575_plugin
+add-extensions extensions/story10575_extension
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Create the model items
+litp create -p /software/items/item1 -t story10575 -o name='item1' config='true' deconfig='true'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp create -p /software/items/item2 -t story10575 -o name='item2' config='true' deconfig='false'
+litp inherit -s /software/items/item2 -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+litp create -p /software/items/item3 -t story10575 -o name='item3' config='false' deconfig='false'
+litp inherit -s /software/items/item3 -p /deployments/local/clusters/cluster1/nodes/node1/items/item3
+
+# 2. Create the plan and check that it contains the right config tasks
+litp create_plan
+
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertTask 0 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertNoConfigTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item3 Initial
+assertNoConfigTask 0 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item3 Initial
+
+# 3. Run the plan and check that the Puppet manifest contains the right resources
+litp run_plan
+assertPlanState successful
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item3 Applied
+assertFileContents manifests/items_applied.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+# 4. Remove the model items
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item3 ForRemoval
+
+# 5. Create the plan and check that the right deconfigure tasks are generated
+litp create_plan
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 0 notify node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertCleanupTask 1 /deployments/local/clusters/cluster1/nodes/node1/items/item3 Initial
+
+# 6. Run the plan successfully and check that the Puppet manifest does not
+#    contain the resources
+runPlanStart
+
+runPlanUntil 1
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Success
+assertTask 0 file node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Success
+assertTask 0 notify node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2 Success
+assertFileContents manifests/resources_replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+runPlanUntil 2
+assertFileContents manifests/resources_replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+runPlanEnd
+assertPlanState successful
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item3
+assertFileContents manifests/items_removed.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

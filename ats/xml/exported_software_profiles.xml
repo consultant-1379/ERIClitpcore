@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:software-profiles-collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="profiles">
+  <litp:os-profile id="rhel_6_4">
+    <arch>x86_64<!--note: this property is not updatable--></arch>
+    <breed>redhat<!--note: this property is not updatable--></breed>
+    <kopts_post>console=ttyS0,115200<!--note: this property is not updatable--></kopts_post>
+    <name>sample-profile<!--note: this property is not updatable--></name>
+    <path>/var/www/html/6/os/x86_64/<!--note: this property is not updatable--></path>
+    <version>rhel6<!--note: this property is not updatable--></version>
+  </litp:os-profile>
+</litp:software-profiles-collection>

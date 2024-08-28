@@ -1,0 +1,7 @@
+runLitpScript ../include/two_nodes.at
+
+#create item at a non-existent path
+assertError --err_type InvalidLocationError --err_message "Path not found" create -t node -p /deployments/site1/clusters/cluster1/
+
+#create item with an invalid property
+assertError --err_type PropertyNotAllowedError --err_property "addr" --err_message '"addr" is not an allowed property of network-interface' update -p /ms/network_interfaces/ip1 -o addr='122.12'

@@ -1,0 +1,50 @@
+## test_02_p_replace_doubly_inherited_properties.at
+## Description:
+## Verify that when all items in the inheritance tree are in state For removal and
+## xml load replace  where source properties are updated resets them all to Updated
+## except grandchild of Node 2 where local property is set
+
+
+add-extensions extensions/test_12798_extension
+add-plugins plugins/test_12798_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 1. Standard doubly inherited model setup
+runLitpScript model.inc
+
+## 2. Update source parent property
+litp update -p /software/services/parent1 -o name=updatedParent1
+assertState -p /software/services/parent1 Updated
+assertProperty /software/services/parent1 -o name=updatedParent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -o name=updatedParent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -o name=updatedParent1
+
+## 3. Mark source parent item for removal
+litp remove -p /software/services/parent1
+
+## 4. Assert state and properties as expected
+assertState -p /software/services/parent1 ForRemoval
+assertProperty /software/services/parent1 -o name=updatedParent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -o name=updatedParent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -o name=updatedParent1
+
+## 5. Run  xml load --replace with source properties updated
+litp load -p / -f xml/source_parent_updated_source_child_updated_source_grandchild_updated.xml --replace
+
+## 6. Assert states and properties as expected
+assertState -p /software/services/parent1 Updated
+assertProperty /software/services/parent1 -o name=parent1_updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -o name=parent1_updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -o name=parent1_updated

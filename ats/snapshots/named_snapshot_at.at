@@ -1,0 +1,15 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot -n testMe123
+assertError --err_type=ValidationError  --err_message='A snapshot with name "testMe123" already exists' create_snapshot -n testMe123
+
+litp remove_snapshot -n testMe123
+
+litp create -p /snapshots/testMe123 -t snapshot-base
+litp remove -p /snapshots/testMe123

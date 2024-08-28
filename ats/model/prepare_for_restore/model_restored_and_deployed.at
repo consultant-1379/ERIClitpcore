@@ -1,0 +1,22 @@
+#Given a LITP MS with a model with everything in an Applied state
+#WHEN I run "litp prepare_for_restore" followed by create_plan, run_plan
+#THEN my restored system is deployed successfully.
+
+runLitpScript ../setup_two_nodes.inc
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/y -s /software/items/xx
+
+litp create_plan
+
+litp run_plan
+
+litp update -p /litp/prepare-restore -o path='/'
+
+litp create_plan
+litp run_plan
+
+assertState -p /software/items/xx Applied
+assertState -p /software/items/x Applied

@@ -1,0 +1,6 @@
+runLitpScript misc/common_test_methods.at
+
+litp run_plan
+assertPlanState successful
+
+assertError --err_message "Plan not currently running" stop_plan

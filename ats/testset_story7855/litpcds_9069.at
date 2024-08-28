@@ -1,0 +1,59 @@
+add-extensions ../plugins/multiple_tasks
+add-plugins ../plugins/multiple_tasks
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t multiple -p /software/items/test_item -o count=3
+litp inherit -s /software/items/test_item -p /deployments/local/clusters/cluster1/nodes/node1/items/test
+
+litp create_plan
+
+
+# 1. No tasks have run for the node's item
+runPlanStart
+stopPlan
+assertPlanState stopping
+runPlanEnd
+assertPlanState stopped
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/test True
+
+# 2. Only one task has run (and failed) for the node's item
+litp create_plan
+failConfigTask resource_type node1 /deployments/local/clusters/cluster1/nodes/node1/items/test
+runPlanStart
+runPlanEnd
+assertPlanState failed
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/test False
+
+# 3. Only one task has run (and succeeded) for the node's item
+litp create_plan
+runPlanStart
+runPlanUntil 1
+stopPlan
+assertPlanState stopping
+runPlanEnd
+assertPlanState stopped
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/test False
+
+# Fully remove the item under node1
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/test
+litp create_plan
+litp run_plan
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/test
+
+# Use node2
+litp inherit -s /software/items/test_item -p /deployments/local/clusters/cluster1/nodes/node2/items/test
+
+# 4. Both tasks have run for the node's item. The first was successful, but the second failed
+litp create_plan
+failCallbackTask _do_nothing /deployments/local/clusters/cluster1/nodes/node2/items/test
+runPlanStart
+runPlanEnd
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/test Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/items/test False

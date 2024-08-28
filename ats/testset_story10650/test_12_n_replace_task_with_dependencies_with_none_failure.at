@@ -1,0 +1,81 @@
+## test_12_n_replace_task_with_dependencies_with_none_failure
+## Description:
+## Ensure that when a task with no dependencies replacing a persisted
+## task with dependencies fails, the manifest will contain the
+## original task with its original dependencies
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates a persisted ConfigTask
+##    with the following dependencies:
+##    original persisted: task1(foo1, bar1) -> task2(foo2, bar2)
+##                        task1(foo1, bar1) -> task3(foo3, bar3)
+## 2. Create Plan
+## 3. Run plan
+## 4. Check manifest is as expected
+## 5. Update model items so plug-in will generate a replacement task
+##    with no dependencies to replace task1
+##    plug-in replacement taskA(fooA, barA) replaces task1(foo1, bar1)
+## 6. Create plan
+## 7. Run plan
+## 8. Wait for the replacement task to fail
+## 9. Check the original persisted task exists in manifest with the original
+##    task dependencies
+## 10.Create plan
+## 11.litp run_plan
+## 12.Check manifest is as expected
+
+## Result:
+## When a replacement task fails, the original persisted task with dependencies
+## can be seen in the manifest
+
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates a persisted ConfigTask
+#   with no dependencies
+litp create -p /software/items/item1 -t story10650 -o name="tc12_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create Plan
+litp create_plan
+
+#3. Run plan
+assertConfigTask node1 foo1 bar1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc12_foobar1"
+litp run_plan
+
+#4. Check manifest is as expected
+assertFileContents manifests/expected/tc12/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#5. Update model items so plug-in will generate a replacement task
+#   that will not have any dependencies defined:
+#   plug-in original persisted: task1(foo1, bar1)
+#   plug-in replacement taskA(fooX, barY) replaces task1(foo1, bar1)
+litp update -p /software/items/item1 -o name="tc12_foobar2"
+
+#6. Create plan
+litp create_plan
+assertConfigTask node1 foo4 bar4 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc12_foobar2"
+
+#7. Run plan
+#8. Wait for the replace task to fail
+failConfigTask foo4 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp run_plan
+
+#9. Check the original persisted task exists in the manifest
+assertFileContents manifests/expected/tc12/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#10.Create plan
+litp create_plan
+assertConfigTask node1 foo4 bar4 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc12_foobar2"
+
+#11.litp run_plan
+litp run_plan
+
+#12.Check manifest is as expected
+assertFileContents manifests/expected/tc12/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+

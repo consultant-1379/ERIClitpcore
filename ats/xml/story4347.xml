@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:mock-package-list-inherit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="story4347" source_path="/software/items/story4347_list">
+  <name>story4347_overwrite</name>
+  <litp:mock-package-list-packages-collection-inherit source_path="/software/items/story4347_list/packages" id="packages">
+    <litp:mock-package-inherit source_path="/software/items/story4347_list/packages/story4347_2" id="story4347_2"/>
+  </litp:mock-package-list-packages-collection-inherit>
+</litp:mock-package-list-inherit>

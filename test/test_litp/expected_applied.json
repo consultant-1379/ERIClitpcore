@@ -1,0 +1,121 @@
+{
+    "puppet_manager": {
+        "node_tasks": {}
+    }, 
+    "items": {
+        "/nodes": {
+            "__type__": "CollectionItem", 
+            "item_type_id": "node", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }, 
+        "/services/service1/nodes": {
+            "__type__": "RefCollectionItem", 
+            "item_type_id": "node", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }, 
+        "/nodes/node1": {
+            "__type__": "ModelItem", 
+            "item_type_id": "node", 
+            "item_status": "Updated", 
+            "item_previous_status": "Applied", 
+            "item_applied_properties": {
+                "hostname": "node1.com"
+            }, 
+            "item_properties": {
+                "hostname": "new.com"
+            },
+            "item_source": null
+        }, 
+        "/": {
+            "__type__": "ModelItem", 
+            "item_type_id": "root", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }, 
+        "/services": {
+            "__type__": "CollectionItem", 
+            "item_type_id": "clusteredservice", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }, 
+        "/services/service1/nodes/node1": {
+            "__type__": "ReferenceItem", 
+            "item_type_id": "node", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {
+                "hostname": "node1.com"
+            }, 
+            "item_properties": {
+                "hostname": "node1.com"
+            },
+            "item_source": null
+        }, 
+        "/blades": {
+            "__type__": "CollectionItem", 
+            "item_type_id": "blade", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }, 
+        "/services/service1": {
+            "__type__": "ModelItem", 
+            "item_type_id": "clusteredservice", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }, 
+        "/systems": {
+            "__type__": "CollectionItem", 
+            "item_type_id": "system", 
+            "item_status": "Applied", 
+            "item_previous_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_properties": {},
+            "item_source": null
+        }
+    }, 
+    "extensions": [
+        {
+            "version": "1.0.0", 
+            "name": "bob", 
+            "class": "foo.bar.baz"
+        }, 
+        {
+            "version": "1.2.4", 
+            "name": "Geronimo", 
+            "class": "really.silly.module.class"
+        }
+    ], 
+    "plan": null, 
+    "plugins": [
+        {
+            "version": "1.0.0", 
+            "name": "bob", 
+            "class": "foo.bar.baz"
+        }, 
+        {
+            "version": "1.2.4", 
+            "name": "Geronimo", 
+            "class": "really.silly.module.class"
+        }
+    ]
+}

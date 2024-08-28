@@ -1,0 +1,38 @@
+## LITPCDS-12114 - Do not inject model dependencies between package ConfigTasks
+add-plugins plugin/
+add-extensions extension/
+runLitpScript ../include/two_nodes.at
+
+## Set up a node package
+litp create -t package -p /software/items/httpd-tools -o name=httpd-tools
+litp inherit -s /software/items/httpd-tools -p /deployments/local/clusters/cluster1/nodes/node1/items/httpd-tools
+litp inherit -s /software/items/httpd-tools -p /deployments/local/clusters/cluster1/nodes/node2/items/httpd-tools
+
+## Set up a cluster service and application
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+litp create -t clustered-service -p /deployments/local/clusters/cluster1/services/apache -o active=1 name=apache node_list=node1,node2 standby=0
+litp create -t service -p /software/services/httpd -o service_name=httpd
+litp inherit -s /software/services/httpd -p /deployments/local/clusters/cluster1/services/apache/applications/httpd
+## Set up a cluster-level package for the service's application
+litp create -t package -p /software/items/httpd_pkg -o name=httpd
+litp inherit -s /software/items/httpd_pkg -p /software/services/httpd/packages/pkg1
+
+litp create_plan
+litp run_plan
+
+## Remove the package on nodes
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/httpd-tools
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/httpd-tools
+litp remove -p /software/items/httpd-tools
+## ...And on the service
+litp remove -p /deployments/local/clusters/cluster1/services/apache
+litp remove -p /software/services/httpd
+litp remove -p /software/items/httpd_pkg
+
+litp create_plan
+
+## There are no dependencies between node and cluster package-type Puppet
+## resources inherited from the extension
+runPlanUntil 2
+assertFileContents no_resource_deps.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

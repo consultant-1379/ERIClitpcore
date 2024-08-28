@@ -1,0 +1,2 @@
+assertError create -p /litp/logging -t software -o loglevel=info
+assertError remove -p /litp/logging

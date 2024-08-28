@@ -1,0 +1,123 @@
+## Description: Verify initial-lock-tasks functionality
+## Verify that with nodes in state initial and model updated so tasks will be generated for the nodes
+## that we get lock/unlock tasks for the nodes when create_plan --initial-lock-tasks is run
+## Verify that with nodes in state applied, and new nodes in state initial and model updated so tasks will be
+## generated for all nodes that we get lock/unlock tasks for all nodes when create_plan --initial-lock-tasks is run
+## Prerequisite: runLitpScript ../include/two_nodes.at, cluster1 nodes 1 & 2 in state Initial
+## Step 1: Create telnet package and inherit telnet package to cluster 1 nodes 1 & 2
+## Step 2: litp create_plan --initial-lock-tasks
+## Step 3: litp run_plan
+## Verification 1: Verify lock/unlock tasks created for nodes 1 & 2 in cluster 1 and nodes are in state applied
+## Step 4: Set up new clusters - clusters2 with nodes 3 & 4 and cluster 3 with nodes 5 & 6
+##         Inherit the telnet package to all nodes in new clusters so tasks will be generated for the new nodes
+##         in state initial
+## Step 5: Create a new vim package and inherit it to cluster 1, nodes 1 & 2 so tasks will be generated for
+##         these nodes in state applied.
+## Step 6: litp create_plan --initial-lock-tasks
+## Step 7: litp run_plan
+## Verification 2: Verify lock/unlock tasks created for all nodes in all clusters and nodes are in state applied
+
+add-plugins ../torf-388708/plugin/dummy_388708_lock
+runLitpScript ../include/two_nodes.at
+
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+litp create -t mock-package -p /software/items/telnet -o name=telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet
+
+litp create_plan --initial-lock-tasks
+litp run_plan
+
+assertCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node2
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node2
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked="false"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked="false"
+
+
+litp create -p /infrastructure/systems/system3 -t system -o system_name='SYS3'
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system3/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/systems/system4 -t system -o system_name='SYS4'
+litp create -p /infrastructure/systems/system4/disks/disk0 -t disk -o name='sdb' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system4/controllers/c1 -t controller-base
+
+litp create -p /deployments/local/clusters/cluster2 -t cluster -o ha_manager=vcs
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node3 -t node -o hostname='node3'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node4 -t node -o hostname='node4'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster2/nodes/node3/items/telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster2/nodes/node4/items/telnet
+
+litp create -p /deployments/local/clusters/cluster3 -t cluster -o ha_manager=vcs
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node5 -t node -o hostname='node5'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node5/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node6 -t node -o hostname='node6'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node6/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster3/nodes/node5/items/telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster3/nodes/node6/items/telnet
+
+
+litp create -t mock-package -p /software/items/vim -o name=vim
+litp inherit -s /software/items/vim -p /deployments/local/clusters/cluster1/nodes/node1/items/vim
+litp inherit -s /software/items/vim -p /deployments/local/clusters/cluster1/nodes/node2/items/vim
+
+
+# Create plan
+# Should  have lock tasks for all nodes, nodes in clusters 2 & 3 are in state Initial
+# and nodes in cluster 1 Applied.
+litp create_plan --initial-lock-tasks
+litp run_plan
+
+assertCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+
+assertCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node2
+assertCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node2
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+
+assertCallbackTask _lock /deployments/local/clusters/cluster2/nodes/node3
+assertCallbackTask _unlock /deployments/local/clusters/cluster2/nodes/node3
+assertState -p /deployments/local/clusters/cluster2/nodes/node3 Applied
+
+assertCallbackTask _lock /deployments/local/clusters/cluster2/nodes/node4
+assertCallbackTask _unlock /deployments/local/clusters/cluster2/nodes/node4
+assertState -p /deployments/local/clusters/cluster2/nodes/node3 Applied
+
+assertCallbackTask _lock /deployments/local/clusters/cluster3/nodes/node5
+assertCallbackTask _unlock /deployments/local/clusters/cluster3/nodes/node5
+assertState -p /deployments/local/clusters/cluster3/nodes/node5 Applied
+
+assertCallbackTask _lock /deployments/local/clusters/cluster3/nodes/node6
+assertCallbackTask _unlock /deployments/local/clusters/cluster3/nodes/node6
+assertState -p /deployments/local/clusters/cluster3/nodes/node6 Applied
+
+

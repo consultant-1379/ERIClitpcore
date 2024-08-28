@@ -1,0 +1,111 @@
+## test_02_p_remove_source_and_inherited_item_in_state_initial
+## Description:
+## Remove source and corresponding inherited item in state Initial (APD=True)
+## Verify that when all items in the inheritance tree are in Initial state and
+## I run load --replace <file.xml> where source and corresponding inherited items
+## are omitted on the xml file then I do not get an error msg and both
+## source and inherited items are in removed
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+## AC 1.2
+
+## 1. Create a parent child and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 2. Inherit parent to node1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+## 3. Inherit parent to node2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 4. Updated node 2 grandchild name
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  -o name=grandchild1Prime
+
+## 5. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 6.  Run  xml load --replace where grandchildren are omitted
+litp load -p / -f xml/all_grandchildren_omitted.xml --replace
+
+## 7. Assert grandchildren are removed
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertNone -p /software/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+## 8. restore model to all initial
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 9. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 10. Run  xml load --replace where grandchildren and children are omitted
+litp load -p / -f xml/all_children_omitted.xml --replace
+
+## 11. Assert grandchildren and children are removed
+assertState -p /software/services/parent1 Initial
+assertNone -p /software/services/parent1/childs/child1
+assertNone -p /software/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+## 12. restore model to all initial
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+## 13. assert all initial
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+
+## 14. Run  xml load --replace where grandchildren, children and parents are omitted
+litp load -p / -f xml/all_parents_omitted.xml --replace
+
+## 15. Assert grandchildren, children and parents are removed
+assertNone -p /software/services/parent1
+assertNone -p /software/services/parent1/childs/child1
+assertNone -p /software/services/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1

@@ -1,0 +1,22 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+runLitpScript setup_twonodes.inc
+
+litp create_plan
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_file
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_file
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim
+
+litp run_plan
+
+assertDirectoryContents expected_run_plan_packages/ /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+assertState -p /software/items/package_file Applied
+assertState -p /software/items/package_vim Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2 Applied
+
+assertError create_plan
+

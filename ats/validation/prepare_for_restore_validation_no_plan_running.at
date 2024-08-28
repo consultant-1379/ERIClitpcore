@@ -1,0 +1,13 @@
+add-extensions ../extensions/dummy_logrotate_extensions
+runLitpScript ../model/setup_two_nodes.inc
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+
+runPlanStart
+
+assertError --err_type InvalidRequestError --err_message "Operation not allowed while plan is running/stopping" prepare_restore

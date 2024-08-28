@@ -1,0 +1,17 @@
+runLitpScript two-node-std.inc
+add-extensions extensions/dummy_extension
+
+litp create -t dummy-profile -p /software/profiles/dummy
+litp create -t dummy-item -p /software/profiles/dummy/item -o name=foo
+litp inherit -s /software/profiles/dummy/item -p /software/profiles/dummy/ro/ref
+litp remove -p /software/profiles/dummy/ro/ref
+
+litp load -p /software/profiles/dummy/ro -f xml/dummy_ro_ref.xml
+assertProperty /software/profiles/dummy/ro/ref -o name=foo
+
+litp load --merge -p /software/profiles/dummy/ro -f xml/dummy_ro_ref.xml
+assertProperty /software/profiles/dummy/ro/ref -o name=foo
+
+litp load --replace -p /software/profiles/dummy/ro -f xml/dummy_ro_ref.xml
+assertProperty /software/profiles/dummy/ro/ref -o name=foo
+

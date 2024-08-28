@@ -1,0 +1,125 @@
+{
+    "puppet_manager": {
+        "node_tasks": {}
+    }, 
+    "items": {
+        "/nodes": {
+            "item_app_prop_det": true,
+            "__type__": "CollectionItem", 
+            "item_type_id": "node", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }, 
+        "/services/service1/nodes": {
+            "item_app_prop_det": true,
+            "__type__": "RefCollectionItem", 
+            "item_type_id": "node", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }, 
+        "/nodes/node1": {
+            "item_app_prop_det": true,
+            "__type__": "ModelItem", 
+            "item_type_id": "node", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {
+                "is_locked": "false",
+                "hostname": "node1.com"
+            }, 
+            "item_source": null
+        }, 
+        "/": {
+            "item_app_prop_det": true,
+            "__type__": "ModelItem", 
+            "item_type_id": "root", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }, 
+        "/services": {
+            "item_app_prop_det": true,
+            "__type__": "CollectionItem", 
+            "item_type_id": "clusteredservice", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }, 
+        "/services/service1/nodes/node1": {
+            "item_app_prop_det": true,
+            "__type__": "ModelItem", 
+            "item_type_id": "node", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": "/nodes/node1"
+        }, 
+        "/blades": {
+            "item_app_prop_det": true,
+           "__type__": "CollectionItem", 
+            "item_type_id": "blade", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }, 
+        "/services/service1": {
+            "item_app_prop_det": true,
+            "__type__": "ModelItem", 
+            "item_type_id": "clusteredservice", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }, 
+        "/systems": {
+            "item_app_prop_det": true,
+            "__type__": "CollectionItem", 
+            "item_type_id": "system", 
+            "item_status": "Initial", 
+            "item_applied_properties": {}, 
+            "item_previous_status": null, 
+            "item_properties": {}, 
+            "item_source": null
+        }
+    }, 
+    "extensions": [
+        {
+            "version": "1.0.0", 
+            "name": "bob", 
+            "class": "foo.bar.baz"
+        }, 
+        {
+            "version": "1.2.4", 
+            "name": "Geronimo", 
+            "class": "really.silly.module.class"
+        }
+    ], 
+    "plan": null, 
+    "plugins": [
+        {
+            "version": "1.0.0", 
+            "name": "bob", 
+            "class": "foo.bar.baz"
+        }, 
+        {
+            "version": "1.2.4", 
+            "name": "Geronimo", 
+            "class": "really.silly.module.class"
+        }
+    ]
+}

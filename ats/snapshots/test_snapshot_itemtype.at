@@ -1,0 +1,18 @@
+add-plugins ../plugins/mock_volmgr_plugin
+assertError --err_message 'litp create: error: argument -t/--type is required' create -p /snapshots/testMe123
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create -p /snapshots/testMe123 -t snapshot-base
+assertPlanState successful
+
+assertError --err_message "Item type not registered: snapshot-ace" --err_type InvalidTypeError create -p /snapshots/testMe12 -t snapshot-ace
+
+assertError --err_message "'node' is not an allowed type for collection of item type 'snapshot-base'" --err_type InvalidTypeError create -p /snapshots/testMe1 -t node
+
+litp create_snapshot --name testMeUnosDosTres
+assertPlanState successful

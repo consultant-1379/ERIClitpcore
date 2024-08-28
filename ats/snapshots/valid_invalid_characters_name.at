@@ -1,0 +1,13 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot -n a-zAZ09_
+
+assertPlanState successful
+
+assertError --err_message='argument -n/--name: A Named Backup Snapshot "name" can only contain characters in the range "[a-zA-Z0-9_-]"' create_snapshot -n *()@!$%^&*

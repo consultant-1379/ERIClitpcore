@@ -1,0 +1,72 @@
+#   Purpose:
+#       This AT was created to replace Story46,
+#       test_10_p_create_plan_after_plan_stop_remaining_tasks
+#       and complement Story2240,
+#       test_03_n_no_remove_create_run_stop_plan_state_stopping
+#       Story46 and Story2240 tests can be found as follows:
+#       ERIClitpcore-testware/python-testcases/src/main/resources/core/testset_story46.py
+#       ERIClitpcore-testware/python-testcases/src/main/resources/core/testset_story2240.py
+#
+#   Description:
+#       This checks that when a plan is run and stopped before all of its
+#       tasks are completed, that a subsequently created plan includes
+#       the remaining tasks from the previous plan.
+#   Actions:
+#       1. Create test package for node and management server
+#       2. Create and run plan.
+#       3. Stop plan after first phase.
+#       4. Verify that task from first phase was applied successfully.
+#        and that tasks belonging to second phase are still at Initial
+#       5. Issue the create plan command.
+#       6. Verify that new plan contains the remaining tasks to be executed
+#   Results:
+#       A plan is created containing the tasks remaining to be executed
+#       from the previous plan.
+
+
+runLitpScript ../include/two_nodes.at
+
+# Define test plugin and test extension
+add-extensions ../plan/plan_states
+add-plugins ../plan/plan_states
+
+# 1. Create test package for node and management server
+litp create -p /software/items/x -t test-package -o name=x
+litp inherit -p /ms/items/x -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/x -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/x -s /software/items/x
+
+# 2. Create and run Plan
+litp create_plan
+assertTask 0 package ms1 /ms/items/x Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+# 3. Stop plan after first phase
+assertPlanState initial
+runPlanUntil 1
+assertPlanState running
+litp stop_plan
+assertPlanState stopping
+runPlanEnd
+assertPlanState stopped
+
+# 4. Verify that task belonging to first phase was successfully applied
+# and that tasks belonging to second phase are still at Initial
+assertTask 0 package ms1 /ms/items/x Success
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+assertState -p /ms/items/x Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+# 5. Issue the create plan command.
+litp create_plan
+
+# 6. Verify that the new plan contains the remaining tasks to be executed
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertTask 0 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/x Initial

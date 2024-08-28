@@ -1,0 +1,51 @@
+runLitpScript ../include/two_nodes_with_packages.at
+
+# Cluster 2
+litp create -p /deployments/local/clusters/cluster2 -t cluster
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node1 -t node -o hostname='c2node1'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node1/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node2 -t node -o hostname='c2node2'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node2/system -s /infrastructure/systems/system2
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node2/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Cluster 3
+litp create -p /deployments/local/clusters/cluster3 -t cluster
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node1 -t node -o hostname='c3node1'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node1/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node2 -t node -o hostname='c3node2'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node2/system -s /infrastructure/systems/system2
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node2/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+
+litp update -p /deployments/local/clusters/cluster2 -o dependency_list="cluster3"
+
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster3
+
+let __err  --err_type "ValidationError" --err_message 'Create plan failed: Cluster "/deployments/local/clusters/cluster3" is for removal. Cluster "/deployments/local/clusters/cluster2" has a dependency on it and is not for removal'
+assertError __err create_plan
+
+litp remove -p /deployments/local/clusters/cluster2
+
+litp create_plan
+litp run_plan
+
+assertPlanState successful

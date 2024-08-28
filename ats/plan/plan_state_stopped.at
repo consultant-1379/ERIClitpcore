@@ -1,0 +1,84 @@
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+# say no to mock - learn to write some plugin code
+add-extensions plan_states
+add-plugins plan_states
+
+# 1. initial->running 2 phase plan->stopping after first phase->stopped
+litp create -p /software/items/x -t test-package -o name=x
+litp inherit -p /ms/items/x -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/x -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/x -s /software/items/x
+
+litp create_plan
+assertTask 0 package ms1 /ms/items/x Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+assertPlanState initial
+runPlanStart
+assertPlanState running
+runPlanUntil 1
+litp stop_plan
+assertPlanState stopping
+runPlanEnd
+assertPlanState stopped
+
+assertTask 0 package ms1 /ms/items/x Success
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+assertState -p /ms/items/x Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/x Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/x Initial
+
+# 2. initial->running single phase plan->stopping after first phase->success
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/x
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/x
+litp create -p /software/items/y -t test-package -o name=y
+litp inherit -p /ms/items/y -s /software/items/y
+
+litp create_plan
+assertTask 0 package ms1 /ms/items/y Initial
+
+assertPlanState initial
+runPlanStart
+assertPlanState running
+runPlanUntil 1
+litp stop_plan
+assertPlanState stopping
+runPlanEnd
+assertPlanState successful
+
+assertTask 0 package ms1 /ms/items/y Success
+assertState -p /ms/items/y Applied
+
+# 3. initial->running 2 phase plan->stopping during second phase->success
+litp inherit -p /ms/items/z -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/z -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/z -s /software/items/x
+
+litp create_plan
+assertTask 0 package ms1 /ms/items/z Initial
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/z Initial
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/z Initial
+
+assertPlanState initial
+runPlanStart
+assertPlanState running
+runPlanUntil 1
+assertPlanState running
+runPlanUntil 2
+litp stop_plan
+assertPlanState stopping
+runPlanEnd
+assertPlanState successful
+
+assertTask 0 package ms1 /ms/items/z Success
+assertTask 1 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/z Success
+assertTask 1 package node2 /deployments/local/clusters/cluster1/nodes/node2/items/z Success
+
+assertState -p /ms/items/z Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/z Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/z Applied

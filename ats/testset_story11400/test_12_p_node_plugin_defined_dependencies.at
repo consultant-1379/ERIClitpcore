@@ -1,0 +1,55 @@
+## test_12_p_node_plugin_defined_dependencies
+## Description:
+## Ensure that plugin defined dependencies are still enforced on the nodes
+
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types
+##   on the MS and Peer Node:
+##   "system" Item-Type
+##   "os" profile Item-Type
+##   "network_interfaces" Item-Type
+##   "storage profile" Item-Type
+##   "software-item" item type
+##   "service-item" item type
+##   "node-config" item type
+##   "file-system" item type
+##   "routes" item type
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/test_12_plugin
+add-extensions ../extensions/dummy_package_like_extensions
+# Basic 2 node deployment setup
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp create -p /software/items/item -t dummy-package-like -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+
+litp create -p /software/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+## 3. Check the resulting plan order
+let __configs_node1 ConfigTask node1 node::configs 12 /deployments/local/clusters/cluster1/nodes/node1/configs/config
+let __services_node1 ConfigTask node1 node::services 11 /deployments/local/clusters/cluster1/nodes/node1/services/service
+let __items_node1 ConfigTask node1 node::items 10 /deployments/local/clusters/cluster1/nodes/node1/items/item
+let __file_systems_node1 ConfigTask node1 node::file_systems 13 /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system
+let __routes_node1 ConfigTask node1 node::routes 14 /deployments/local/clusters/cluster1/nodes/node1/routes/route
+let __network_interfaces_node1 ConfigTask node1 node::network_interfaces 15 /deployments/local/clusters/cluster1/nodes/node1/network_interfaces
+let __storage_profile_node1 ConfigTask node1 node::storage_profile 16 /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __os_node1 ConfigTask node1 node::os 17 /deployments/local/clusters/cluster1/nodes/node1/os
+let __system_node1 ConfigTask node1 node::system 18 /deployments/local/clusters/cluster1/nodes/node1/system
+
+assertTaskBeforeTask __configs_node1 __services_node1
+assertTaskBeforeTask __items_node1 __configs_node1
+assertTaskBeforeTask __routes_node1 __configs_node1
+assertTaskBeforeTask __system_node1 __os_node1 __network_interfaces_node1 __storage_profile_node1 __items_node1 __file_systems_node1 __configs_node1

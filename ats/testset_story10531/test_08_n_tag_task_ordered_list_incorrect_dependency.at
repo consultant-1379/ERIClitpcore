@@ -1,0 +1,34 @@
+# Test Case 08.
+
+# Description:
+# Test that on creating a plan with default deployment ruleset defined and an
+# invalid ordered task list with tagged tasks, an internal error message is raised.
+#
+# Actions:
+# 1. Create a model item that generates tasks associated with all valid task's
+#    tags in an ordered task list with tasks in different group
+# 2. Execute "create_plan" command
+# 3. Check that an internal server error is raised and that error message is logged
+#
+# Result:
+# On plan creation, ordered tasks with tags and with invalid tasks dependency
+# raises an internal server error and that error message is logged.
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Create a model item that generates tasks associated with all valid task's
+#    tags in an ordered task list with tasks in different group
+litp create -p /software/items/item1 -t foo8 -o name='item1'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 2. Execute "create_plan" command
+# 3. Check that an internal server error is raised and that error message is logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Task for item /deployments/local/clusters/cluster1/nodes/node1/items/item1 in \
+group DEPLOYMENT_BOOT_GROUP and its dependent task for \
+item /deployments/local/clusters/cluster1/nodes/node1/items/item1 in \
+group DEPLOYMENT_MS_GROUP are in different groups"

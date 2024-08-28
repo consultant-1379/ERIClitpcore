@@ -1,0 +1,18 @@
+add-plugins plugins/plugins3
+litp create -p /ms/network_interfaces/nic1 -t network-interface -o network_name=mgmt ipaddress=10.10.10.100
+# will require network-interface through sibling dependency
+litp create -t service-base -p /ms/services/srv1
+
+litp create_plan
+litp run_plan
+#show show_plan
+
+litp remove -p /ms/network_interfaces/nic1
+#show show -p /ms/network_interfaces/nic1
+
+litp create_plan
+runPlanUntil 1
+assertFileContents ./manifests/test_03_01.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+runPlanEnd
+assertFileContents ./manifests/test_03_02.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

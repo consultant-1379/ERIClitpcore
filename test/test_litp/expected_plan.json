@@ -1,0 +1,226 @@
+{
+    "puppet_manager": {
+        "node_tasks": {
+            "node1": [{
+                "node": "/nodes/node1",
+                "state": "Initial",
+                "uuid": "92bbd88b-c48d-4ba4-9734-088da83a9714",
+                "description": "Node Task",
+                "kwargs": {
+                    "my_name": {
+                        "item_vpath": "/nodes/node1",
+                        "__type__": "FuturePropertyValue",
+                        "property_name": "hostname"
+                    }
+                },
+                "__type__": "ConfigTask",
+                "model_item": "/nodes/node1",
+                "model_items": [],
+                "call_type": "node1",
+                "call_id": "task1",
+                "group": "DEPLOYMENT_NODE_GROUP",
+                "requires": {"items": [], "tasks": [], "call_type_call_id": []},
+                "dependency_unique_ids": [],
+                "persist": true
+	           }]
+        }
+    },
+    "items": {
+        "/nodes": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "CollectionItem",
+            "item_properties": {},
+            "item_source": null,
+            "item_type_id": "node",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/nodes/node1/system": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "ModelItem",
+            "item_properties": {},
+            "item_source": "/systems/sys1",
+            "item_type_id": "system",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/systems/sys1": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "ModelItem",
+            "item_properties": {
+                "name": "sys1"
+            },
+            "item_source": null,
+            "item_type_id": "system",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/nodes/node1": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "ModelItem",
+            "item_properties": {
+                "is_locked": "false",
+                "hostname": "node1"
+            },
+            "item_source": null,
+            "item_type_id": "node",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "ModelItem",
+            "item_properties": {},
+            "item_source": null,
+            "item_type_id": "root",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/services": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "CollectionItem",
+            "item_properties": {},
+            "item_source": null,
+            "item_type_id": "clusteredservice",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/blades": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "CollectionItem",
+            "item_properties": {},
+            "item_source": null,
+            "item_type_id": "blade",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        },
+        "/systems": {
+            "item_app_prop_det": true,
+            "item_previous_status": null,
+            "__type__": "CollectionItem",
+            "item_properties": {},
+            "item_source": null,
+            "item_type_id": "system",
+            "item_status": "Initial",
+            "item_applied_properties": {}
+        }
+    },
+    "extensions": [
+        {
+            "version": "1.0.0",
+            "name": "bob",
+            "class": "foo.bar.baz"
+        },
+        {
+            "version": "1.2.4",
+            "name": "Geronimo",
+            "class": "really.silly.module.class"
+        }
+    ],
+    "plan": {
+        "phases": [
+            [
+                {
+                    "node": "/nodes/node1",
+                    "state": "Initial",
+                    "uuid": "92bbd88b-c48d-4ba4-9734-088da83a9714",
+                    "description": "Node Task",
+                    "kwargs": {
+                        "my_name": {
+                            "item_vpath": "/nodes/node1",
+                            "__type__": "FuturePropertyValue",
+                            "property_name": "hostname"
+                        }
+                    },
+                    "__type__": "ConfigTask",
+                    "model_item": "/nodes/node1",
+                    "model_items": [],
+                    "call_type": "node1",
+                    "call_id": "task1",
+                    "group": "DEPLOYMENT_NODE_GROUP",
+                    "requires": {"items": [], "tasks": [], "call_type_call_id": []},
+                    "dependency_unique_ids": [],
+                    "persist": true
+                },
+                {
+                    "node": "/nodes/node1",
+                    "state": "Success",
+                    "uuid": "dedbb1ed-f16b-4248-8b7d-ebad10e8c608",
+                    "description": "Install system",
+                    "kwargs": {
+                        "param": "value"
+                    },
+                    "__type__": "ConfigTask",
+                    "model_item": "/nodes/node1/system",
+                    "model_items": [],
+                    "call_type": "system",
+                    "call_id": "sys1",
+                    "group": "DEPLOYMENT_NODE_GROUP",
+                    "requires": {"items": [], "tasks": [], "call_type_call_id": []},
+                    "dependency_unique_ids": [],
+                    "persist": true
+                },
+                {
+                    "callback": "callback",
+                    "state": "Initial",
+                    "description": "Callback 1",
+                    "plugin": "test_model_container.MockPlugin",
+                    "plugin_name": "Plugin",
+                    "kwargs": {
+                        "param1": "value1"
+                    },
+                    "args": [
+                        "arg1"
+                    ],
+                    "__type__": "CallbackTask",
+                    "model_item": "/nodes/node1/system",
+                    "model_items": ["/nodes/node1"],
+                    "group": "DEPLOYMENT_NODE_GROUP"
+                },
+                {
+                    "__type__": "RemoteExecutionTask",
+                    "action": "action",
+                    "agent": "agent",
+                    "args": [],
+                    "description": "RemoteExecutionTask 1",
+                    "kwargs": {
+                        "param1": "value1"
+                    },
+                    "model_item": "/nodes/node1/system",
+                    "model_items": [
+                        "/nodes/node1"
+                    ],
+                    "nodes": [
+                        "/nodes/node1"
+                    ],
+                    "plugin": "litp.core.task.RemoteExecutionTask",
+                    "state": "Initial",
+                    "plugin_name": null
+                }
+            ]
+        ],
+        "has_cleanup_phase": false,
+        "__type__": "Plan",
+        "is_snapshot_plan": false,
+        "state": "initial"
+    },
+    "plugins": [
+        {
+            "version": "1.0.0",
+            "name": "bob",
+            "class": "foo.bar.baz"
+        },
+        {
+            "version": "1.2.4",
+            "name": "Geronimo",
+            "class": "really.silly.module.class"
+        }
+    ]
+}

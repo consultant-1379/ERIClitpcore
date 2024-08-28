@@ -1,0 +1,28 @@
+runLitpScript ../setup_two_nodes.inc
+
+litp create -p /software/items/A -t mock-package -o name=A
+litp inherit -p /ms/items/A -s /software/items/A
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/A -s /software/items/A
+
+litp create_plan
+litp run_plan
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+
+assertState -p /software/items/x Initial
+assertState -p /ms/items/y Initial
+
+litp update -p /litp/prepare-restore -o path='/'
+
+assertNone -p /software/items/x
+assertNone -p /ms/items/y
+assertState -p  /ms/items/A Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/A Initial
+
+litp create_plan
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/A Initial

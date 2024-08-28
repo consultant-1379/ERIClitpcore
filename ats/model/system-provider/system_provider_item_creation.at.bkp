@@ -1,0 +1,13 @@
+# can create system-provider item
+litp /infrastructure/system_providers/sys1 create system-provider
+
+# ensure error on creation of exisitng system-provier item
+assertError /infrastructure/system_providers/sys1 create system-provider
+
+# can create multiple system-provier items
+litp /infrastructure/system_providers/sys2 create system-provider
+litp /infrastructure/system_providers/sys3 create system-provider
+
+# ensure system_provider collection cannot contains non system_provider items
+assertError /infrastructure/system_providers/sys4 create system
+assertError /infrastructure/system_providers/sys4 create node

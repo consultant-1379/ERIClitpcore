@@ -1,0 +1,11 @@
+runLitpScript misc/common_test_methods.at
+
+failConfigTask package node2 /deployments/local/clusters/cluster1/nodes/node2/items/story_2240
+runPlanStart
+assertPlanState running
+# We expect the plan to fail
+runPlanEnd
+assertPlanState failed
+
+litp remove_plan
+assertError --err_message "Plan does not exist" show_plan

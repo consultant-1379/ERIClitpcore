@@ -1,0 +1,8 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+# first make sure this works
+litp create_snapshot
+litp remove_snapshot
+
+litp create_snapshot
+litp remove_snapshot -n snapshot

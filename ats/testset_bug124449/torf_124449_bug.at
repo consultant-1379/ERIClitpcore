@@ -1,0 +1,50 @@
+## TORF-124449
+add-extensions extensions/dummy_124449_extension
+add-plugins plugins/dummy_124449_plugin
+runLitpScript ../include/two_nodes.at
+
+litp create -t vm-service -p /ms/services/ms_vmservice1 -o service_name="vm1"
+
+litp create_plan
+litp run_plan
+
+assertPlanState successful
+
+assertState -p /ms/services/ms_vmservice1 Applied
+assertState -p /ms/services/ms_vmservice1/foo Applied
+assertState -p /ms/services/ms_vmservice1/bar Applied
+assertState -p /ms/services/ms_vmservice1/baz Applied
+assertState -p /ms/services/ms_vmservice1/quux Applied
+
+litp remove -p /ms/services/ms_vmservice1
+
+assertState -p /ms/services/ms_vmservice1 ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/services/ms_vmservice1 True
+
+litp create_plan
+
+runPlanUntil 2
+litp stop_plan
+runPlanEnd
+assertPlanState stopped
+
+assertState -p /ms/services/ms_vmservice1 ForRemoval
+assertState -p /ms/services/ms_vmservice1/foo ForRemoval
+assertState -p /ms/services/ms_vmservice1/bar ForRemoval
+assertState -p /ms/services/ms_vmservice1/baz ForRemoval
+assertState -p /ms/services/ms_vmservice1/quux ForRemoval
+assertState -p /ms/services/ms_vmservice1/packages ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/services/ms_vmservice1 False
+
+
+litp create -t vm-service -p /ms/services/other_vm_service -o service_name="test"
+
+litp create_plan
+litp run_plan
+
+assertNone -p /ms/services/ms_vmservice1
+assertNone -p /ms/services/ms_vmservice1/foo
+assertNone -p /ms/services/ms_vmservice1/bar
+assertNone -p /ms/services/ms_vmservice1/baz
+assertNone -p /ms/services/ms_vmservice1/quux
+assertNone -p /ms/services/ms_vmservice1/packages

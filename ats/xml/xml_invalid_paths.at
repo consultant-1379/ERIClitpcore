@@ -1,0 +1,24 @@
+# invalid path given (nonexistant)
+assertError --err_type "InvalidLocationError" --err_message "Not Found" load -p /wrong -f root-dep2.xml --replace
+
+# invalid path imp (cannont overwrite root without merge)
+assertError load -p / -f root-dep2.xml
+
+# merge load valid xml create same item
+litp load -p / -f root-dep2.xml --merge
+assertError create -t storage-profile-base -p /infrastructure/storage/storage_profiles/profile_1
+
+# invalid path given (without /)
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=nodea
+assertError load -p /deployments/dep1/clusters/cluster1/nodes -f node1.xml --replace
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=nodea
+
+# invalid path given (loading into the wrong path, ie. loading network-profile item into storage-profile path)
+assertError --err_type "InvalidXMLError" --err_message "No matching global declaration available for the validation root., line 2" load -p /infrastructure/storage/storage_profiles -f network_profile.xml --replace
+
+# attempt to load empty file
+assertError --err_message "invalid xml data" load -p / -f empty.xml
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=nodea
+
+# incorrect path to xml file given
+assertError --err_type "InvalidRequestError" load -p / -f node.xml --replace

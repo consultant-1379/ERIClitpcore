@@ -1,0 +1,61 @@
+# LITPCDS-9406/9069: When removing Initial item with APD = False, it goes into the
+# "For Removal" state and so must all of its all sub-items (Collections,
+# RefCollections, References and Children).
+
+# Note: Expecting container task at top of plan in own phase
+
+add-extensions ../extensions/bug9406_extension
+add-plugins ../plugins/dummy_plugin
+runLitpScript ../../include/two_nodes.at
+
+# Create container and child
+litp create -t container -p /software/profiles/container -o hostname=container
+litp create -t child-item -p /software/profiles/container/child
+
+# Create reference
+litp create -p /infrastructure/storage/storage_profiles/profile_3 -t storage-profile-base
+litp inherit -p /software/profiles/container/ref -s /infrastructure/storage/storage_profiles/profile_3
+
+# Create nested container item and its sub-items
+litp create -t container -p /software/profiles/container/child/container_two -o hostname=container_two
+litp create -t child-item -p /software/profiles/container/child/container_two/child
+litp inherit -p /software/profiles/container/child/container_two/ref -s /infrastructure/storage/storage_profiles/profile_3
+
+litp create_plan
+
+# Fail container item's task (all other tasks must stay initial)
+failConfigTask container_call node1 /software/profiles/container
+litp run_plan
+
+# Container item is in initial state with APD=False
+assertAppliedPropertiesDeterminable -p /software/profiles/container False
+assertState -p /software/profiles/container Initial
+assertState -p /software/profiles/container/child Initial
+assertState -p /software/profiles/container/ref Initial
+
+# Remove parent items
+litp remove -p /software/profiles/container
+litp remove -p /infrastructure/storage/storage_profiles/profile_3
+
+# Sub items of parent items should go to ForRemoval
+assertState -p /software/profiles/container ForRemoval
+assertState -p /software/profiles/container/child ForRemoval
+assertState -p /software/profiles/container/ref ForRemoval
+
+# Sub items of nested container should also go to ForRemoval
+assertState -p /software/profiles/container/child/container_two ForRemoval
+assertState -p /software/profiles/container/child/container_two/child ForRemoval
+assertState -p /software/profiles/container/child/container_two/ref ForRemoval
+assertState -p /infrastructure/storage/storage_profiles/profile_3 ForRemoval
+
+# Recreate plan and assert that the items were successfully removed
+litp create_plan
+litp run_plan
+
+assertNone -p /software/profiles/container
+assertNone -p /software/profiles/container/child
+assertNone -p /software/profiles/container/ref
+assertNone -p /software/profiles/container/child/container_two
+assertNone -p /software/profiles/container/child/container_two/child
+assertNone -p /software/profiles/container/child/container_two/ref
+assertNone -p /infrastructure/storage/storage_profiles/profile_3

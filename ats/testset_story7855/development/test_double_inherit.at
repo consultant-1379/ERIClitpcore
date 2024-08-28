@@ -1,0 +1,56 @@
+runLitpScript ../../include/two_nodes.at
+
+# Create items
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+# Double inherit
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /ms/items/telnet
+# Triple inherit
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet -s /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+
+litp create_plan
+litp run_plan
+
+# Check they are applied and flag is true
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet True
+
+# Remove all items
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp remove -p /ms/items/telnet
+litp remove -p /software/items/telnet
+
+litp create_plan
+
+# Fail task associated with the inherited model item
+failConfigTask package ms1 /ms/items/telnet
+litp run_plan
+assertPlanState failed
+
+assertState -p /software/items/telnet ForRemoval
+assertState -p /ms/items/telnet ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet True
+
+# Recreate source item, update inherited item, check APD is false
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet True

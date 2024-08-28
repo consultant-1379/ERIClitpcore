@@ -1,0 +1,18 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/a_package -t mock-package -o name=a_package
+litp create -p /software/items/b_package -t mock-package -o name=b_package
+litp create -p /software/items/c_package -t mock-package -o name=c_package
+litp create -p /software/items/d_package -t mock-package -o name=d_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -s /software/items/b_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package -s /software/items/d_package
+
+litp create_plan
+litp run_plan
+
+litp export -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -f /tmp/package.xml
+litp load -p /deployments/local/clusters/cluster1/nodes/node1/items/ -f /tmp/package.xml --replace
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -o name=b_package_newname
+litp export -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -f /tmp/package.xml
+litp load -p /deployments/local/clusters/cluster1/nodes/node1/items/ -f /tmp/package.xml --replace

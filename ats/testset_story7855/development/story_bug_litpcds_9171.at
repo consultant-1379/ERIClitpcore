@@ -1,0 +1,39 @@
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+
+assertState -p /software/items/telnet Initial
+assertState -p /ms/items/telnet Initial
+
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+litp create_plan
+
+litp run_plan
+
+assertPlanState successful
+
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+litp remove -p /ms/items/telnet
+litp remove -p /software/items/telnet
+
+litp create_plan
+
+# Fail the inherited item's task, leaving the source's task initial
+failConfigTask package ms1 /ms/items/telnet
+litp run_plan
+assertPlanState failed
+
+assertState -p /software/items/telnet ForRemoval
+assertState -p /ms/items/telnet ForRemoval
+
+# The model item related to the task which did not execute has determinable properties
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+assertAppliedPropertiesDeterminable -p /software/items/telnet True

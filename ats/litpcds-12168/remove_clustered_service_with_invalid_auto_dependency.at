@@ -1,0 +1,29 @@
+add-plugins plugin/
+add-extensions extension/
+runLitpScript ../include/two_nodes.at
+
+## Set up a node package
+litp create -t package -p /software/items/httpd-tools -o name=httpd-tools -o plugin_deps="true"
+litp inherit -s /software/items/httpd-tools -p /deployments/local/clusters/cluster1/nodes/node1/items/httpd-tools
+litp inherit -s /software/items/httpd-tools -p /deployments/local/clusters/cluster1/nodes/node2/items/httpd-tools
+
+## Set up a cluster service and application
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+litp create -t clustered-service -p /deployments/local/clusters/cluster1/services/apache -o active=1 name=apache node_list=node1,node2 standby=0
+litp create -t service -p /software/services/httpd -o service_name=httpd
+litp inherit -s /software/services/httpd -p /deployments/local/clusters/cluster1/services/apache/applications/httpd
+## Set up a cluster-level package for the service's application
+litp create -t package -p /software/items/httpd_pkg -o name=httpd
+litp inherit -s /software/items/httpd_pkg -p /software/services/httpd/packages/pkg1
+
+litp create_plan
+litp run_plan
+
+litp update -p /deployments/local/clusters/cluster1/services/apache -o dependency_list=apache
+
+assertError --err_message "A service can not depend on itself. Please ensure dependency_list property is correct" create_plan
+
+litp remove -p /deployments/local/clusters/cluster1/services/apache
+litp create_plan
+

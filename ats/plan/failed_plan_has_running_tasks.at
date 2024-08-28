@@ -1,0 +1,23 @@
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+#add-plugins ../plugins/dummy_callback
+add-plugins ../testset_story11955/dev/plugins/dummy_11955_dev_plugin
+litp create_plan
+
+failConfigTask foo node1 /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+# Assert that a failed task in a phase fails the plan and doesn't move on to next phase
+assertPlanState failed
+assertTask 0 _cb node1 /deployments/local/clusters/cluster1/nodes/node1 Success
+
+assertTask 1 foo node1 /deployments/local/clusters/cluster1/nodes/node1 Failed
+assertTask 1 bar node1 /deployments/local/clusters/cluster1/nodes/node1 Success
+assertTask 1 node::system node1 /deployments/local/clusters/cluster1/nodes/node1/system Success
+
+assertTask 2 node::network_interfaces node1 /deployments/local/clusters/cluster1/nodes/node1/network_interfaces Initial
+
+assertTask 3 baz node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 3 diff_phase node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+

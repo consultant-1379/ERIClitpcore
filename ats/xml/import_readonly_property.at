@@ -1,0 +1,86 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+# litp load -p / -f blade.xml --replace
+litp load -p / -f blade_updated_readonly_property.xml --replace
+
+#  The cases below have been switched from false to true to accomodate
+#  the following fix in model_manager
+#  FIXME: Overly intricate solution to LITPCDS-6217.
+#  1347                 if pname in ["is_locked"] and existing_item.is_node():
+#  1348                     new_properties[pname] = existing_item.is_locked
+#
+
+# Test updating is_locked property on node in Initial state via xml load
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Initial
+
+litp load -p / -f blade_updated_readonly_property.xml --replace
+# is_locked property update should be silently ignored with --merge just like with --replace
+litp load -p / -f blade_updated_readonly_property.xml --merge
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+# Check for ItemExistsError and InvalidRequestError (readonly property)
+let __err_1 --err_type ItemExistsError --err_message "Item / already exists"
+assertError __err_1 --errors_length 1 load -p / -f blade_updated_readonly_property.xml
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Initial
+
+# Test updating is_locked property on node in Applied state via xml load
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Applied
+
+let __err_1 --err_type ItemExistsError --err_message "Item / already exists"
+let __err_2 --err_type InvalidRequestError --err_message 'Unable to modify readonly property: name'
+
+litp load -p / -f blade_updated_readonly_property.xml --replace
+litp load -p / -f blade_updated_readonly_property.xml --merge
+# Check for ItemExistsError and InvalidRequestError (readonly property)
+assertError __err_1 --errors_length 1 load -p / -f blade_updated_readonly_property.xml
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node3 -o is_locked=false
+assertState -p /deployments/local/clusters/cluster1/nodes/node3 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Applied
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package -o name=b_package_newname
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Applied
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 -o size='2G'
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 -o uuid='xyz'
+assertError __err_2 update -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 -o name='abc'
+
+assertState -p /infrastructure/storage/nfs_mounts/nfs_fs/export Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/nfs_fs/export Applied
+
+litp export -p / -f /tmp/root.xml
+# the following has been commented out because we are allowing updates
+# if they are updated to the same value (no-update)
+#assertError --err_type InvalidRequestError --err_message 'InvalidRequestError in property: "is_locked"    Unable to modify readonly property: is_locked' load -p / -f /tmp/root.xml --replace
+litp load -p / -f /tmp/root.xml --replace
+
+litp create_plan
+litp run_plan

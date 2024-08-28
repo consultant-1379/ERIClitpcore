@@ -1,0 +1,29 @@
+add-extensions ../extensions/dummy_nas_extensions
+add-extensions ../extensions/dummy_volmgr_extensions
+
+litp load -p / -f exported_root_states.xml --replace
+
+assertState -p /software/items/a_package Initial
+assertState -p /software/items/b_package Initial
+assertState -p /software/items/c_package Initial
+assertState -p /software/items/d_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Initial
+
+litp create_plan
+litp run_plan
+
+assertState -p /software/items/a_package Applied
+assertState -p /software/items/b_package Applied
+assertState -p /software/items/c_package Applied
+assertState -p /software/items/d_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/b_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/c_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/d_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system/disks/disk0 Applied

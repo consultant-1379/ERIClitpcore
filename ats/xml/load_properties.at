@@ -1,0 +1,8 @@
+litp create -p /software/profiles/rhel_6_4 -t os-profile -o name='sample-profile' path='/profiles/node-iso/'
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+
+# 12. load replace item with file with missing mandatory property
+litp load -p / -f root-dep2.xml --replace
+
+assertError load -p /deployments/dep2/clusters/at_cluster/nodes -f node_missing_properties.xml --replace

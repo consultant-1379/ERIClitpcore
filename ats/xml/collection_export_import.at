@@ -1,0 +1,8 @@
+litp create -t deployment -p /deployments/d1
+litp create -t cluster -p /deployments/d1/clusters/c1
+litp create -t node -p /deployments/d1/clusters/c1/nodes/n1 -o hostname=node1
+litp create -t network-interface -p /deployments/d1/clusters/c1/nodes/n1/network_interfaces/net1 -o network_name="misternetwork"
+
+litp export -p /deployments -f /tmp/to_reimport.xml
+
+litp load -p / -f /tmp/to_reimport.xml --replace

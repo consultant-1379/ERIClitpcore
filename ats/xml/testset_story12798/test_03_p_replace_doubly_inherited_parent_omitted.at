@@ -1,0 +1,29 @@
+## test_03_p_replace_doubly_inherited_parent_omitted
+## Description:
+## Verify that when all items in the inheritance tree are in state applied and
+## doubly inherited parent is omitted then doubly inherited parent, child and grandchild
+## go for ForRemoval
+
+
+add-extensions extensions/test_12798_extension
+add-plugins plugins/test_12798_plugin
+runLitpScript ../../include/two_nodes.at
+
+## 1. Standard doubly inherited model setup
+runLitpScript model.inc
+
+## 2. Run  xml load --replace with doubly inherited parent omitted
+litp load -p / -f xml/doubly_inherited_parent_omitted.xml --replace
+
+## 3. Assert states are as expected
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval

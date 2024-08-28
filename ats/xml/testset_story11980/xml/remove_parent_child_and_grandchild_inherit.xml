@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:node-services-collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="services">
+  <!--litp:parent-inherit source_path="/software/services/parent1" id="parent1"-->
+    <!--litp:parent-childs-collection-inherit source_path="/software/services/parent1/childs" id="childs"-->
+      <!--litp:child-inherit source_path="/software/services/parent1/childs/child1" id="child1"-->
+        <!--litp:child-grand_children-collection-inherit source_path="/software/services/parent1/childs/child1/grand_children" id="grand_children"-->
+          <!--litp:grand-child-inherit source_path="/software/services/parent1/childs/child1/grand_children/grandchild1" id="grandchild1"/-->
+        <!--/litp:child-grand_children-collection-inherit-->
+      <!--/litp:child-inherit-->
+    <!--/litp:parent-childs-collection-inherit-->
+  <!--/litp:parent-inherit-->
+</litp:node-services-collection>

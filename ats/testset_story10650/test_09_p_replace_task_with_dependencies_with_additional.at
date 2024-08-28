@@ -1,0 +1,64 @@
+## test_09_p_replace_task_with_dependencies_with_additional
+## Description:
+## Ensure that a persisted task with dependencies
+## can be replaced by a task with existing and new dependencies
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates a persisted ConfigTask
+##    with the following dependency:
+##    original persisted: task1(foo1, bar1) -> task2(foo2, bar2)
+##                        task1(foo1, bar1) -> task3(foo3, bar3)
+## 2. Create Plan
+## 3. Run plan
+## 4. Update model items so plug-in will generate a replacement task
+##    with dependencies to replace task1
+##    plug-in replacement taskA: (fooA, barA) -> task2(foo2, bar2) and task3(foo3, bar3) and task4(foo4, bar4), replaces: task1(foo1, bar1)
+## 5. Create plan
+## 6. Run plan
+## 7. Check the new persisted task exists in manifest with the original
+##    task1 dependencies and with the new dependencies
+
+## Result:
+## A persisted task with dependencies
+## can be replaced by a task with existing and new dependencies
+
+#Prerequisite:
+#Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates a persisted ConfigTask
+#   with the following dependency:
+#   original persisted: task1(foo1, bar1) -> task2(foo2, bar2)
+#                       task1(foo1, bar1) -> task3(foo3, bar3)
+litp create -p /software/items/item1 -t story10650 -o name="tc09_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create Plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+# Check manifest is as expected
+assertFileContents manifests/expected/tc09/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#4. Update model items so plug-in will generate a replacement task
+#   with dependencies to replace task1
+#   plug-in replacement taskA: (fooA, barA) -> task2(foo2, bar2) and task3(foo3, bar3) and task4(foo4, bar4), replaces: task1(foo1, bar1)
+litp update -p /software/items/item1 -o name="tc09_foobar2"
+
+#5. Create plan
+litp create_plan
+
+#6. Run plan
+litp run_plan
+
+#7. Check the new persisted task exists in manifest with the original
+#   task1 dependencies and with the new dependencies
+assertFileContents manifests/expected/tc09/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

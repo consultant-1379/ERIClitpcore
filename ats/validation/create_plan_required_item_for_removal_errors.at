@@ -1,0 +1,33 @@
+# setup std 2 node deployment
+runLitpScript ../queryitems/setup_twonodes.inc
+
+litp create_plan
+litp run_plan
+
+# Updating hostname to original value, no update required, no error
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node1"
+assertError --err_message 'no tasks were generated' create_plan
+
+# Try to update hostname to a new value, results in an error as this is an Applied readonly value
+assertError --err_type 'InvalidRequestError' --err_message 'Unable to modify readonly property: hostname' update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="newhostname"
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node1"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1 -o hostname="node1"
+assertError --err_message 'no tasks were generated' create_plan
+
+# try remove a required item
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1/storage_profile
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/storage_profile ForRemoval
+
+# ensure error returned from create_plan
+assertError create_plan
+
+
+# try remove the node
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node1
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 ForRemoval
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/storage_profile ForRemoval
+
+# ensure no error from create_plan
+litp create_plan

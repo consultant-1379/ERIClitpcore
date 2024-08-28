@@ -1,0 +1,12 @@
+runLitpScript  ../include/two_nodes.at
+add-extensions ../plugins/update_property
+add-plugins plugins/dummy_9743_update_model_PluginError
+
+litp create -t test_item -p /software/items/test_item -o name=test_item ms_url_path="/test_item"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+assertError --err_type InternalServerError --err_message 'Create plan failed: Model update failed with: Not all yum-repository checksums can be updated'  create_plan
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='X.X.X'
+
+# verify that plan does not get created in case there is an update model exception
+assertError --err_type InvalidLocationError  --err_message 'Plan does not exist'  run_plan

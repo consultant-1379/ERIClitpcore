@@ -1,0 +1,8 @@
+
+litp create -p /software/profiles/rhel_6_4 -t os-profile -o arch=x86_64 breed=redhat kopts_post="console=ttyS0,115200" name=sample-profile path="/var/www/html/6/os/x86_64/" version="rhel6"
+
+litp export -p /software/profiles -f /tmp/profiles.xml
+
+assertFileContents exported_software_profiles.xml /tmp/profiles.xml
+
+litp load -p /software -f /tmp/profiles.xml --replace

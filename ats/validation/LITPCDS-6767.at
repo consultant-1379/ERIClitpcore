@@ -1,0 +1,13 @@
+runLitpScript ../model/setup_two_nodes.inc
+
+litp create -p /deployments/site1/clusters/cluster1/services/serv1 -t clustered-service -o active=2 standby=0 name='serv1' node_list='node2,node_1'
+litp create -p /software/services/APP37 -t service -o cleanup_command='/bin/touch /tmp/test-lsb-37.cleanup' service_name='test-lsb-37' stop_command='/sbin/service test-lsb-37 stop' status_command='/sbin/service test-lsb-37 status' start_command='/sbin/service test-lsb-37 start'
+litp inherit -p /deployments/site1/clusters/cluster1/services/serv1/applications/APP37 -s /software/services/APP37 
+
+assertError --err_type "ValidationError" --err_property "status_timeout" --err_message "Invalid value '-'." create -p /deployments/site1/clusters/cluster1/services/serv1/ha_configs/service_config -t ha-service-config -o status_timeout="-" restart_limit="^" status_interval="*" startup_retry_limit="$" 
+
+assertError --err_type "ValidationError" --err_property "status_interval" --err_message "Invalid value '*'." create -p /deployments/site1/clusters/cluster1/services/serv1/ha_configs/service_config -t ha-service-config -o status_timeout="-" restart_limit="^" status_interval="*" startup_retry_limit="$" 
+
+assertError --err_type "ValidationError" --err_property "startup_retry_limit" --err_message "Invalid value '$'." create -p /deployments/site1/clusters/cluster1/services/serv1/ha_configs/service_config -t ha-service-config -o status_timeout="-" restart_limit="^" status_interval="*" startup_retry_limit="$" 
+
+assertError --err_type "ValidationError" --err_property "restart_limit" --err_message "Invalid value '^'." create -p /deployments/site1/clusters/cluster1/services/serv1/ha_configs/service_config -t ha-service-config -o status_timeout="-" restart_limit="^" status_interval="*" startup_retry_limit="$" 

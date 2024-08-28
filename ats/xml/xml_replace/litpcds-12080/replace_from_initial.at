@@ -1,0 +1,58 @@
+## LITPCDS-12080 alters load behaviour
+## This AT verifies the table
+## described by Architecture on expected transitions
+## see http://confluence-nam.lmera.ericsson.se/display/ELITP/Architecture+Driven+Behaviour
+## for property removal actions via xml
+
+add-extensions replace_extension
+add-plugins replace_plugin
+
+runLitpScript two-node-std.inc
+runLitpScript misc/replace-common.inc
+
+# Test 1 removal of properties from initial model items
+
+# load an empty xml to trigger validation messages for removal of required properties
+# validates the required property without default supplied combination
+let __err_0 --err_type InvalidXMLError
+let __err_1 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/defaults_and_non --err_message 'ItemType "dummy_extension" is required to have a property with name "property5"'
+let __err_2 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/defaults_and_non --err_message 'ItemType "dummy_extension" is required to have a property with name "property6"'
+let __err_3 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/defaults_and_non --err_message 'ItemType "dummy_extension" is required to have a property with name "property7"'
+let __err_4 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/defaults_and_non --err_message 'ItemType "dummy_extension" is required to have a property with name "property8"'
+let __err_5 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/all_user_supplied --err_message 'ItemType "dummy_extension" is required to have a property with name "property5"'
+let __err_6 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/all_user_supplied --err_message 'ItemType "dummy_extension" is required to have a property with name "property6"'
+let __err_7 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/all_user_supplied --err_message 'ItemType "dummy_extension" is required to have a property with name "property7"'
+let __err_8 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/all_user_supplied --err_message 'ItemType "dummy_extension" is required to have a property with name "property8"'
+let __err_9 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/only_required --err_message 'ItemType "dummy_extension" is required to have a property with name "property5"'
+let __err_10 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/only_required --err_message 'ItemType "dummy_extension" is required to have a property with name "property6"'
+let __err_11 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/only_required --err_message 'ItemType "dummy_extension" is required to have a property with name "property7"'
+let __err_12 --err_type MissingRequiredPropertyError --err_vpath /ms/configs/only_required --err_message 'ItemType "dummy_extension" is required to have a property with name "property8"'
+assertError __err_0 __err_1 __err_2 __err_3 __err_4 __err_5 __err_6 __err_7 __err_8 __err_9 __err_10 __err_11 __err_12 --errors_length 13 load -p /ms -f xml/empty_default_and_non.xml --replace
+
+# assert that all properties are as before xml load (failed) - these are the same values as in the replace-common.inc file (copy paste)
+assertProperty /ms/configs/defaults_and_non -o property1="this_is_a_default_value" property2="this_is_a_default_value" property3="this_is_a_default_value" property4="this_is_a_default_value" property5="user_supplied_required_value" property6="user_supplied_required_value" property7="user_supplied_required_value" property8="user_supplied_required_value" property9="this_is_a_default_value" property10="this_is_a_default_value" property11="this_is_a_default_value" property12="this_is_a_default_value" property13="user_supplied_value" property14="user_supplied_value" property15="user_supplied_value" property16="user_supplied_value"
+assertProperty /ms/configs/all_user_supplied -o property1="user_supplied_value" property2="user_supplied_value" property3="user_supplied_value" property4="user_supplied_value" property5="user_supplied_value" property6="user_supplied_value" property7="user_supplied_value" property8="user_supplied_value" property9="user_supplied_value" property10="user_supplied_value" property11="user_supplied_value" property12="user_supplied_value" property13="user_supplied_value" property14="user_supplied_value" property15="user_supplied_value" property16="user_supplied_value"
+assertProperty /ms/configs/only_required -o property1="this_is_a_default_value" property2="this_is_a_default_value" property3="this_is_a_default_value" property4="this_is_a_default_value" property5="user_supplied_required_value" property6="user_supplied_required_value" property7="user_supplied_required_value" property8="user_supplied_required_value" property9="this_is_a_default_value" property10="this_is_a_default_value" property11="this_is_a_default_value" property12="this_is_a_default_value"
+assertPropertyUnset -p /ms/configs/only_required -o property13 property14 property15 property16
+
+# load a xml file suitably populated to avoid triggering the above validation so we trigger update/removal of properties
+litp load -p /ms -f xml/minimal_initial.xml --replace
+
+# assert the property value changes
+# assert that required properties with defaults are reset to the defaults
+# the item of interest is user_supplied_value as these values have been updated
+assertProperty /ms/configs/defaults_and_non -o property1="this_is_a_default_value" property2="this_is_a_default_value" property3="this_is_a_default_value" property4="this_is_a_default_value"
+assertProperty /ms/configs/all_user_supplied -o property1="this_is_a_default_value" property2="this_is_a_default_value" property3="this_is_a_default_value" property4="this_is_a_default_value"
+assertProperty /ms/configs/only_required -o property1="this_is_a_default_value" property2="this_is_a_default_value" property3="this_is_a_default_value" property4="this_is_a_default_value"
+
+# assert that non required properties with defaults are reset to the defaults
+# the item of interest is user_supplied_value as these values have been updated
+assertProperty /ms/configs/defaults_and_non -o property9="this_is_a_default_value" property10="this_is_a_default_value" property11="this_is_a_default_value" property12="this_is_a_default_value"
+assertProperty /ms/configs/all_user_supplied -o property9="this_is_a_default_value" property10="this_is_a_default_value" property11="this_is_a_default_value" property12="this_is_a_default_value"
+assertProperty /ms/configs/only_required -o property9="this_is_a_default_value" property10="this_is_a_default_value" property11="this_is_a_default_value" property12="this_is_a_default_value"
+
+# assert that non required properties with defaults are reset to the defaults
+# the item of interest is defaults_and_non and user_supplied_value as these values are present and are removed
+assertPropertyUnset -p /ms/configs/defaults_and_non -o property13 property14 property15 property16
+assertPropertyUnset -p /ms/configs/all_user_supplied -o property13 property14 property15 property16
+assertPropertyUnset -p /ms/configs/only_required -o property13 property14 property15 property16

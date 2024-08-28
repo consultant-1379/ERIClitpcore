@@ -1,0 +1,11 @@
+add-plugins ./plugin
+
+runLitpScript ../include/two_nodes.at
+
+litp create_plan
+litp run_plan
+
+
+litp restore_model
+litp create -t software-item -p /software/items/flag
+litp create_plan

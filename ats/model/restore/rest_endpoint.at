@@ -1,0 +1,36 @@
+
+# The 'logging' service can be read
+litp show -p /litp/logging
+# Sending a POST to the logging service endpoint results in a failure
+assertError --err_type MethodNotAllowedError --err_message "Create method on path not allowed" --err_vpath /litp/logging create -t logging -p /litp/logging
+# Sending a PUT to the logging service endpoint works OK
+litp update -p /litp/logging -o force_debug=true
+
+# The 'restore_model' service can be read
+litp show -p /litp/restore_model
+
+litp create -t mock-package -p /software/items/pack -o name=foo
+litp inherit -p /ms/items/p -s /software/items/pack
+litp create_plan
+
+# We cannot restore the model when no plan has executed successfully
+assertErrorMessage "The deployment model couldn't be restored" restore_model
+assertLogMessage "Could not restore model because no deployment model backup is available."
+
+# Test restore cannot be performed on a running plan
+runPlanStart
+assertPlanState running
+assertError --err_type InvalidRequestError --err_vpath /litp/restore_model --err_message "Operation not allowed while plan is running/stopping" restore_model
+runPlanEnd
+
+assertNone -p /software/items/other_pack
+assertNone -p /ms/items/q
+litp create -t mock-package -p /software/items/other_pack -o name=bar
+litp inherit -p /ms/items/q -s /software/items/other_pack
+
+assertState -p /software/items/other_pack Initial
+assertState -p /ms/items/q Initial
+litp restore_model
+assertNone -p /software/items/other_pack
+assertNone -p /ms/items/q
+assertLogMessage "Restoring model from backup"

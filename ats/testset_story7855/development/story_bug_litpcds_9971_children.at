@@ -1,0 +1,73 @@
+# Assert that prepare_restore sets child/parent items APD to True
+
+# Note: Expecting container task at top of plan in own phase
+
+add-extensions ../extensions/bug9406_extension
+add-plugins ../plugins/dummy_plugin
+runLitpScript ../../include/two_nodes.at
+
+# Create container and child
+litp create -t container -p /software/profiles/container -o hostname=container
+litp create -t child-item -p /software/profiles/container/child
+
+# Create reference
+litp create -p /infrastructure/storage/storage_profiles/profile_3 -t storage-profile-base
+litp inherit -p /software/profiles/container/ref -s /infrastructure/storage/storage_profiles/profile_3
+
+litp create_plan
+
+# Fail container item's task
+failConfigTask container_call node1 /software/profiles/container
+litp run_plan
+
+# Container item is in initial state with APD=False
+assertAppliedPropertiesDeterminable -p /software/profiles/container False
+assertState -p /software/profiles/container Initial
+
+litp remove_plan
+litp create_plan
+litp run_plan
+
+# Issue prepare_restore command to reset container APD flags to true
+litp update -p /litp/prepare-restore -o path='/'
+
+assertAppliedPropertiesDeterminable -p /software/profiles/container True
+assertState -p /software/profiles/container Initial
+
+litp create_plan
+# Fail child item's task
+failConfigTask child_call node1 /software/profiles/container/child
+litp run_plan
+
+# Child item is in initial state with APD=False
+assertState -p /software/profiles/container/child Initial
+assertAppliedPropertiesDeterminable -p /software/profiles/container/child False
+
+litp remove_plan
+litp create_plan
+litp run_plan
+
+# Issue prepare_restore command to reset child APD flags to true
+litp update -p /litp/prepare-restore -o path='/'
+
+assertState -p /software/profiles/container/child Initial
+assertAppliedPropertiesDeterminable -p /software/profiles/container/child True
+
+litp create_plan
+# Fail reference item's task
+failConfigTask ref_call node1 /software/profiles/container/ref
+litp run_plan
+
+# Reference item is in initial state with APD=False
+assertState -p /software/profiles/container/ref Initial
+assertAppliedPropertiesDeterminable -p /software/profiles/container/ref False
+
+litp remove_plan
+litp create_plan
+litp run_plan
+
+# Issue prepare_restore command to reset reference APD flags to true
+litp update -p /litp/prepare-restore -o path='/'
+
+assertState -p /software/profiles/container/ref Initial
+assertAppliedPropertiesDeterminable -p /software/profiles/container/ref True

@@ -1,0 +1,34 @@
+# LITPCDS-5860
+add-plugins ../plugins/mock_volmgr_plugin
+add-plugins ../plugins/dummy_config_plugin
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/foo_package -t mock-package -o name=foo_package version=1
+litp create -p /software/items/bar_package -t mock-package -o name=bar_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo_package -s /software/items/foo_package
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/dummycfg -t node-config
+
+litp create_plan
+
+failConfigTask dummy::cfg node1 /deployments/local/clusters/cluster1/nodes/node1/configs/dummycfg
+
+litp run_plan
+
+assertTask 0 dummy::cfg node1 /deployments/local/clusters/cluster1/nodes/node1/configs/dummycfg Failed
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo_package Applied
+# show show -p /deployments/local/clusters/cluster1/nodes/node1/items/foo_package 
+assertState -p /software/items/foo_package Initial
+
+litp update -p /software/items/foo_package -o version=2
+assertState -p /software/items/foo_package Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo_package Updated
+
+litp create_plan
+litp run_plan
+
+# show show -p /deployments/local/clusters/cluster1/nodes/node1/items/foo_package 
+assertState -p /software/items/foo_package Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo_package Applied

@@ -1,0 +1,182 @@
+# Test Case 04.
+
+# Description:
+# Test that on creating a plan with the deployment ruleset defined with tasks
+# tag set and valid but with an invalid dependency on another task (e.g.
+# tasks are in different groups), the task validation will raise an error
+# Test that a task validation error is raised for invalid dependency for
+#    - direct 'task-to-task' dependency within the same plugin
+#    - ConfigTask dependency using call type/id between two different plugins.
+#    - 'queryItem' dependency between two different plugins.
+#
+# Actions:
+#  1. Create a model item that is the target of a task associated with a valid
+#     task's tag with an invalid direct 'task-to-task' dependency
+#  2. Execute "create_plan" command
+#  3. Check that an internal server error is raised and that error message is
+#     logged
+#  4. Remove the model item that is the target of the task with the invalid
+#     direct 'task-to-task' dependency
+#  5. Create a model item that is the target of a task associated with a valid
+#     task's tag with an invalid ConfigTask dependency using call type/id
+#  6. Execute "create_plan" command
+#  7. Check that an internal server error is raised and that eror message is
+#     logged
+#  8. Remove the model item that is the target of the task with the invalid
+#     ConfigTask dependency using call type/id
+#  9. Create a model item that is the target of a task associated with a valid
+#     task's tag with an invalid 'queryItem' dependency for tasks on different
+#     nodes, same group
+# 10. Execute "create_plan" command
+# 11. Check that an internal server error is raised and that error message is
+#     logged
+# 12. Remove the model item that is the target of the task with the invalid
+#     'queryItem' dependency for tasks on different nodes, same group
+# 13. Create a model item that is the target of a task associated with a valid task's
+#     tag with an invalid 'queryItem' dependency for tasks on same node,
+#     different groups and invalid group order dependency
+# 14. Execute "create_plan" command
+# 15. Check that an internal server error is raised and that error message is
+#     logged
+# 16. Remove the model item that is the target of the task with the invalid
+#     'queryItem' dependency for tasks on same node, different group
+# 17. Create a model item that is the target of a task associated with a valid task's
+#     tag with an invalid 'queryItem' dependency for same group with a task
+#     associated with a node and the other with ms
+# 18. Execute "create_plan" command
+# 19. Check that an internal server error is raised and that error message is
+#     logged
+#
+# Result:
+#   An internal server error is raised and an error message is logged during
+#   execution of 'create_plan' command when an invalid task dependency is set
+#   for either direct 'task-to-task' dependency, ConfigTask dependency using
+#   call type/id or 'queryItem' dependency for tasks with valid tags.
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+add-plugins plugins/story10531_plugin_2
+
+runLitpScript ../include/two_nodes.at
+
+# Task to task dependency (step 1-4)
+
+# 1. Create a model item that is the target of a task associated with a valid
+#    task's tag with an invalid direct 'task-to-task' dependency
+litp create -p /software/items/item1 -t foo4 -o name='item1' task_dependency_type='t2t'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 2. Execute "create_plan" command
+# 3. Check that an internal server error is raised and that error message is
+#    logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Task for item /deployments/local/clusters/cluster1/nodes/node1/items/item1 in \
+group DEPLOYMENT_NODE_GROUP and its dependent task for item /deployments/local/clusters/cluster1/nodes/node1/items/item1 \
+in group DEPLOYMENT_BOOT_GROUP are in different groups"
+
+# 4. Remove the model item that is the target of the task with the invalid
+#    direct 'task-to-task' dependency
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp remove -p /software/items/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# Task to (call_type, call_id) dependency (step 5-8)
+
+# 5. Create a model item that is the target of a task associated with a valid
+#    task's tag with an invalid ConfigTask dependency using call type/id
+litp create -p /software/items/item2 -t foo4 -o name='item2' task_dependency_type='call_type_id'
+litp inherit -s /software/items/item2 -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 6. Execute "create_plan" command
+# 7. Check that an internal server error is raised and that eror message is
+#    logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Required ConfigTask(s) in different group"
+
+# 8. Remove the model item that is the target of the task with the invalid
+#    ConfigTask dependency using call type/id
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+litp remove -p /software/items/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# Task to QueryItem dependencies (step 9-20)
+
+# 9. Create a model item that is the target of a task associated with a valid
+#    task's tag with an invalid 'queryItem' dependency between tasks:
+#    different nodes, same group
+litp create -p /software/items/item3 -t foo4 -o name='item3' task_dependency_type='query_item'
+litp create -p /software/items/item4 -t foo4 -o name='item4' task_dependency_type='query_item'
+litp inherit -s /software/items/item3 -p /deployments/local/clusters/cluster1/nodes/node1/items/item3
+litp inherit -s /software/items/item4 -p /deployments/local/clusters/cluster1/nodes/node2/items/item4
+
+# 10. Execute "create_plan" command
+# 11. Check that an internal server error is raised and that error message is
+#     logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Required item relates to a different node"
+
+# 12. Remove the model item that is the target of the task with the invalid
+#     task dependency
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item3 Initial
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item3
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4 Initial
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/item4
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/item4
+
+assertState -p /software/items/item3 Initial
+litp remove -p /software/items/item3
+assertNone -p /software/items/item3
+assertState -p /software/items/item4 Initial
+litp remove -p /software/items/item4
+assertNone -p /software/items/item4
+
+# 13. Create a model item that is the target of a task associated with a valid
+#     task's tag with an invalid 'queryItem' dependency between tasks:
+#     same node, different groups and invalid group order dependency
+litp create -p /software/items/item5 -t foo4 -o name='item5' task_dependency_type='query_item'
+litp create -p /software/items/item6 -t foo4 -o name='item6' task_dependency_type='query_item'
+litp inherit -s /software/items/item5 -p /deployments/local/clusters/cluster1/nodes/node2/items/item5
+litp inherit -s /software/items/item6 -p /deployments/local/clusters/cluster1/nodes/node2/items/item6
+
+# 14. Execute "create_plan" command
+# 15. Check that an internal server error is raised and the error message is
+#     logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Task for item /deployments/local/clusters/cluster1/nodes/node1/items/item1 in \
+group DEPLOYMENT_NODE_GROUP and its dependent task for item /deployments/local/clusters/cluster1/nodes/node1/items/item1 \
+in group DEPLOYMENT_BOOT_GROUP are in different groups"
+
+# 16. Remove the model item that is the target of the task with the invalid
+#     dependency
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item5 Initial
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/item5
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/item5
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item6 Initial
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/item6
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/item6
+
+assertState -p /software/items/item5 Initial
+litp remove -p /software/items/item5
+assertNone -p /software/items/item5
+assertState -p /software/items/item6 Initial
+litp remove -p /software/items/item6
+assertNone -p /software/items/item6
+
+# 17. Create a model item that is the target of a task associated with a valid
+#     task's tag with an invalid 'queryItem' dependency between tasks:
+#     same group, task A associated with a node and task B associated with ms
+litp create -p /software/items/item7 -t foo4 -o name='item7' task_dependency_type='query_item'
+litp create -p /software/items/item8 -t foo4 -o name='item8' task_dependency_type='query_item'
+litp inherit -s /software/items/item7 -p /deployments/local/clusters/cluster1/nodes/node1/items/item7
+litp inherit -s /software/items/item8 -p /ms/items/item8
+
+# 18. Execute "create_plan" command
+# 19. Check that an internal server error is raised and that error message is
+#     logged
+assertError --err_type InternalServerError create_plan
+assertLogMessage "Required item doesn't relate to a node"
+

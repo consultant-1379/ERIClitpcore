@@ -1,0 +1,43 @@
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/package_vim -t mock-package -o name="vim"
+
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/package_vim -s /software/items/package_vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/package_vim -s /software/items/package_vim
+litp inherit -p /ms/items/package_vim -s /software/items/package_vim
+
+litp create_plan
+litp run_plan
+
+litp remove -p /ms/items/package_vim
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/package_vim
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/package_vim
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/package_vim ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/package_vim ForRemoval
+assertState -p /ms/items/package_vim ForRemoval
+
+litp create_plan
+
+runPlanUntil 1
+
+assertState -p /ms/items/package_vim Removed
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/package_vim ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/package_vim ForRemoval
+
+runPlanUntil 2
+
+assertState -p /ms/items/package_vim Removed
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/package_vim Removed
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/package_vim Removed
+
+
+runPlanEnd
+
+assertNone -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim
+assertNone -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim
+assertNone -p /ms/items/package_vim
+
+

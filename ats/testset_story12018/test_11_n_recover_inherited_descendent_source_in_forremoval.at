@@ -1,0 +1,134 @@
+## test_11_n_recover_inherited_descendent_source_in_forremoval
+## Description:
+## When an attempt to recover the descendent of an inherited Item
+## and its corresponding source item is in "ForRemoval" state
+## then a validation error is raised
+## 
+# Actions:
+add-extensions extensions/test_12018_extension
+add-plugins plugins/test_12018_plugin
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA that has child items,
+#    and grandchild items
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child2 -t child -o name=child2
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild2 -t grand-child -o name=grandchild2
+litp create -p /software/services/parent1/childs/child2/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp create -p /software/services/parent1/childs/child2/grand_children/grandchild2 -t grand-child -o name=grandchild2
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child2 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /software/services/parent1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /software/services/parent1/childs/child2/grand_children/grandchild2 Initial
+
+# 2. Inherit itemA to item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild2 Initial
+
+# 3. Inherit itemA to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2/grand_children/grandchild2 Initial
+
+# 4. Execute "create_plan" command
+litp create_plan
+
+# 5. Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 6. Check all items are in "Applied" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild2 Applied
+assertState -p /software/services/parent1/childs/child2 Applied
+assertState -p /software/services/parent1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /software/services/parent1/childs/child2/grand_children/grandchild2 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild2 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2/grand_children/grandchild2 Applied
+
+# 7. Remove the source item, itemA
+litp remove -p /software/services/parent1
+
+# 8. Check all items are in "ForRemoval" state
+assertState -p /software/services/parent1 ForRemoval
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild2 ForRemoval
+assertState -p /software/services/parent1/childs/child2 ForRemoval
+assertState -p /software/services/parent1/childs/child2/grand_children/grandchild1 ForRemoval
+assertState -p /software/services/parent1/childs/child2/grand_children/grandchild2 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild2 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child2/grand_children/grandchild2 ForRemoval
+
+# 9. Attempt to execute litp "update" command to update
+#    a property on item1, a descendent of an inherited item
+# 10.Check MethodNotAllowedError raised
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's source item is marked for removal"
+
+# 11.Attempt to execute litp "update" command to update
+#    a property on a child item of item1,
+##    a descendent of an inherited item
+# 12.Check MethodNotAllowedError raised
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 -o name=update_child
+
+# 13.Attempt to execute litp "update" command to update
+#    a property on a grandchild item of item1,
+#    a descendent of an inherited item
+# 14.Check MethodNotAllowedError raised
+let __err_1 --err_type MethodNotAllowedError --err_message "Item's parent is marked for removal"
+assertError __err_1 update -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child2/grand_children/grandchild2 -o name=update_gchild
+
+# Result:
+# The expected Validation Error is seen when an
+# attempt is made to recover the descendent of an inherited Item
+# when its corresponding source item is in "ForRemoval" state

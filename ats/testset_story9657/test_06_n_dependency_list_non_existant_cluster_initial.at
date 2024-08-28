@@ -1,0 +1,21 @@
+# test_06_n_dependency_list_non_existant_cluster
+# ==============================================
+
+# Description:
+# Test that adding a cluster that does not exist raises a ValidationError
+
+# Actions:
+# Create multiple clusters within a deployment
+# Update the "dependency_list" property with a cluster that does not exist
+
+# Result:
+# ValidationError raised
+
+# 1. Create multi cluster deployment
+add-extensions ../plugins/dummy_9657
+add-plugins ../plugins/dummy_9657
+runLitpScript misc/create_multi_cluster_deployment.inc
+
+# 2. Update the "dependency_list" property with a cluster that does not exist
+litp update -p /deployments/litpcds_9657/clusters/cluster_1 -o dependency_list='cluster_2','CLUSTER_DOESNT_EXIST'
+assertError --err_type "ValidationError" --err_message "Cluster \"/deployments/litpcds_9657/clusters/CLUSTER_DOESNT_EXIST\" does not exist. Ensure dependency_list property is correct" create_plan

@@ -1,0 +1,38 @@
+add-plugins plugins/dummy_plugin_10798
+add-extensions extensions/dummy_extension_10798
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/git -t re-mock-package -o name=git
+litp inherit -p /ms/items/git -s /software/items/git
+
+litp create_plan
+assertConfigTask ms1 package git /ms/items/git ensure=installed
+litp run_plan
+assertPlanState successful
+assertState -p /ms/items/git Applied
+
+litp update -p /ms/items/git -o name=some_new_name
+litp create_plan
+failConfigTask package ms1 /ms/items/git
+litp run_plan
+assertPlanState failed
+
+litp update -p /ms/items/git -o name=git
+assertState -p /ms/items/git Updated
+assertAppliedPropertiesDeterminable -p /ms/items/git False
+litp create_plan
+
+# Assert that the config task has not been filtered out as its model item is
+# APD=False, even though its description is the same as prev successful tasks.
+assertConfigTask ms1 package git /ms/items/git ensure=installed
+
+litp run_plan
+assertPlanState successful
+
+assertAppliedPropertiesDeterminable -p /ms/items/git True
+
+litp remove -p /ms/items/git
+litp create_plan
+
+# Assert the deconfigure task has not been removed
+assertConfigTask ms1 package git /ms/items/git ensure=absent

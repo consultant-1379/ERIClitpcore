@@ -1,0 +1,85 @@
+## TORF-194416
+add-extensions extensions/dummy_194416_extension
+add-plugins plugins/dummy_194416_plugin
+runLitpScript ../include/two_nodes.at
+
+# This item will be configured by means of a plugin-generated ConfigTask and
+# deconfigured through a core-generated substitution ConfigTask
+litp create -t trigger-194416 -p /software/items/install_item -o behaviour=config-only_configtask
+litp inherit -s /software/items/install_item -p /deployments/local/clusters/cluster1/nodes/node1/items/install_item
+litp inherit -s /software/items/install_item -p /deployments/local/clusters/cluster1/nodes/node2/items/install_item
+
+# This item will be configured _and_ deconfigured by means of a
+# plugin-generated ConfigTask
+litp create -t trigger-194416 -p /software/items/plugin_managed_item -o behaviour=config-and-deconfig_configtask
+litp inherit -s /software/items/plugin_managed_item -p /deployments/local/clusters/cluster1/nodes/node1/items/plugin_managed_item
+litp inherit -s /software/items/plugin_managed_item -p /deployments/local/clusters/cluster1/nodes/node2/items/plugin_managed_item
+
+# This item will be configured by means of a plugin-generated CallbackTask and
+# deconfigured through a core-generated CleanupTask
+litp create -t trigger-194416 -p /software/items/cb_item -o behaviour=config-only_callbacktask
+litp inherit -s /software/items/cb_item -p /deployments/local/clusters/cluster1/nodes/node1/items/cb_item
+litp inherit -s /software/items/cb_item -p /deployments/local/clusters/cluster1/nodes/node2/items/cb_item
+
+# This item will be configured by means of a plugin-generated CallbackTask and
+# also deconfigured through a plugin-generated CallbackTask
+litp create -t trigger-194416 -p /software/items/cb_deconf_item -o behaviour=config-and-deconfig_callbacktask
+litp inherit -s /software/items/cb_deconf_item -p /deployments/local/clusters/cluster1/nodes/node1/items/cb_deconf_item
+litp inherit -s /software/items/cb_deconf_item -p /deployments/local/clusters/cluster1/nodes/node2/items/cb_deconf_item
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+
+# This will cause a replacement ConfigTask to be created for the item on node1.
+# This task will not have an equivalent on node2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/install_item
+
+# This will cause a plugin-generated removal ConfigTask to be created for the
+# item on node1.
+# This task will not have an equivalent on node2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/plugin_managed_item
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/cb_item
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/cb_deconf_item
+
+# Mark node2 as ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 ForRemoval
+
+litp create_plan
+# show show_plan
+
+# The "call id" for the replacement task is the vpath of the item
+assertConfigTask node1 notify /deployments/local/clusters/cluster1/nodes/node1/items/install_item /deployments/local/clusters/cluster1/nodes/node1/items/install_item
+# There is no replacement task for the item on node2
+assertNoConfigTask node2 notify /deployments/local/clusters/cluster1/nodes/node2/items/install_item /deployments/local/clusters/cluster1/nodes/node2/items/install_item
+
+# The plugin-generated removal ConfigTask is present for the item on node1
+assertConfigTask node1 resource_194416 configure_plugin_managed_item /deployments/local/clusters/cluster1/nodes/node1/items/plugin_managed_item ensure=absent
+# There is no plugin-generated removal ConfigTask for the item on node2
+assertNoConfigTask node1 resource_194416 configure_plugin_managed_item /deployments/local/clusters/cluster1/nodes/node2/items/plugin_managed_item ensure=absent
+
+# The plugin-generated removal CallbackTask is present for the item on node1
+assertCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node1/items/cb_deconf_item
+# ...so's the task generated for node2, as Core can't reliably filter it out
+assertCallbackTask _noop_callback /deployments/local/clusters/cluster1/nodes/node2/items/cb_deconf_item
+
+# There are only two phases in the plan
+assertPlanLength 3
+
+# The 2nd phase is where the substitution and deconfigure ConfigTasks are
+# sorted for node1 and it's the only task in that phase
+assertPhaseLength 1 2
+
+# ...and it's all CleanupTasks
+assertCleanupTask 2 /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertCleanupTask 2 /deployments/local/clusters/cluster1/nodes/node2/items/install_item Initial
+assertCleanupTask 2 /deployments/local/clusters/cluster1/nodes/node2/items/plugin_managed_item Initial
+assertCleanupTask 2 /deployments/local/clusters/cluster1/nodes/node2/items/cb_item Initial
+
+assertNoCleanupTask /deployments/local/clusters/cluster1/nodes/node1/install_item
+assertNoCleanupTask /deployments/local/clusters/cluster1/nodes/node1/plugin_managed_item
+assertCleanupTask 2 /deployments/local/clusters/cluster1/nodes/node1/items/cb_item Initial

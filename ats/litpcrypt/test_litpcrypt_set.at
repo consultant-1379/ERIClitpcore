@@ -1,0 +1,9 @@
+litpcrypt set 'key-for-root' root 'root0'
+litpcrypt set 'key-for-root' root1 'root1'
+litpcrypt set 'key-for-root' root2 'root12'
+litpcrypt set 'key-for-root' root3 'root123'
+litpcrypt set 'key-for-node1_ilo' root 'shroot12'
+litpcrypt set 'key-for-node2_ilo' root 'shroot12'
+litpcrypt set 'key-for-sfs' support 'support'
+
+assertFileContents litp_shadow /opt/ericsson/nms/litp/etc/litp_shadow

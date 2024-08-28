@@ -1,0 +1,23 @@
+add-plugins plugins/plugins1
+litp create -p /ms/network_interfaces/nic1 -t network-interface -o network_name=mgmt ipaddress=10.10.10.100
+
+litp create_plan
+litp run_plan
+#show show_plan
+
+litp create -t service-base -p /ms/services/srv1
+
+litp create_plan
+assertNoConfigTask ms1 disk test1 /ms/network_interfaces/nic1
+litp run_plan
+
+assertFileContents ./manifests/test_01.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+# test_02
+litp remove -p /ms/network_interfaces/nic1
+
+litp create_plan
+litp run_plan
+#show show_plan
+
+assertFileContents ./manifests/test_02.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

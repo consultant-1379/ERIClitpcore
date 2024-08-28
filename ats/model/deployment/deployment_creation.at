@@ -1,0 +1,5 @@
+litp create -p /deployments/dep1 -t deployment
+assertError create -p /deployments/dep1 -t deployment -o notaproperty="123"
+
+litp create -p /deployments/dep2 -t deployment
+assertError create -p /deployments/dep2 -t deployment

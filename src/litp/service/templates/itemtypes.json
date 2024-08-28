@@ -1,0 +1,4 @@
+{
+    "data": $getVar('item_types', []),
+    "messages": []
+}

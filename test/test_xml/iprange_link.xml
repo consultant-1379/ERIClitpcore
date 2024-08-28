@@ -1,0 +1,3 @@
+<litp:network-interface xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2" id="ip1">
+<network_name>nodes</network_name>
+</litp:network-interface>

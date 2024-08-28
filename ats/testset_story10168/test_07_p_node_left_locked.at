@@ -1,0 +1,60 @@
+#test_07_p_node_left_locked
+#=========================================
+#Description:
+#Test that on a cluster whose item type provides a node_upgrade_ordering view, when a node is left in a locked state from a previous plan, it is processed first in the next plan.
+
+#Actions:
+#1. Follow install instructions
+#2. Create a deployment model that includes a cluster of a type that implements a {{node_upgrade_ordering}} view
+#3. Execute "create_plan" command
+#4. Check that the plan uses orders node tasks for that cluster according to the order given by the view
+#5. Execute "run_plan" command
+#6. Stop plan after the first node under that cluster has been locked
+#7. Change the behaviour of the view so that it now returns the nodes in reverse order
+#8. Execute "create_plan" command
+#9. Check that the node left locked is ordered first in the plan
+#10. Check that the other nodes are ordered according to the order given by the view
+#11. Execute "run_plan" command
+
+#Result:
+#The second plan is successful.
+
+#1. Follow install instructions
+#2. Create a deployment model that includes a cluster of a type that implements a {{node_upgrade_ordering}} view
+add-extensions ../plugins/dummy_10168
+add-plugins ../plugins/dummy_10168
+runLitpScript misc/create_multi_node_deployment.inc
+
+litp update -p /deployments/litpcds_10168/clusters/cluster_1 -o ordering_behaviour=forward
+#
+#3. Execute "create_plan" command
+litp create_plan
+
+#4. Check that the plan uses orders node tasks for that cluster according to the order given by the view
+let __task_n1 ConfigTask c1-node1 foo bar /deployments/litpcds_10168/clusters/cluster_1/nodes/node1
+let __task_n2 ConfigTask c1-node2 foo bar /deployments/litpcds_10168/clusters/cluster_1/nodes/node2
+assertTaskBeforeTask __task_n1 __task_n2
+
+#5. Execute "run_plan" command
+#6. Stop plan after the first node under that cluster has been locked
+runPlanStart
+runPlanUntil 2
+litp stop_plan
+runPlanEnd
+
+#7. Change the behaviour of the view so that it now returns the nodes in reverse order
+litp update -p /deployments/litpcds_10168/clusters/cluster_1 -o ordering_behaviour=reverse
+
+#8. Execute "create_plan" command
+litp create_plan
+
+#9. Check that the node left locked is ordered first in the plan
+assertRemoteExecutionTask 0 /ms c1-node1 lock_unlock unlock
+
+#10. Check that the other nodes are ordered according to the order given by the view
+assertRemoteExecutionTask 1 /ms c1-node2 lock_unlock lock
+assertConfigTask c1-node2 foo bar /deployments/litpcds_10168/clusters/cluster_1/nodes/node2
+assertRemoteExecutionTask 3 /ms c1-node2 lock_unlock unlock
+
+#11. Execute "run_plan" command
+litp run_plan

@@ -1,0 +1,64 @@
+runLitpScript ../../include/two_nodes.at
+
+# Create items
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /software/items/telnet
+
+assertState -p /software/items/telnet Initial
+assertState -p /ms/items/telnet Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet Initial
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+
+litp create_plan
+
+litp run_plan
+
+assertPlanState successful
+
+# Check they are applied and flag is true
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+
+# Remove item and fail plan
+litp remove -p /ms/items/telnet
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp remove -p /software/items/telnet
+
+litp create_plan
+
+# Fail task associated with the model item
+failConfigTask package ms1 /ms/items/telnet
+litp run_plan
+assertPlanState failed
+
+assertState -p /software/items/telnet ForRemoval
+assertState -p /ms/items/telnet ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+# Associated task failed
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+# Associated task didn't execute
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+
+# Recreate source item, check states of inherited items
+litp update -p /software/items/telnet -o name=telnet
+assertState -p /software/items/telnet Applied
+# Based on AC 07 - ForRemoval, flag False -> Updated
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+# Check positive case: ForRemoval flag True -> Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet True
+
+# Update ForRemoval inherited item, APD False -> Updated and APD False
+litp update -p /ms/items/telnet -o version=1
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False

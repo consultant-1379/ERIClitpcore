@@ -1,0 +1,12 @@
+
+module domain 1.0;
+
+require {
+        attribute domain;
+	type puppet_tmp_t;
+	class file { getattr write read append };
+}
+
+#============= domain ==============
+
+allow domain puppet_tmp_t:file { read write getattr append };

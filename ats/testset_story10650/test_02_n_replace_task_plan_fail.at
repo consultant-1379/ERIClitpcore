@@ -1,0 +1,94 @@
+## test_02_n_replace_task_plan_fail
+## Description:
+## Test that when an existing persisted task is replaced on the same node, and
+## the replacement task fails, the original tasks are still present in the manifest
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates persisted ConfigTasks
+## 2. Create Plan
+## 3. Run plan
+## 4. Check manifest is as expected
+## 5. Update model items so plug-in will generate replacement tasks
+##    plug-in original persisted: (foo1, bar1)
+##    plug-in original persisted: (foo2, bar2)
+##    plug-in original persisted: (foo3, bar3)
+##    plug-in task1: (fooX, barX), replaces: (foo1, bar1)
+##    plug-in task2: (fooY, barY), replaces: (foo2, bar2), (foo3, bar3)
+## 6. Create plan
+## 7. Run plan
+## 8. Wait for plan to fail a replacement task after one replacement
+## 9. Check new persisted tasks exists for successful replacement task
+## 10.Check that original persisted tasks exist for the failed replacement
+## 11.Update the item so the plugin will generate replacement tasks
+## 12 Create plan
+## 13.Run plan
+## 14.Wait for plan to fail a replacement task after one replacement
+## 15.Check new persisted tasks exists for successful replacement task
+## 16.Check that original persisted tasks exist for the failed replacement task
+
+## Results:
+## A plug-in that generates a replacement Config Task at create_plan
+## and this task fails during run_plan,then the original persisted tasks
+## are present in the manifests
+
+#Prerequisite:
+#Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates a persisted ConfigTask
+litp create -p /software/items/item1 -t story10650 -o name="tc01_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create Plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+#4. Check manifest is as expected
+assertFileContents manifests/expected/tc02/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#5. Update model items so plug-in will generate replacement tasks
+#   plug-in original persisted: (foo1, bar1)
+#   plug-in original persisted: (foo2, bar2)
+#   plug-in original persisted: (foo3, bar3)
+#   plug-in task1: (fooX, barX), replaces: (foo1, bar1)
+#   plug-in task2: (fooY, barY), replaces: (foo2, bar2), (foo3, bar3)
+litp update -p /software/items/item1 -o name="tc01_foobar2"
+
+#6. Create plan
+litp create_plan
+
+#7. Run plan
+#8. Wait for plan to fail a replacement task after one replacement
+#   task has succeeded
+failConfigTask foo5 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp run_plan
+
+#9. Check new persisted tasks exists for successful replacement task
+#10.Check that original persisted tasks exist for the failed replacement
+#   task
+assertFileContents manifests/expected/tc02/replaced1.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#11.Update the item so the plugin will generate replacement tasks
+litp update -p /software/items/item1 -o name="tc01_foobar3"
+
+#12 Create plan
+litp create_plan
+
+#13.Run plan
+#14.Wait for plan to fail a replacement task after one replacement
+#   task has succeeded
+failConfigTask foo4 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp run_plan
+
+#15.Check new persisted tasks exists for successful replacement task
+#16.Check that original persisted tasks exist for the failed replacement
+#   task
+assertFileContents manifests/expected/tc02/replaced2.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

@@ -1,0 +1,11 @@
+runLitpScript misc/common_test_methods.at
+
+runPlanStart
+assertPlanState running
+# We expect the plan to fail
+runPlanEnd
+assertPlanState successful
+
+litp remove_plan
+
+assertError --err_message "Plan does not exist" show_plan

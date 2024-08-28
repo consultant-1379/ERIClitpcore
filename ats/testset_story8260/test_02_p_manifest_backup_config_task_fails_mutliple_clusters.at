@@ -1,0 +1,41 @@
+#test_p_test_02_manifest_backup_config_task_fails_mutliple_clusters
+#Description:
+#Test that when a plan fails due to a config tasks failure,
+#a copy of all the puppet manifests is saved to
+#/opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/*.pp
+#for all clusters
+
+#Test Setup
+runLitpScript ../include/two_nodes.at
+add-extensions plugins/foo_package
+add-plugins plugins/foo_package
+
+# Add another cluster
+litp create -p /deployments/local/clusters/cluster2 -t cluster
+
+litp create -p /deployments/local/clusters/cluster2/nodes/c2_node1 -t node -o hostname='c2node1'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/c2_node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/c2_node1/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/c2_node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/c2_node2 -t node -o hostname='c2node2'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/c2_node2/system -s /infrastructure/systems/system2
+litp inherit -p /deployments/local/clusters/cluster2/nodes/c2_node2/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/c2_node2/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/c2_node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/c2_node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Test that manifest files are saved on a failed plan
+litp create -p /software/items/foo2 -t foo-package -o name=foo2
+litp create -p /software/items/bar2 -t foo-package -o name=bar2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo2 -s /software/items/foo2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar2 -s /software/items/bar2
+
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo2
+
+litp run_plan
+assertPlanState failed
+
+assertDirectoryContents manifests/failed3 /opt/ericsson/nms/litp/etc/puppet/manifests/plugins.failed/

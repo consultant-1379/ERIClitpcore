@@ -1,0 +1,4 @@
+litp create -p /deployments/local_vm -t deployment
+litp create -p /deployments/local_vm/clusters/cluster1 -t cluster
+assertError --err_type "InvalidXMLError" --err_message "The attribute 'id' is required but missing." load -p /deployments/local_vm/clusters/cluster1/nodes -f node1_noid.xml
+

@@ -1,0 +1,39 @@
+## LITPCDS-13721
+add-plugins plugins/dummy_13721_plugin
+runLitpScript ../include/two_nodes.at
+
+litp create_plan
+
+let __task1 CallbackTask _fail_callback /deployments/local/clusters/cluster1/nodes/node1/system
+let __task2 ConfigTask node1 foo bar /deployments/local/clusters/cluster1/nodes/node1
+
+assertTaskBeforeTask __task1 __task2
+
+restartLitp
+
+failCallbackTask _fail_callback /deployments/local/clusters/cluster1/nodes/node1/system
+
+litp run_plan
+
+# The system item is not determinably applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/system Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/system False
+# ...and neither is the node item, since it is an "extra" model item of the failed CallbackTask
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1 False
+
+litp remove_plan
+litp create_plan
+
+restartLitp
+
+failCallbackTask _mco_callback /deployments/local/clusters/cluster1/nodes/node2/system
+
+litp run_plan
+
+# The system item is not determinably applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/system Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2/system False
+# ...and neither is the node item, since it is an "extra" model item of the failed CallbackTask
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node2 False

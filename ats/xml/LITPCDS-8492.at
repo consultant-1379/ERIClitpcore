@@ -1,0 +1,70 @@
+add-extensions ../extensions/dummy_volmgr_extensions
+add-plugins ../plugins/dummy_fs_plugin
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t mock-package -p /software/items/dummy_package -o name=vim
+litp inherit -s /software/items/dummy_package -p /deployments/local/clusters/cluster1/nodes/node1/items/foo 
+litp inherit -s /software/items/dummy_package -p /deployments/local/clusters/cluster1/nodes/node2/items/foo 
+
+litp create -t mock-package -p /software/items/apache -o name=apache
+
+# The 'storage-profile' item type doesn't include any references
+litp create -t storage-profile -p /infrastructure/storage/storage_profiles/SP
+litp create -t volume-group -p /infrastructure/storage/storage_profiles/SP/volume_groups/vgA -o volume_group_name=foo
+litp create -t physical-device -p /infrastructure/storage/storage_profiles/SP/volume_groups/vgA/physical_devices/pd1 -o device_name=c0t0d0s0
+litp create -t file-system -p /infrastructure/storage/storage_profiles/SP/volume_groups/vgA/file_systems/fs1 -o type=ext4 name=bar size=35G
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+litp inherit -s /infrastructure/storage/storage_profiles/SP -p /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+litp inherit -s /infrastructure/storage/storage_profiles/SP -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+
+
+# We need to have at least one task using one of the items to be removed as model item in order to trigger 8492
+litp create_plan
+assertConfigTask node2 Fake_Puppet_resource_type unique_fs_id /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems/fs1
+litp run_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices/pd1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems/fs1 Applied
+
+litp export -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile -f node_sp.xml
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices/pd1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems/fs1 ForRemoval
+
+# This XML operation will fail
+assertError load -p /deployments/local/clusters/ --merge -f node_sp.xml
+# Everything should be ForRemoval after the failed XML load
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices/pd1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems/fs1 ForRemoval
+
+# This XML operation should be successful
+litp load -p /deployments/local/clusters/cluster1/nodes/node2 --merge -f node_sp.xml
+
+# Everything should be Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/physical_devices/pd1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/storage_profile/volume_groups/vgA/file_systems/fs1 Applied

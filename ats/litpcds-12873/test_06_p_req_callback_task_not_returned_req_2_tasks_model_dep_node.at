@@ -1,0 +1,70 @@
+## test_06_p_req_callback_task_not_returned_req_2_tasks_model_dep_node
+## Description:
+## Ensure that when a required Callback task is not returned by the plugin,
+## which in turns requires 2 tasks (one returned and one not returned),
+## the model defined dependencies which are defined on the 'node' item types
+## are taken into account in the plan (config and callback tasks) and the manifest
+## (Config tasks only).
+
+## Prerequisiste
+## Plugin generates a required Callback task (t2) which is not returned which in turns
+## requires 2 tasks (t4 returned) and (t5 not returned)
+## t1 - Config task associated with 'software-item' item type
+## t1 requires t2
+## t2 - Callback task associated with 'node-config' item type (not returned by plugin)
+## t3 - Config task associated with 'file_system' item type
+## t3 requires t4 and t5
+## t4 - Config task associated with 'routes' item type (route-a)
+## t5 - Config task associated with 'routes' item type (route-b) (not returned by plugin)
+add-plugins plugins/tc5_tc6_plugin
+
+# Define 2 nodes deployment
+runLitpScript ../include/two_nodes.at
+
+## Actions:
+
+## 1. Create Model items on node
+## "software-item" item type
+litp create -p /software/items/item -t software-item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item_tc6 -s /software/items/item
+
+## "node-config" item type
+litp create -p /ms/configs/config_tc6 -t node-config
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config_tc6 -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system_tc6 -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route_a_tc6 -s /infrastructure/networking/routes/route
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route_b_tc6 -s /infrastructure/networking/routes/route
+
+## 2. Execute the 'create_plan' command
+litp create_plan
+
+## 3.1 Check that the tasks associated with software-item, node-config, routes
+## and filesystem are all in the plan, even though the tasks associated with
+## 'node-config' and 'route' model items were not returned by the plugin.
+assertTask 0 node::file_systems node1 /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system_tc6
+assertTask 0 node::routes_a node1 /deployments/local/clusters/cluster1/nodes/node1/routes/route_a_tc6
+assertTask 0 node::routes_b node1 /deployments/local/clusters/cluster1/nodes/node1/routes/route_b_tc6
+assertCallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/configs/config_tc6
+assertTask 2 node::items node1 /deployments/local/clusters/cluster1/nodes/node1/items/item_tc6
+
+##3.2 Check tasks dependencies (t1 requires t2)
+let __task1_node1 ConfigTask node1 node::items id_node_item /deployments/local/clusters/cluster1/nodes/node1/items/item_tc6
+let __task2_node1 CallbackTask _cb /deployments/local/clusters/cluster1/nodes/node1/configs/config_tc6
+assertTaskBeforeTask __task2_node1 __task1_node1
+
+## 4. Execute the 'run__plan' command
+litp run_plan
+
+## 5. Assert puppet manifest
+## Model defined dependency for the required tasks that were not returned by
+## the plugin are present in the manifest:
+## Task (t1) associated with 'software-item' item type requires tasks (t3)
+## associated with 'file_system' item type (model defined dependency) and also
+## requires tasks (t4, t5) associated with 'routes' item type ('route_a and route_b')
+assertFileContents manifests/tc6_node1.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

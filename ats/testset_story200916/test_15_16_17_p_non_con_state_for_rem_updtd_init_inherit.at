@@ -1,0 +1,81 @@
+# Description: Test to verify that the state transition of the LITP items works correctly following the update of non-configuration properties on an inherited item in state For-Removal.
+# Covers test cases 15, 16 and 17
+# Test steps:
+# 1. On an existing dummy-filesystem which has been inherited below a node
+# 2. update non-configuration properties of an item
+# 3. ensure the item and it's inherited items are in a state of Initial
+# 4. issue the remove command on the item
+# 5. update all of the non-configuration properties on the source item
+# 6. ensure the item has transitioned to state Applied
+# 7. update a configuration property on the source item
+# 8. ensure the item and it's inherited items have transitioned to state Update
+# 9. update all of the non-configuration properties on the source item
+# 10. ensure the item and all it's inherited items have stayed in state Updated
+
+add-extensions ../testset_story200916/extensions/dummy_200916_extension
+
+runLitpScript ../testset_story200916/include/two_nodes_torf200916.at
+
+litp create -t storage-profile -p /infrastructure/storage/storage_profiles/sp
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs1 -o path='/var/log' size='5G' req_non_config_prop='required' non_config_default='non-config'
+litp create -t dummy-filesystem -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='5G' snap_size='10' backup_policy='snapshot' req_non_config_prop='required' non_config_default='non-config'
+litp inherit -p /deployments/d1/clusters/c1/nodes/n1/storage_profile -s /infrastructure/storage/storage_profiles/sp
+litp inherit -p /deployments/d1/clusters/c1/nodes/n2/storage_profile -s /infrastructure/storage/storage_profiles/sp
+
+# Test Case 17
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Initial
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Initial
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='5G' snap_size='10' backup_policy='snapshot' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='5G' snap_size='10' backup_policy='snapshot' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15' backup_policy='original' size='1G'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Initial
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Initial
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='1G' snap_size='15' backup_policy='original' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='1G' snap_size='15' backup_policy='original' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='5' backup_policy='snapshot' size='10'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Initial
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Initial
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='10' snap_size='5' backup_policy='snapshot' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='10' snap_size='5' backup_policy='snapshot' non_config_default='non-config'
+
+litp create_plan
+litp run_plan
+
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='10' snap_size='5' backup_policy='snapshot' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='10' snap_size='5' backup_policy='snapshot' non_config_default='non-config'
+
+# Test Case 15
+litp remove -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 ForRemoval
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='10' snap_size='5' backup_policy='snapshot' non_config_default='non-config'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='10' snap_size='5' backup_policy='snapshot' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='15'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Applied
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Applied
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/home' size='10' snap_size='15' backup_policy='snapshot' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/home' size='10' snap_size='15' backup_policy='snapshot' non_config_default='non-config'
+
+# Test Case 16
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/foo'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Updated
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/foo' size='10' snap_size='15' backup_policy='snapshot' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/foo' size='10' snap_size='15' backup_policy='snapshot' non_config_default='non-config'
+
+litp update -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o snap_size='25' backup_policy='original' size='1G'
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Updated
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/foo' size='1G' snap_size='25' backup_policy='original' non_config_default='non-config'
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/foo' size='1G' snap_size='25' backup_policy='original' non_config_default='non-config'
+
+litp update -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o snap_size='30' non_config_default='new-non-config'
+assertState -p /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 Updated
+assertState -p /infrastructure/storage/storage_profiles/sp/file_systems/fs2 Updated
+assertProperty /deployments/d1/clusters/c1/nodes/n2/storage_profile/file_systems/fs2 -o path='/foo' size='1G' snap_size='30' backup_policy='original' non_config_default='new-non-config'
+assertProperty /infrastructure/storage/storage_profiles/sp/file_systems/fs2 -o path='/foo' size='1G' snap_size='25' backup_policy='original' non_config_default='non-config'

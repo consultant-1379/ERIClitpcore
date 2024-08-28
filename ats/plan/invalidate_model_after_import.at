@@ -1,0 +1,13 @@
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /software/items/telnet
+
+litp create_plan
+
+litp load -p /software/items -f addFirefox.xml --merge
+
+assertError --err_message 'Plan is invalid - model changed' run_plan
+                

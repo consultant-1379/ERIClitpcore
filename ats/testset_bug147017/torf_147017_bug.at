@@ -1,0 +1,33 @@
+# Without the fix for TORF-147017, the 3rd plan triggers a SQLAlchemy IntegrityError
+runLitpScript two-node-std.inc
+
+add-extensions extensions/dummy_dns
+add-plugins plugins/dummy_dns
+
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2/configs/mstest01a -t dns-client -o search=foo.com,test.com,test.com
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2/configs/mstest01a/nameservers/nameserver_01a -t nameserver -o ipaddress=10.10.10.101 position=1 
+
+# 1st Plan - we successfully apply resources to be removed in the nex plan
+litp create_plan
+litp run_plan
+
+litp create -p /software/items/bar1 -t mock-package -o name=baz1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/bar1 -s /software/items/bar1
+litp remove -p /deployments/site1/clusters/cluster1/nodes/node2/configs/mstest01a
+
+# 2nd Plan
+litp create_plan
+failConfigTask package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/bar1
+litp run_plan
+# The failure will cause the Puppet Manager's cleanup() to run - thereby
+# reverting the list of persisted ConfigTasks for node2 to a known good state.
+# This should never result in failed tasks being persisted, however!
+assertPlanState failed
+
+# 3rd Plan
+litp create_plan
+failConfigTask dnsclient::nameserver node2 /deployments/site1/clusters/cluster1/nodes/node2/configs/mstest01a
+# This will trigger an IntegrityError if the clean-up performed after the 2nd plan has persisted failed tasks
+litp run_plan
+
+assertPlanState failed

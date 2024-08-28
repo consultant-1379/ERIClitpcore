@@ -1,0 +1,80 @@
+# Test Case 02: Correct Tasks
+## Description: Create a plan which doesn't contain lock/unlock tasks using the -no-lock-tasks argument and verify that the plan is the same as if its generated not using the argument
+# Pre-requisates: A LITP system with more than 1 node
+##Step 1: Update model where lock/unlock tasks will NOT be generated for either node
+##Step 2: litp create_plan and store plan
+##Step 3: litp create_plan --no-lock-tasks and store plan
+#Verification 3: Verify that all the plans generated in steps 2 and 3 are the exact same
+# AC Mapping: AC1
+
+## load the AT plugin. This generates lock/unlock tasks and tasks for uuid
+add-plugins plugin/dummy_190067_no_lock
+## set up a standard two node deployment
+runLitpScript ../include/two_nodes.at
+
+## enable ha_manager so that we can generate callback tasks
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+## generate some model change so we can get the model to a fully applied state
+litp create -t mock-package -p /software/items/telnet -o name=telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+litp inherit -s /software/items/telnet -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet
+
+litp create_plan
+litp run_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked="false"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2 -o is_locked="false"
+
+## The nodes are now applied and subsequent plans will feature lock/unlock tasks
+
+# Step 1 update some uuids
+litp update -p /infrastructure/systems/system1/disks/disk0 -o uuid="bar"
+litp update -p /infrastructure/systems/system2/disks/disk0 -o uuid="bar"
+
+# Step 2
+## Create plan
+litp create_plan
+
+# Verification 2 assert plan generates as expected with no lock tasks
+assertNumberConfigTasks node1 0
+assertNumberConfigTasks node2 0
+assertNumberCallbackTasks 2
+assertNumberLockTasks node1 0
+assertNumberLockTasks node2 0
+assertNumberUnlockTasks node1 0
+assertNumberUnlockTasks node2 0
+assertPlanLength 1
+
+assertCallbackTask _noop /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _noop /deployments/local/clusters/cluster1/nodes/node2
+
+assertNoCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node1
+
+assertNoCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node2
+assertNoCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node2
+
+# Step 3
+litp create_plan --no-lock-tasks
+
+# Verification 3 assert plan generates as expected without lock tasks
+assertNumberConfigTasks node1 0
+assertNumberConfigTasks node2 0
+assertNumberCallbackTasks 2
+assertNumberLockTasks node1 0
+assertNumberLockTasks node2 0
+assertNumberUnlockTasks node1 0
+assertNumberUnlockTasks node2 0
+
+assertPlanLength 1
+
+assertCallbackTask _noop /deployments/local/clusters/cluster1/nodes/node1
+assertCallbackTask _noop /deployments/local/clusters/cluster1/nodes/node2
+
+assertNoCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node1
+assertNoCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node1
+
+assertNoCallbackTask _lock /deployments/local/clusters/cluster1/nodes/node2
+assertNoCallbackTask _unlock /deployments/local/clusters/cluster1/nodes/node2

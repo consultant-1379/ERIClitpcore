@@ -1,0 +1,312 @@
+## test_20_p_export_load_xml_dependency_list
+## ===============================
+
+## Description:
+## Test that the default behaviour will be used when loading xml with dependency_list
+## property not present or with different values, with and without load --replace and --merge switches
+
+## Actions:
+## 1. Create a deployment with three clusters in applied state
+
+## 2 Export xml files with different dependency list values
+## not_present_cluster1.xml
+## empty_value_cluster1.xml
+## single_value_cluster1.xml
+## multi_values_cluster1.xml
+
+## Export cluster item
+## Check for dependency_list tag in xml files
+## 2.1 not present_cluster1.xml
+## 2.1.0 Dependency_list property not defined and not exported to xml
+## 2.2 Empty_value_cluster1.xml
+## As per bug LITPCDS-11866, when exporting the xml, a property with no value
+## does not generate a property tag in the xml snippet
+##   litpcds-8809_dependency_list_empty_value.xml was edited manually to include
+##   <dependency_list></dependency_list>
+## 2.3 single_value_cluster1.xml
+## 2.3.0 Dependency_list property has a single value which is exported to xml
+## 2.4 multi_values_cluster1.xml
+## 2.4.0 Dependency_list property has multiple values which are exported to xml
+
+## 3 Load xml with --merge switch
+## 3.1 Merge xml files with the different dependency_list values
+## Check that values are merged and state of cluster item is changed from applied
+## to updated when the value is changed
+## 3.2 Cluster item is applied with no dependency_list property defined
+## 3.3 Load xml not_present_cluster1.xml
+## 3.4 Load xml empty_value_cluster1.xml
+## 3.5 Load xml single_value_cluster1.xml
+## 3.5.1 Update state of cluster item back to Applied
+## 3.6 Load xml multi_values_cluster1.xml
+## Check that values are merged and state of cluster item remains updated
+## when the value is changed
+## 3.7 Cluster item is updated with dependency_list with empty value
+## 3.8 Load xml not_present_cluster1.xml
+## 3.9 Load xml empty_value_cluster1.xml
+## 3.10 Load xml single_value_cluster1.xml
+## 3.11 Load xml multi_values_cluster1.xml
+
+## 4 Load xml with --replace switch
+## 4.1 replace xml files with the different dependency_list values
+## Check that values are replaced and state of cluster item is changed from applied
+## to updated when the value is changed and then the state of the cluster item is
+## changed back from updated to applied when the item goes back to its applied properties
+## 4.2 Cluster item is applied with no dependency_list property defined
+## 4.3 Load xml not_present_cluster1.xml
+## 4.4 Load xml single_value_cluster1.xml
+## 4.5 Load xml empty_value_cluster1.xml
+## 4.6 Load xml multi_values_cluster1.xml
+## Check that values are replaced and state of cluster item remains updated
+## when the value is changed and then the state of the cluster item is changed
+## back from updated to applied when the item goes back to its applied properties
+## 4.7 Cluster item is updated with dependency_list with empty value
+## 4.8 Load xml not_present_cluster1.xml
+## 4.9 Load xml single_value_cluster1.xml
+## 4.10 Load xml empty_value_cluster1.xml
+## 4.11 Load xml multi_values_cluster1.xml
+
+## 5 Load xml with no switch
+## Load xml files with different dependency_list values
+## In call cases, ItemExistsError is returned
+## 5.1 Load xml empty_value_cluster1.xml
+## 5.2 Load xml not_present_cluster1.xml
+## 5.3 Load xml single_value_cluster1.xml
+## 5.4 Load xml multi_values_cluster1.xml
+
+# 1. Create a deployment with three clusters
+# Define first cluster
+runLitpScript ../include/two_nodes.at
+
+# Define second cluster
+litp create -p /infrastructure/systems/system3 -t system -o system_name='SYS3'
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system3/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/systems/system4 -t system -o system_name='SYS4'
+litp create -p /infrastructure/systems/system4/disks/disk0 -t disk -o name='sdb' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system4/controllers/c1 -t controller-base
+
+litp create -p /deployments/local/clusters/cluster2 -t cluster -o ha_manager=vcs
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node3 -t node -o hostname='node3'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node4 -t node -o hostname='node4'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Define third cluster
+litp create -p /deployments/local/clusters/cluster3 -t cluster -o ha_manager=vcs
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node5 -t node -o hostname='node5'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node5/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster3/nodes/node6 -t node -o hostname='node6'
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster3/nodes/node6/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node5/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster3/nodes/node6/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Create and inherit an item on a node so that items can enter the Applied state
+litp create -p /software/items/a_package -t mock-package -o name=a_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/a_package -s /software/items/a_package
+
+litp create_plan
+litp run_plan
+
+# 2 Export xml files with different dependency list values
+# not_present_cluster1.xml
+# empty_value_cluster1.xml
+# single_value_cluster1.xml
+# multi_values_cluster1.xml
+
+
+# Export cluster item
+# Check for dependency_list tag in xml files
+# 2.1 not present_cluster1.xml
+# 2.1.0 Dependency_list property not defined and not exported to xml
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+litp export -p /deployments/local/clusters/cluster1 -f /tmp/not_present_cluster1.xml
+assertFileContents ./xml/litpcds-8809_dependency_list_not_present.xml /tmp/not_present_cluster1.xml
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 2.2 Empty_value_cluster1.xml
+# As per bug LITPCDS-11866, when exporting the xml, a property with no value
+# does not generate a property tag in the xml snippet
+#   litpcds-8809_dependency_list_empty_value.xml was edited manually to include
+#   <dependency_list></dependency_list>
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=''
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list=''
+litp export -p /deployments/local/clusters/cluster1 -f /tmp/empty_value_cluster1.xml
+assertFileContents ./xml/litpcds-8809_dependency_list_not_present.xml /tmp/empty_value_cluster1.xml
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 2.3 single_value_cluster1.xml
+# 2.3.0 Dependency_list property has a single value which is exported to xml
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list='cluster2'
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list='cluster2'
+litp export -p /deployments/local/clusters/cluster1 -f /tmp/single_value_cluster1.xml
+assertFileContents ./xml/litpcds-8809_dependency_list_single_value.xml /tmp/single_value_cluster1.xml
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 2.4 multi_values_cluster1.xml
+# 2.4.0 Dependency_list property has multiple values which are exported to xml
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list='cluster2,cluster3'
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list='cluster2,cluster3'
+litp export -p /deployments/local/clusters/cluster1 -f /tmp/multi_values_cluster1.xml
+assertFileContents ./xml/litpcds-8809_dependency_list_multi_values.xml /tmp/multi_values_cluster1.xml
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 3 Load xml with --merge switch
+# 3.1 Merge xml files with the different dependency_list values
+# Check that values are merged and state of cluster item is changed from applied
+# to updated when the value is changed
+# 3.2 Reset Cluster item to applied with no dependency_list property defined, though XMl
+litp load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml --replace
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 3.3 Load xml not_present_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml --merge
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 3.4 Load xml empty_value_cluster1.xml
+#   Bug LITPCDS-11866
+# litpcds-8809_dependency_list_empty_value.xml was edited manually
+litp load -p /deployments/local/clusters/ -f ./xml/litpcds-8809_dependency_list_empty_value.xml --merge
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 3.5 Load xml single_value_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/single_value_cluster1.xml --merge
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list='cluster2'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 3.5.1 Reset state of cluster item back to Applied through XML
+litp load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml --replace
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 3.6 Load xml multi_values_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/multi_values_cluster1.xml --merge
+assertProperty /deployments/local/clusters/cluster1 -o dependency_list='cluster2,cluster3'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# Check that values are merged and state of cluster item remains updated
+# when the value is changed
+
+# 3.7 Cluster item is updated with dependency_list with empty value
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=''
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list=''
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 3.8 Load xml not_present_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml --merge
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list=''
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 3.9 Load xml empty_value_cluster1.xml
+#   Bug LITPCDS-11866
+# litpcds-8809_dependency_list_empty_value.xml was edited manually
+litp load -p /deployments/local/clusters/ -f ./xml/litpcds-8809_dependency_list_empty_value.xml --merge
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list=''
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 3.10 Load xml single_value_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/single_value_cluster1.xml --merge
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list='cluster2'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 3.11 Load xml multi_values_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/multi_values_cluster1.xml --merge
+assertProperty /deployments/local/clusters/cluster1 -o dependency_list='cluster2,cluster3'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 4 Load xml with --replace switch
+# 4.1 replace xml files with the different dependency_list values
+# Check that values are replaced and state of cluster item is changed from applied
+# to updated when the value is changed and then the state of the cluster item is
+# changed back from updated to applied when the item goes back to its applied properties
+# 4.2 Cluster item is applied with no dependency_list property defined
+# 4.3 Load xml not_present_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml --replace
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 4.4 Load xml single_value_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/single_value_cluster1.xml --replace
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list='cluster2'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 4.5 Load xml empty_value_cluster1.xml
+#   Bug LITPCDS-11866
+# litpcds-8809_dependency_list_empty_value.xml was edited manually
+litp load -p /deployments/local/clusters/ -f ./xml/litpcds-8809_dependency_list_empty_value.xml --replace
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 4.6 Load xml multi_values_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/multi_values_cluster1.xml --replace
+assertProperty /deployments/local/clusters/cluster1 -o dependency_list='cluster2,cluster3'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# Check that values are replaced and state of cluster item remains updated
+# when the value is changed and then the state of the cluster item is changed
+# back from updated to applied when the item goes back to its applied properties
+
+# 4.7 Cluster item is updated with dependency_list with empty value
+litp update -p /deployments/local/clusters/cluster1 -o dependency_list=''
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list=''
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 4.8 Load xml not_present_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml --replace
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 4.9 Load xml single_value_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/single_value_cluster1.xml --replace
+assertProperty  /deployments/local/clusters/cluster1 -o dependency_list='cluster2'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 4.10 Load xml empty_value_cluster1.xml
+#   Bug LITPCDS-11866
+# litpcds-8809_dependency_list_empty_value.xml was edited manually
+litp load -p /deployments/local/clusters/ -f ./xml/litpcds-8809_dependency_list_empty_value.xml --replace
+assertPropertyUnset -p /deployments/local/clusters/cluster1 -o dependency_list
+assertState -p /deployments/local/clusters/cluster1 Applied
+
+# 4.11 Load xml multi_values_cluster1.xml
+litp load -p /deployments/local/clusters/ -f /tmp/multi_values_cluster1.xml --replace
+assertProperty /deployments/local/clusters/cluster1 -o dependency_list='cluster2,cluster3'
+assertState -p /deployments/local/clusters/cluster1 Updated
+
+# 5 Load xml with no switch
+# Load xml files with different dependency_list values
+# In call cases, ItemExistsError is returned
+# 5.1 Load xml empty_value_cluster1.xml
+assertError --err_type ItemExistsError --err_message "Item /deployments/local/clusters/cluster1 already exists" \
+    load -p /deployments/local/clusters/ -f ./xml/litpcds-8809_dependency_list_empty_value.xml
+
+# 5.2 Load xml not_present_cluster1.xml
+assertError --err_type ItemExistsError --err_message "Item /deployments/local/clusters/cluster1 already exists" \
+    load -p /deployments/local/clusters/ -f /tmp/not_present_cluster1.xml
+
+# 5.3 Load xml single_value_cluster1.xml
+assertError --err_type ItemExistsError --err_message "Item /deployments/local/clusters/cluster1 already exists" \
+    load -p /deployments/local/clusters/ -f /tmp/single_value_cluster1.xml
+
+# 5.4 Load xml multi_values_cluster1.xml
+assertError --err_type ItemExistsError --err_message "Item /deployments/local/clusters/cluster1 already exists" \
+    load -p /deployments/local/clusters/ -f /tmp/multi_values_cluster1.xml

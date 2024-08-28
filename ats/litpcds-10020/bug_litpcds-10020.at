@@ -1,0 +1,22 @@
+# Assert that prepare_restore removes manifest files
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet -s /software/items/telnet
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/telnet -s /software/items/telnet
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Test prepare_restore manifest written with new ForRemoval task (bug reproduced)
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/telnet ForRemoval
+
+litp prepare_restore
+
+# pending atrunner tests/fixes
+# assertDirectoryContents manifests/ /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+

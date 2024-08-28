@@ -1,0 +1,54 @@
+## LITPCDS-12008: Test REST API
+## Update Initial source with ForRemoval reference
+runLitpScript ../include/two_nodes.at
+litp create -p /software/items/foo -t mock-package -o name=original_foo version=1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo \
+    -s /software/items/foo
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp run_plan
+assertPlanState failed
+
+# Non overwritten reference properties
+
+# TC16: Update initial source, ForRemoval ref goes to Updated
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/foo False
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+assertState -p /software/items/foo Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+
+litp update -p /software/items/foo -o name=doesnt_matter
+
+assertState -p /software/items/foo Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=doesnt_matter
+
+# Clean up and start fresh for overwritten properties test
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Reference overwrites properties
+
+# TC17: Update initial source, ForRemoval ref stays ForRemoval
+litp create -p /software/items/bar -t mock-package -o name=original_bar version=1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar \
+    -s /software/items/bar
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/bar -o name=ref_overwrites
+
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/bar
+litp run_plan
+assertPlanState failed
+
+assertAppliedPropertiesDeterminable -p /deployments/local/clusters/cluster1/nodes/node1/items/bar False
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+assertState -p /software/items/bar Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/bar ForRemoval
+
+litp update -p /software/items/bar -o name=doesnt_matter
+
+assertState -p /software/items/bar Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/bar ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o name=doesnt_matter

@@ -1,0 +1,178 @@
+## Description:
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+## Inherited Items in state initial are be directly removed
+## when their progeny and inherited progeny are in state initial
+## When a source item or a source descendent of a direct doubly inherited item with a state
+## "Updated" is removed, the item and its descendants
+##
+## Preconditions:
+## Source itemA: /software/items/itemA
+## Inherited item1 (source is itemA): /ms/items/item1
+## Doubly inherited item2 (source is grandchild of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item2
+## Inherited item3 (source is itemA): /ms/items/item3
+## Doubly inherited item4 (source is grandchild of item3): /deployments/local/clusters/cluster1/nodes/node2/items/item4
+## Doubly inherited item5 (source is grandchild of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item5
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_09
+runLitpScript ../include/two_nodes.at
+
+#1. Create an itemA with a child item a grandchild item and a grand-grandchild
+litp create -p /software/items/itemA -t 'parent' -o name=parentA
+litp create -p /software/items/itemA/childs/child1 -t 'child' -o name=childA
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1 -t 'g-child' -o name=grand_childA
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 -t 'g-g-child' -o name=ggrand_childA
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 Initial
+
+# 2. Inherit itemA to item1
+litp inherit -p /ms/items/item1 -s /software/items/itemA
+
+assertState -p /ms/items/item1 Initial
+
+# 3. Inherit grandchild of item1 to item2 (double direct inheritance)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 \
+ -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+
+# 4. Inherit itemA to item3
+litp inherit -p /ms/items/item3 -s /software/items/itemA
+
+assertState -p /ms/items/item3 Initial
+
+# 5. Inherit grandchild of item3 to item4 (double direct inheritance)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item4 \
+ -s /ms/items/item3/childs/child1/grand_children/grandchild1
+
+# 6. Check that all descendents are created and in "Initial" state
+assertState -p /ms/items/item1/childs/child1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/ggrandchild1 Initial
+assertState -p /ms/items/item3/childs/child1 Initial
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4/grand_grand_children/ggrandchild1 Initial
+
+# 7,8 create and run plan
+litp create_plan
+litp run_plan
+
+# 9. Check all items are in "Applied" state
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 Applied
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/ggrandchild1 Applied
+assertState -p /ms/items/item3 Applied
+assertState -p /ms/items/item3/childs/child1 Applied
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4/grand_grand_children/ggrandchild1 Applied
+
+# 10. Update the source item, itemA
+litp update -p /software/items/itemA -o name=parentA_updated
+litp update -p /software/items/itemA/childs/child1 -o name=childA_updated
+litp update -p /software/items/itemA/childs/child1/grand_children/grandchild1 -o name=grand_childA_updated
+litp update -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 -o name=grand_grand_childA_updated
+
+# 11. Check that the source itemA, and its corresponding inherited items, item1 and item3 are in state, "Updated"
+assertState -p /software/items/itemA Updated
+assertState -p /ms/items/item1 Updated
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Updated
+assertState -p /ms/items/item3 Updated
+assertState -p /ms/items/item3/childs/child1 Updated
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 Updated
+
+# 12. Check that doubly inherited item2 and item4 and their descendents are in state "Updated"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/ggrandchild1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4/grand_grand_children/ggrandchild1 Updated
+
+# 13.Inherit grandchild of item1 to item5 (double direct inheritance)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item5 \
+ -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+# 14.Check that item5 and its descendents are in "Initial" state
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item5 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item5/grand_grand_children/ggrandchild1 Initial
+
+# 5.Remove the inherited item item1
+litp remove -p /ms/items/item1
+
+# 16.Check that the inherited item item1 and its descendents are in state, "ForRemoval"
+assertState -p /ms/items/item1 ForRemoval
+assertState -p /ms/items/item1/childs/child1 ForRemoval
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 ForRemoval
+
+# 15.Check that doubly inherited item2 and its descendents are in state, "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/ggrandchild1 ForRemoval
+
+# 16. Check that item5 and its descendents have been removed since they were in "Initial" state
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item5
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item5/grand_grand_children/ggrandchild1
+
+# 17. Remove item3 child
+litp remove -p /ms/items/item3/childs/child1
+
+# 18.Check that item3 child and its descendents  are in state, "ForRemoval"
+assertState -p /ms/items/item3/childs/child1 ForRemoval
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1 ForRemoval
+
+# 19.Check that doubly inherited item4 and its descendents are in state, "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item4/grand_grand_children/ggrandchild1 ForRemoval
+
+# 20,21 create and run plan
+litp create_plan
+litp run_plan
+
+# 22.Check that the inherited item item1 and its descendents have been removed
+assertNone -p /ms/items/item1
+assertNone -p /ms/items/item1/childs/child1
+assertNone -p /ms/items/item1/childs/child1/grand_children/grandchild1
+assertNone -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1
+
+# 23. Check that doubly inherited item2 and its descendents have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_grand_children/ggrandchild1
+
+# 24. Check that item3 child and its descendents have been removed
+assertState -p /ms/items/item3 Applied
+assertNone -p /ms/items/item3/childs/child1
+assertNone -p /ms/items/item3/childs/child1/grand_children/grandchild1
+assertNone -p /ms/items/item3/childs/child1/grand_children/grandchild1/grand_grand_children/ggrandchild1
+
+# 25. Check that doubly inherited item4 and its descendents have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/item4
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/item4/grand_grand_children/ggrandchild1
+
+# Result:
+# When a source item or a source descendent of a direct doubly inherited item
+# in state "Updated", is removed, the item and its descendants
+# and all its corresponding inherited progeny
+# (which encompasses inherited progeny and double inherited progeny)
+# will move to "ForRemoval" state
+# and can be successfully removed by executing
+# a plan
+# Inherited Items in state initial are directly removed
+# without running a plan
+# when their progeny and inherited progeny are in state initial
+# a plan

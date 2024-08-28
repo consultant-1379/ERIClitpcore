@@ -1,0 +1,49 @@
+runLitpScript ../include/two_nodes.at
+add-extensions 11139_extension
+
+litp create -t dummy_package -p /software/items/dum_package_unique -o ro_name="dum_ro_name" name="dum"
+litp inherit -p /ms/items/dum_package_unique -s /software/items/dum_package_unique
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/dum_package_unique -s /software/items/dum_package_unique
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/dum_package_unique -s /software/items/dum_package_unique
+
+litp create -p /software/items/package_1 -t mock-package -o name=package_1
+litp inherit -p /ms/items/package_1 -s /software/items/package_1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/package_1 -s /software/items/package_1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/package_1 -s /software/items/package_1
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Remove the model items
+litp remove -p /ms/items/dum_package_unique
+litp remove -p /ms/items/package_1
+assertState -p /ms/items/dum_package_unique ForRemoval
+assertState -p /ms/items/package_1 ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/dum_package_unique
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/dum_package_unique ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/package_1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/package_1 ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/dum_package_unique
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/dum_package_unique ForRemoval
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/package_1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/package_1 ForRemoval
+
+
+assertError --err_type InvalidRequestError --err_message 'Unable to modify readonly property: ro_name' update -p /deployments/local/clusters/cluster1/nodes/node1/items/dum_package_unique -o ro_name='not_unique'
+assertError --err_type InvalidRequestError --err_message 'Unable to modify readonly property: ro_name' update -p /deployments/local/clusters/cluster1/nodes/node2/items/dum_package_unique -o ro_name='not_unique'
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/package_1 -o name=package_2
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/items/package_1 -o name=package_2
+
+
+
+assertState -p /ms/items/dum_package_unique ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/dum_package_unique -o ro_name='dum_ro_name'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/dum_package_unique ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/package_1 -o name='package_2'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/package_1 Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/dum_package_unique -o ro_name='dum_ro_name'
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/dum_package_unique ForRemoval
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/package_1 -o name='package_2'
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/package_1 Updated
+

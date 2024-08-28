@@ -1,0 +1,202 @@
+# Test Case 02
+# Description:
+# Covers acceptance criteria 7-13
+# Tests the applied_properties_determinable flag when model
+# items transitions from state "Applied" to "Updated" to "Applied" 
+
+# Prerequisite - LITP Deployment
+runLitpScript ../include/two_nodes.at
+
+# Test setup
+# a. Create model items
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+
+# b. Check they are in Initial state and their APD flag is set to True
+assertState -p /software/items/telnet Initial
+assertState -p /ms/items/telnet Initial
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+# c. Create plan
+litp create_plan
+
+# d. Run plan
+litp run_plan
+
+# e. Wait for plan to succeed
+assertPlanState successful
+
+# f. Check model items are in applied state and the APD flag is True
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+#1. Update an "Applied" model Item with 
+#   applied_properties_determinable set to True with new properties
+litp update -p /software/items/telnet -o version=2
+litp update -p /ms/items/telnet -o version=2
+
+#2. Check that the updated item is in state, "Updated"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/telnet Updated
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+#3. Update the "Updated" model Item with
+#   applied_properties_determinable set to True
+#   by updating a property
+litp update -p /software/items/telnet -o version=3
+litp update -p /ms/items/telnet -o version=3
+
+#4. Check that the updated item is in state, "Updated"
+##   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/telnet Updated
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+#5. Update the "Updated" model Item with
+#   applied_properties_determinable flag is set to True
+#   to use original properties
+litp update -p /software/items/telnet -d version
+litp update -p /ms/items/telnet -d version
+
+#6. Check that the updated item are in state, "Applied"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+#7. Update an "Applied" model Item with 
+#   applied_properties_determinable set to True with new properties
+litp update -p /software/items/telnet -o version=3.1
+litp update -p /ms/items/telnet -o version=3.1
+
+#8. Check that the updated item are in state, "Updated"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/telnet Updated
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+# 9. Create plan
+litp create_plan
+
+# 10. Run plan
+runPlanUntil 0
+assertPlanState running
+
+# 11. Fail task associated with the model item
+failConfigTask package ms1 /ms/items/telnet
+runPlanEnd
+assertPlanState failed
+
+#12.Check that the item is in state, "Updated"
+#   and the applied_properties_determinable flag is set to False
+#   for the inherited item and true for the parent item
+assertState -p /software/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+
+#13.Update the "Updated" model Item with
+#   applied_properties_determinable flag is set to False
+#   using it's original applied_properties
+litp update -p /software/items/telnet -d version
+litp update -p /ms/items/telnet -d version
+
+#14.Check that the model item is in state, "Updated"
+#   and the applied_properties_determinable is False
+assertState -p /software/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+
+#15.Update the model item with
+#   applied_properties_determinable flag is set to False
+#   to use new properties
+litp update -p /software/items/telnet -o version=3
+litp update -p /ms/items/telnet -o version=3
+
+#16.Check that the model item is in state, "Updated"
+#   and the applied_properties_determinable is False
+assertState -p /software/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+
+#17.Remove the "Updated" model item with
+# applied_properties_determinable is False
+litp remove -p /ms/items/telnet
+litp remove -p /software/items/telnet
+
+#18.Check that the model item is in state, "ForRemoval"
+##  and the applied_properties_determinable is False
+assertState -p /software/items/telnet ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+
+#19.Remove model to previous state 
+litp update -p /software/items/telnet -o version=3
+litp update -p /ms/items/telnet -o version=3
+
+#20.Check that the model item is in state, "Updated"
+##   and the applied_properties_determinable is False
+assertState -p /software/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet Updated
+assertAppliedPropertiesDeterminable -p /ms/items/telnet False
+
+#21.Create plan
+litp create_plan
+
+#22.Run plan
+litp run_plan
+
+#23.Wait for plan to pass
+assertPlanState successful
+
+#24.Check that all items are in state, "Applied"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+#25.Update model items
+litp update -p /software/items/telnet -o version=4
+litp update -p /ms/items/telnet -o version=4
+
+#26.Create plan
+litp create_plan
+
+#27.Run plan
+litp run_plan
+
+#28.Wait for plan to pass
+assertPlanState successful
+
+#29.Check that all items are in state, "Applied"
+#   and the applied_properties_determinable flag is set to True
+assertState -p /software/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+#30.Remove model items
+litp remove -p /ms/items/telnet
+litp remove -p /software/items/telnet
+
+#31.Check that all items are in state, "ForRemoval"
+#show show -p /software/items/telnet
+#show show -p /ms/items/telnet
+assertState -p /software/items/telnet ForRemoval
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertState -p /ms/items/telnet ForRemoval
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+

@@ -1,0 +1,9 @@
+<litp:os-profile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd"
+	id="rhel_6_2" version="LITP2">
+    <!-- this is a comment we are testing comments do not remove -->
+	<arch>x86_64</arch>
+	<name>sample-profile</name>
+	<path>/here</path>
+	<version>rhel6</version>
+</litp:os-profile>

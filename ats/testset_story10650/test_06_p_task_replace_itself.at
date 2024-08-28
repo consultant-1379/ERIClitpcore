@@ -1,0 +1,37 @@
+## test_06_p_task_replace_itself
+## Description:
+## Test that a task can replace itself
+
+## Prerequisite:
+## Create a plug-in that generates tasks and a replacement task
+
+## Actions:
+## 1. Create model items so plug-in will generate replacement tasks
+##    i.e. plug-in task: (foo1, bar1), replaces: (foo1, bar1)
+## 2. Create plan
+## 3. Run plan
+## 4. Check manifest
+
+## Result:
+## A replacement task can replace itself
+
+#Prerequisite:
+#Create a plug-in that generates tasks and a replacement task
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create model items so plug-in will generate replacement tasks
+#   i.e. plug-in task: (foo1, bar1), replaces: (foo1, bar1)
+litp create -p /software/items/item1 -t story10650 -o name="tc06_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+#4. Check manifest
+assertFileContents manifests/expected/tc06/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

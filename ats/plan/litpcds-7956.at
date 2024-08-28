@@ -1,0 +1,11 @@
+add-extensions ../extensions/dummy_logrotate_extensions
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/finger -t mock-package -o name="finger"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/finger -s /software/items/finger
+
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/n1test03a -t logrotate-rule-config
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/n1test03a/rules/logrule_03a -t logrotate-rule -o name='rule1' path='/var/log/logrotatetest.log' rotate='3' size='3k' copytruncate='true'
+litp create_plan
+litp run_plan
+assertError --err_type "InvalidRequestError" update -p /deployments/local/clusters/cluster1/nodes/node1/configs/n1test03a/rules/logrule_03a -o name='n1_rule1_updated'

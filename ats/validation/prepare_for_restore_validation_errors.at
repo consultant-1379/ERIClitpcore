@@ -1,0 +1,40 @@
+add-extensions ../extensions/dummy_logrotate_extensions
+runLitpScript ../model/setup_two_nodes.inc
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+# With an environment with everything in Applied state try to run prepare_restore with invalid parameters
+
+assertError --err_type "ValidationError" --err_message "Invalid value 'some_invalid_action'." update -p /litp/prepare-restore -o actions='some_invalid_action'
+assertError --err_type "ValidationError" --err_message "Item not found '/invalid'" update -p /litp/prepare-restore -o path=/invalid
+
+# ATs listed in TORF-223443
+assertError --err_type "ValidationError" --err_message "Invalid value '$'." update -p /litp/prepare-restore -o path='$'
+assertError --err_type "ValidationError" --err_message "Invalid value '@'." update -p /litp/prepare-restore -o path='@'
+assertError --err_type "ValidationError" --err_message "Invalid value ''." update -p /litp/prepare-restore -o path=''
+
+assertError --err_type "ValidationError" --err_message "Item not found '$/deployments/site1/clusters/cluster1/nodes/node1'" update -p /litp/prepare-restore -o path='$/deployments/site1/clusters/cluster1/nodes/node1'
+assertError --err_type "ValidationError" --err_message "Item not found '/deployments/site1/clusters/cluster1/nodes/node1<'" update -p /litp/prepare-restore -o path='/deployments/site1/clusters/cluster1/nodes/node1<'
+assertError --err_type "ValidationError" --err_message "Item not found '/deployments/site1/ clusters/cluster1/nodes/node1'" update -p /litp/prepare-restore -o path="/deployments/site1/ clusters/cluster1/nodes/node1"
+assertError --err_type "ValidationError" --err_message "Item not found '/deployments/site1/clusters/cluster1/nodes/node1/bogus'" update -p /litp/prepare-restore -o path="/deployments/site1/clusters/cluster1/nodes/node1/bogus"
+assertError --err_type "ValidationError" --err_message "Item not found '/deployments/site1/clusters/cluster1/nodes/node1 /deployments/site1/clusters/cluster1/nodes/node2'" update -p /litp/prepare-restore -o path="/deployments/site1/clusters/cluster1/nodes/node1 /deployments/site1/clusters/cluster1/nodes/node2"
+
+assertError --err_type "ValidationError" --err_message "Item is not a node '/deployments/site1/clusters/cluster1/nodes/node1/items/y'" update -p /litp/prepare-restore -o path=/deployments/site1/clusters/cluster1/nodes/node1/items/y
+assertError --err_type "ValidationError" --err_message "Item is not a node '/deployments/site1/clusters/cluster1'" update -p /litp/prepare-restore -o path=/deployments/site1/clusters/cluster1
+assertError --err_type "ValidationError" --err_message "Item is not a node '/software/items'" update -p /litp/prepare-restore -o path=/software/items
+
+# Create a snapshot
+litp create_snapshot
+
+# Create an empty collection that will make a plan fail
+litp create -t logrotate-rule-config -p /ms/configs/logging
+
+# Plan is invalid, prepare_restore should still be able to remove snapshot
+litp update -p /litp/prepare-restore -o path=/ actions='all'

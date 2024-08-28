@@ -1,0 +1,39 @@
+module local 1.0;
+require {
+type ssh_keygen_t;
+type nfs_t;
+type sshd_t;
+class file
+
+{ getattr open read };
+class dir search;
+type haproxy_t;
+type default_t;
+type haproxy_unit_file_t;
+type unreserved_port_t;
+class tcp_socket {name_bind name_connect};
+type luci_port_t;
+type transproxy_port_t;
+type us_cli_port_t;
+}
+#============= ssh_keygen_t ==============
+allow ssh_keygen_t nfs_t:file { getattr open read }
+;
+allow ssh_keygen_t nfs_t:dir search;
+allow sshd_t nfs_t:file
+
+{ getattr open read };
+#============= haproxy_t ==============
+allow haproxy_t default_t:file read;
+allow haproxy_t haproxy_unit_file_t:file { getattr open read }
+;
+allow haproxy_t nfs_t:dir search;
+allow haproxy_t nfs_t:file
+
+{ getattr open read }
+;
+allow haproxy_t unreserved_port_t:tcp_socket name_bind;
+allow haproxy_t luci_port_t:tcp_socket name_bind;
+allow haproxy_t transproxy_port_t:tcp_socket name_bind;
+allow haproxy_t unreserved_port_t:tcp_socket name_connect;
+allow haproxy_t us_cli_port_t:tcp_socket name_bind;

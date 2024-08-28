@@ -1,0 +1,13 @@
+
+module openshift_initrc 1.0;
+
+require {
+        type rpm_script_t;
+        type openshift_initrc_t;
+        type svirt_t;
+        class process transition;
+}
+
+#============= openshift_initrc_t ==============
+allow openshift_initrc_t rpm_script_t:process transition;
+allow openshift_initrc_t svirt_t:process transition;

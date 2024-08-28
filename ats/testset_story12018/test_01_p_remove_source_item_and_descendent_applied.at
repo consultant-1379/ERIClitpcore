@@ -1,0 +1,256 @@
+## test_01_p_remove_source_item_and_descendent_applied
+## Description:
+## When a source item in state, "Applied"
+## is removed, then the item and its descendants
+## and all its corresponding inherited progeny
+## will move to "ForRemoval" state
+## When the descendent of a source item
+## in state, "Applied" is removed
+## then the item and its descendants
+## and all its corresponding inherited progeny
+## will move to "ForRemoval" state
+
+# Actions:
+add-extensions extensions/test_12018_extension
+add-plugins plugins/test_12018_plugin
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA with a child item
+#    and a grandchild item
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 2. Inherit itemA to item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 3. Inherit itemA to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 4. Execute "create_plan" command
+litp create_plan # don't disable callback mock
+
+# 5. Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 6. Check all items are in "Applied" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 7. Remove the source item, itemA
+litp remove -p /software/services/parent1
+
+assertLogMessage "DEBUG - set item for removal: /software/services/parent1"
+
+# 8. Check that itemA, item1 and item2
+#    are in state, "ForRemoval"
+assertState -p /software/services/parent1 ForRemoval
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 9. Execute "create_plan" command
+litp create_plan # don't disable callback mock
+
+# 10.Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 11.Check that itemA, item1 and item2
+#    have been removed
+assertNone -p /software/services/parent1
+assertLogMessage "INFO - Deleted item <ModelItem /software/services/parent1 type=parent state=Removed>"
+assertNone -p /software/services/parent1/childs/child1
+assertNone -p /software/services/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent/parent1/childs/child1/grand_children/grandchild1
+
+# 12.Create an itemA with a child item
+#    and a grandchild item
+litp create -p /software/services/parent1 -t parent -o name=parent1 # source item
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Initial
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 13.Inherit itemA to item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 14.Inherit itemA to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 15.Execute "create_plan" command
+litp create_plan # don't disable callback mock
+
+# 16.Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 17.Check all items are in "Applied" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 18.Remove a descendent of a source item
+litp remove -p /software/services/parent1/childs/child1
+
+assertLogMessage "DEBUG - set item for removal: /software/services/parent1/childs/child1"
+
+# 19.Check that the descendents of the source item, item1
+#    and item2 and their descendents are in state, "ForRemoval"
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 ForRemoval
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 20.Execute "create_plan" command
+litp create_plan
+
+# 21.Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 22.Check that the descendents of the source item, item1
+#    and item2 have been removed
+assertState -p /software/services/parent1 Applied
+assertNone -p /software/services/parent1/childs/child1
+assertLogMessage "INFO - Deleted item <ModelItem /software/services/parent1/childs/child1 type=child state=Removed>"
+assertNone -p /software/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+# 23.Recreate the source item descendents that have been removed
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 24.check that the inherited items have been re-created
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 25.check that the inherited items have been re-created
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+# 26.Execute "create_plan" command
+litp create_plan # don't disable callback mock
+
+# 27.Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 28.Check all items are in "Applied" state
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Applied
+
+# 29.Remove a descendent of a source item
+litp remove -p /software/services/parent1/childs/child1/grand_children/grandchild1
+
+assertLogMessage "DEBUG - set item for removal: /software/services/parent1/childs/child1/grand_children/grandchild1"
+
+# 30.Check that the descendents of the source item, item1
+#    and item2 and their descendents are
+#    in state, "ForRemoval"
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 31.Execute "create_plan" command
+litp create_plan
+
+# 32.Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 33.Check that the descendents of the source item, item1 and item2
+#    have been removed
+assertState -p /software/services/parent1 Applied
+assertState -p /software/services/parent1/childs/child1 Applied
+assertNone -p /software/services/parent1/childs/child1/grand_children/grandchild1
+assertLogMessage "INFO - Deleted item <ModelItem /software/services/parent1/childs/child1/grand_children/grandchild1 type=grand-child state=Removed>"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+# Result:
+# When an inherit source item in state "Applied",
+# is removed, the item and its descendants
+# and all its corresponding inherited progeny
+# will move to "ForRemoval" state
+# and can be successfully removed by executing
+# a plan

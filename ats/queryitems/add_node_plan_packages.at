@@ -1,0 +1,26 @@
+
+runLitpScript setup_twonodes.inc
+
+litp create_plan
+
+
+litp run_plan
+
+
+# Add third node
+litp create -p /infrastructure/systems/sys3 -t system -o system_name="sys3"
+
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3 -t node -o hostname="node3"
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node3/system -s /infrastructure/systems/sys3
+litp create -p /deployments/site1/clusters/cluster1/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node3/os -s /software/profiles/osprofile1
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node3/items/package_file -s /software/items/package_file
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node3/items/package_vim -s /software/items/package_vim
+
+litp create_plan
+
+
+assertTask 0 package node3 /deployments/site1/clusters/cluster1/nodes/node3/items/package_file
+assertTask 0 package node3 /deployments/site1/clusters/cluster1/nodes/node3/items/package_vim

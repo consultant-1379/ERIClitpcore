@@ -1,0 +1,11 @@
+add-plugins ../plugins/configtask_deps
+
+runLitpScript ../include/two_nodes.at
+
+litp create_plan
+litp run_plan
+
+litp update -p /deployments/local/clusters/cluster1/nodes/node1 -o node_id=123
+
+litp create_plan
+litp run_plan

@@ -1,0 +1,8 @@
+# create node without any links
+litp create -p /deployments/dep1 -t deployment
+litp create -p /deployments/dep1/clusters/cluster1 -t cluster
+litp create -p /deployments/dep1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+
+# ensure error returned from create_plan
+#show create_plan
+assertError create_plan

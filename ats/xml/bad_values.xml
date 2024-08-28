@@ -1,0 +1,333 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="root">
+  <litp:root-deployments-collection id="deployments">
+    <litp:deployment id="local">
+      <litp:deployment-clusters-collection id="clusters">
+        <litp:cluster id="cluster1">
+          <litp:cluster-configs-collection id="configs"/>
+          <litp:cluster-nodes-collection id="nodes">
+            <litp:node id="node1">
+              <hostname>node1</hostname>
+              <is_locked>false<!--note: this property is not updatable--></is_locked>
+              <litp:node-configs-collection id="configs"/>
+              <litp:node-file_systems-collection id="file_systems">
+                <litp:nfs-file-system-inherit source_path="/infrastructure/storage/nfs_mounts/nfs_fs" id="nfs_fs">
+                  <litp:nfs-export-inherit source_path="/infrastructure/storage/nfs_mounts/nfs_fs/export" id="export"/>
+                  <litp:nfs-virtual-server-inherit source_path="/infrastructure/storage/nfs_mounts/nfs_fs/vip" id="vip"/>
+                </litp:nfs-file-system-inherit>
+              </litp:node-file_systems-collection>
+              <litp:node-items-collection id="items">
+                <litp:mock-package-inherit source_path="/software/items/a_package" id="a_package"/>
+                <litp:mock-package-inherit source_path="/software/items/b_package" id="b_package"/>
+                <litp:mock-package-inherit source_path="/software/items/c_package" id="c_package"/>
+                <litp:mock-package-inherit source_path="/software/items/d_package" id="d_package"/>
+              </litp:node-items-collection>
+              <litp:node-managed_files-collection id="managed_files"/>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <network_name>nodes</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os">
+                <name>sample-profile-newname</name>
+              </litp:os-profile-inherit>
+              <litp:node-routes-collection id="routes"/>
+              <litp:node-services-collection id="services"/>
+              <litp:storage-profile-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile">
+                <litp:storage-profile-volume_groups-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups" id="volume_groups">
+                  <litp:volume-group-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1" id="vg1">
+                    <litp:volume-group-file_systems-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems" id="file_systems">
+                      <litp:file-system-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/root" id="root"/>
+                      <litp:file-system-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/swap" id="swap"/>
+                    </litp:volume-group-file_systems-collection-inherit>
+                    <litp:volume-group-physical_devices-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices" id="physical_devices">
+                      <litp:physical-device-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices/internal" id="internal"/>
+                    </litp:volume-group-physical_devices-collection-inherit>
+                  </litp:volume-group-inherit>
+                </litp:storage-profile-volume_groups-collection-inherit>
+              </litp:storage-profile-inherit>
+              <litp:system-inherit source_path="/infrastructure/systems/system1" id="system">
+                <litp:system-controllers-collection-inherit source_path="/infrastructure/systems/system1/controllers" id="controllers"/>
+                <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system1/disks" id="disks">
+                  <litp:disk-inherit source_path="/infrastructure/systems/system1/disks/disk0" id="disk0"/>
+                  <litp:disk-inherit source_path="/infrastructure/systems/system1/disks/disk1" id="disk1"/>
+                </litp:system-disks-collection-inherit>
+              </litp:system-inherit>
+            </litp:node>
+            <litp:node id="node2">
+              <hostname>node2</hostname>
+              <is_locked>false<!--note: this property is not updatable--></is_locked>
+              <litp:node-configs-collection id="configs"/>
+              <litp:node-file_systems-collection id="file_systems"/>
+              <litp:node-items-collection id="items"/>
+              <litp:node-managed_files-collection id="managed_files"/>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <network_name>nodes</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os"/>
+              <litp:node-routes-collection id="routes"/>
+              <litp:node-services-collection id="services"/>
+              <litp:storage-profile-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile">
+                <litp:storage-profile-volume_groups-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups" id="volume_groups">
+                  <litp:volume-group-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1" id="vg1">
+                    <litp:volume-group-file_systems-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems" id="file_systems">
+                      <litp:file-system-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/root" id="root"/>
+                      <litp:file-system-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/swap" id="swap"/>
+                    </litp:volume-group-file_systems-collection-inherit>
+                    <litp:volume-group-physical_devices-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices" id="physical_devices">
+                      <litp:physical-device-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices/internal" id="internal"/>
+                    </litp:volume-group-physical_devices-collection-inherit>
+                  </litp:volume-group-inherit>
+                </litp:storage-profile-volume_groups-collection-inherit>
+              </litp:storage-profile-inherit>
+              <litp:system-inherit source_path="/infrastructure/systems/system2" id="system">
+                <litp:system-controllers-collection-inherit source_path="/infrastructure/systems/system2/controllers" id="controllers"/>
+                <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system2/disks" id="disks">
+                  <litp:disk-inherit source_path="/infrastructure/systems/system2/disks/disk0" id="disk0"/>
+                </litp:system-disks-collection-inherit>
+              </litp:system-inherit>
+            </litp:node>
+            <litp:node id="node3">
+              <hostname>node3</hostname>
+              <is_locked>false<!--note: this property is not updatable--></is_locked>
+              <litp:node-configs-collection id="configs"/>
+              <litp:node-file_systems-collection id="file_systems"/>
+              <litp:node-items-collection id="items"/>
+              <litp:node-managed_files-collection id="managed_files"/>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <network_name>nodes</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os"/>
+              <litp:node-routes-collection id="routes"/>
+              <litp:node-services-collection id="services"/>
+              <litp:storage-profile-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile">
+                <litp:storage-profile-volume_groups-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups" id="volume_groups">
+                  <litp:volume-group-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1" id="vg1">
+                    <litp:volume-group-file_systems-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems" id="file_systems">
+                      <litp:file-system-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/root" id="root"/>
+                      <litp:file-system-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/file_systems/swap" id="swap"/>
+                    </litp:volume-group-file_systems-collection-inherit>
+                    <litp:volume-group-physical_devices-collection-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices" id="physical_devices">
+                      <litp:physical-device-inherit source_path="/infrastructure/storage/storage_profiles/profile_1/volume_groups/vg1/physical_devices/internal" id="internal"/>
+                    </litp:volume-group-physical_devices-collection-inherit>
+                  </litp:volume-group-inherit>
+                </litp:storage-profile-volume_groups-collection-inherit>
+              </litp:storage-profile-inherit>
+              <litp:blade-inherit source_path="/infrastructure/systems/system3" id="system">
+                <litp:system-controllers-collection-inherit source_path="/infrastructure/systems/system3/controllers" id="controllers"/>
+                <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system3/disks" id="disks">
+                  <litp:disk-inherit source_path="/infrastructure/systems/system3/disks/bmc_1" id="bmc_1"/>
+                  <litp:disk-inherit source_path="/infrastructure/systems/system3/disks/bmc_2" id="bmc_2"/>
+                </litp:system-disks-collection-inherit>
+                <litp:bmc-base-inherit source_path="/infrastructure/systems/system3/bmc" id="bmc"/>
+              </litp:blade-inherit>
+            </litp:node>
+          </litp:cluster-nodes-collection>
+          <litp:cluster-services-collection id="services"/>
+          <litp:cluster-software-collection id="software"/>
+        </litp:cluster>
+      </litp:deployment-clusters-collection>
+    </litp:deployment>
+  </litp:root-deployments-collection>
+  <litp:infrastructure id="infrastructure">
+    <litp:infrastructure-items-collection id="items"/>
+    <litp:networking id="networking">
+      <litp:networking-networks-collection id="networks">
+        <litp:network id="ms_network">
+          <litp_management>false</litp_management>
+          <name>nodes</name>
+          <subnet>10.10.10.0/24</subnet>
+        </litp:network>
+      </litp:networking-networks-collection>
+      <litp:networking-routes-collection id="routes"/>
+    </litp:networking>
+    <litp:infrastructure-service_providers-collection id="service_providers"/>
+    <litp:storage id="storage">
+      <litp:storage-nfs_mounts-collection id="nfs_mounts">
+        <litp:nfs-file-system id="nfs_fs">
+          <mount_options>defaults</mount_options>
+          <mount_point>/opt/test</mount_point>
+          <name>nfs_fs</name>
+          <network_name>some_network</network_name>
+          <litp:nfs-export-inherit source_path="/infrastructure/storage/storage_providers/nfs_service/exports/nfs_export" id="export"/>
+          <litp:nfs-virtual-server-inherit source_path="/infrastructure/storage/storage_providers/nfs_service/ip_addresses/nfs_ip" id="vip"/>
+        </litp:nfs-file-system>
+      </litp:storage-nfs_mounts-collection>
+      <litp:storage-storage_profiles-collection id="storage_profiles">
+        <litp:storage-profile id="profile_1">
+          <volume_driver>lvm</volume_driver>
+          <litp:storage-profile-volume_groups-collection id="volume_groups">
+            <litp:volume-group id="vg1">
+              <volume_group_name>vg_root</volume_group_name>
+              <litp:volume-group-file_systems-collection id="file_systems">
+                <litp:file-system id="root">
+                  <mount_point>/</mount_point>
+                  <size>8G</size>
+                  <snap_size>100</snap_size>
+                  <type>ext4</type>
+                </litp:file-system>
+                <litp:file-system id="swap">
+                  <mount_point>swap</mount_point>
+                  <size>2G</size>
+                  <snap_size>100</snap_size>
+                  <type>swap</type>
+                </litp:file-system>
+              </litp:volume-group-file_systems-collection>
+              <litp:volume-group-physical_devices-collection id="physical_devices">
+                <litp:physical-device id="internal">
+                  <device_name>hd0</device_name>
+                </litp:physical-device>
+              </litp:volume-group-physical_devices-collection>
+            </litp:volume-group>
+          </litp:storage-profile-volume_groups-collection>
+        </litp:storage-profile>
+        <litp:storage-profile id="profile_2">
+          <volume_driver>lvm</volume_driver>
+          <litp:storage-profile-volume_groups-collection id="volume_groups">
+            <litp:volume-group id="vg1">
+              <volume_group_name>vg_root</volume_group_name>
+              <litp:volume-group-file_systems-collection id="file_systems">
+                <litp:file-system id="root">
+                  <mount_point>/</mount_point>
+                  <size>8G</size>
+                  <snap_size>100</snap_size>
+                  <type>ext4</type>
+                </litp:file-system>
+                <litp:file-system id="swap">
+                  <mount_point>swap</mount_point>
+                  <size>2G</size>
+                  <snap_size>100</snap_size>
+                  <type>swap</type>
+                </litp:file-system>
+              </litp:volume-group-file_systems-collection>
+              <litp:volume-group-physical_devices-collection id="physical_devices">
+                <litp:physical-device id="internal">
+                  <device_name>hd0</device_name>
+                </litp:physical-device>
+              </litp:volume-group-physical_devices-collection>
+            </litp:volume-group>
+          </litp:storage-profile-volume_groups-collection>
+        </litp:storage-profile>
+      </litp:storage-storage_profiles-collection>
+      <litp:storage-storage_providers-collection id="storage_providers">
+        <litp:nfs-service id="nfs_service">
+          <password>makota</password>
+          <service_name>nfs_service</service_name>
+          <user_name>ala</user_name>
+          <litp:nfs-service-exports-collection id="exports">
+            <litp:nfs-export id="nfs_export">
+              <name>nfs-export</name>
+            </litp:nfs-export>
+          </litp:nfs-service-exports-collection>
+          <litp:nfs-service-ip_addresses-collection id="ip_addresses">
+            <litp:nfs-virtual-server id="nfs_ip">
+              <address>1.2.3.4</address>
+              <name>nfs-vs</name>
+            </litp:nfs-virtual-server>
+          </litp:nfs-service-ip_addresses-collection>
+        </litp:nfs-service>
+      </litp:storage-storage_providers-collection>
+    </litp:storage>
+    <litp:infrastructure-system_providers-collection id="system_providers"/>
+    <litp:infrastructure-systems-collection id="systems">
+      <litp:system id="system1">
+        <system_name>SYS1</system_name>
+        <litp:system-disks-collection id="disks">
+          <litp:disk id="disk0">
+            <bootable>false</bootable>
+            <name>disk0</name>
+            <size>1G</size>
+            <uuid>foo</uuid>
+          </litp:disk>
+          <litp:disk id="disk1">
+            <bootable>false</bootable>
+            <name>disk1</name>
+            <size>2G</size>
+            <uuid>bar</uuid>
+          </litp:disk>
+        </litp:system-disks-collection>
+      </litp:system>
+      <litp:system id="system2">
+        <system_name>SYS2</system_name>
+        <litp:system-disks-collection id="disks">
+          <litp:disk id="disk0">
+            <bootable>false</bootable>
+            <name>disk0</name>
+            <size>1G</size>
+            <uuid>foo</uuid>
+          </litp:disk>
+        </litp:system-disks-collection>
+      </litp:system>
+      <litp:blade id="system3">
+        <system_name>SYS3</system_name>
+        <litp:system-disks-collection id="disks">
+          <litp:disk id="bmc_1">
+            <bootable>false</bootable>
+            <name>bmc_disk_1</name>
+            <size>1G</size>
+            <uuid>foo_bmc</uuid>
+          </litp:disk>
+          <litp:disk id="bmc_2">
+            <bootable>false</bootable>
+            <name>bmc_disk_2</name>
+            <size>2G</size>
+            <uuid>bar_bmc</uuid>
+          </litp:disk>
+        </litp:system-disks-collection>
+        <litp:bmc-base id="bmc"/>
+      </litp:blade>
+    </litp:infrastructure-systems-collection>
+  </litp:infrastructure>
+  <litp:ms id="ms">
+    <hostname>ms1___bad</hostname>
+    <litp:ms-configs-collection id="configs"/>
+    <litp:ms-file_systems-collection id="file_systems"/>
+    <litp:ms-items-collection id="items"/>
+    <litp:ms-network_interfaces-collection id="network_interfaces">
+      <litp:network-interface id="ip1">
+        <ipaddress>810.10.10.100</ipaddress>
+        <network_name>nodes</network_name>
+      </litp:network-interface>
+    </litp:ms-network_interfaces-collection>
+    <litp:ms-routes-collection id="routes"/>
+    <litp:ms-services-collection id="services"/>
+  </litp:ms>
+  <litp:root-plans-collection id="plans"/>
+  <litp:software id="software">
+    <litp:software-deployables-collection id="deployables"/>
+    <litp:software-items-collection id="items">
+      <litp:mock-package id="a_package">
+        <ensure>installed</ensure>
+        <name>a_package</name>
+      </litp:mock-package>
+      <litp:mock-package id="b_package">
+        <ensure>installed</ensure>
+        <name>b_package</name>
+      </litp:mock-package>
+      <litp:mock-package id="c_package">
+        <ensure>installed</ensure>
+        <name>c_package</name>
+      </litp:mock-package>
+      <litp:mock-package id="d_package">
+        <ensure>installed</ensure>
+        <name>d_package</name>
+      </litp:mock-package>
+    </litp:software-items-collection>
+    <litp:software-profiles-collection id="profiles">
+      <litp:os-profile id="rhel_6_2">
+        <arch>x86_64</arch>
+        <breed>redhat</breed>
+        <kopts_post>console=ttyS0,115200</kopts_post>
+        <name>sample-profile</name>
+        <path>/profiles/node-iso/</path>
+        <version>rhel6</version>
+      </litp:os-profile>
+    </litp:software-profiles-collection>
+    <litp:software-runtimes-collection id="runtimes"/>
+    <litp:software-services-collection id="services"/>
+  </litp:software>
+</litp:root>

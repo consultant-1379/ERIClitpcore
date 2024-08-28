@@ -1,0 +1,52 @@
+# test_01_n_test_user_cant_change_the_model_while_plan_running
+#Description:
+#This test tests that a user can't change model
+#while plan is running where change is: creation updates
+#and deletions
+
+# test_02_n_there_are_no_changes_in_model_but_plan_running
+#Description:
+#This test testing If there are no changes in the model
+#but the plan is running, run_plan fails
+#and an error is returned.
+
+# test_03_n_while_plan_running_not_possible_to_remove_plan
+#Description:
+#This test testing while plan is running,
+#it's not possible to remove a plan
+
+# test_04_n_while_plan_running_export_and_import_is_not_allowed
+#Description:
+#This test testing while plan is running,
+#xml export and import should not be enabled
+
+# Prerequisite - LITP Deployment
+runLitpScript ../include/two_nodes.at
+
+# 1. Create model items
+litp create -t mock-package -p /software/items/story_1647 -o name=finger
+litp inherit -s /software/items/story_1647 -p /ms/items/story_1647
+
+litp inherit -s /software/items/story_1647 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_1647
+litp inherit -s /software/items/story_1647 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_1647
+
+# 2. Create Plan
+litp create_plan
+
+# 3. Run plan
+runPlanStart
+assertPlanState running
+
+# 4. Execute Commands while running
+let __err1_ --err_type "InvalidRequestError" --err_message "Operation not allowed while plan is running/stopping"
+assertError __err1_ create -p /software/items/package_list1/packages/finger -t mock-package -o name="finger"
+assertError __err1_ remove -p /software/items/package_list1/packages/finger
+assertError __err1_ update -p /deployments/local/clusters/cluster1/nodes/node1/items/package_finger -o name="finger2"
+assertError __err1_ export -p /deployments/local/clusters/cluster1/nodes -f /tmp/nodes.xml
+assertError __err1_ load -p / -f /tmp/nodes.xml --merge
+assertError --err_type "InvalidRequestError" --err_message "Plan is currently running or stopping" run_plan
+assertError --err_type "InvalidRequestError" --err_message "Removing a running/stopping plan is not allowed" remove_plan
+runPlanEnd
+
+# 5. Plan assert Plan executes successfully
+assertPlanState successful

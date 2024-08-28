@@ -1,0 +1,51 @@
+
+litp create -p /software/items/package_file -t mock-package -o name="file"
+litp create -p /software/items/package_vim -t mock-package -o name="vim-enhanced"
+
+litp create -p /software/profiles/osprofile1 -t os-profile -o name="node-iso" path="/cobbler/ks_mirror/node-iso-x86_64"
+
+litp create -p /infrastructure/systems/sys1 -t system -o system_name="sys1"
+litp create -p /infrastructure/systems/sys2 -t system -o system_name="sys2"
+litp create -p /infrastructure/networking/networks/mgmt_iprange2 -t network -o name="mgmt" subnet="10.10.10.0/24"
+
+litp create -p /deployments/site1 -t deployment
+litp create -p /deployments/site1/clusters/cluster1 -t cluster
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2 -t node -o hostname="node2"
+
+assertState -p /software/items/package_file Initial
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/os -s /software/profiles/osprofile1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/os -s /software/profiles/osprofile1
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/sys1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/sys2
+
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+
+runLitpScript net-storage-2node.inc
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file -s /software/items/package_file
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim -s /software/items/package_vim
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_file -s /software/items/package_file
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim -s /software/items/package_vim
+
+litp create_plan
+litp run_plan
+
+assertState -p /software/items/package_file Applied
+
+litp update -p /software/items/package_file -o name="file"
+
+assertState -p /software/items/package_file Applied
+# Change to different value
+litp update -p /software/items/package_file -o name="different"
+
+assertState -p /software/items/package_file Updated
+
+# Change back again
+litp update -p /software/items/package_file -o name="file"
+
+assertState -p /software/items/package_file Applied
+

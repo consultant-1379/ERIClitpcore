@@ -1,0 +1,30 @@
+add-extensions ../extensions/dummy_logrotate_extensions
+runLitpScript ../model/setup_two_nodes.inc
+add-plugins ../plugins/mock_volmgr_plugin
+
+assertError --err_type ValidationError --err_message "Not possible to restore the deployment to a known good state because the last deployment plan was not successfully executed." update -p /litp/prepare-restore -o path=/ actions='all'
+assertError --err_type InternalServerError --err_message "The deployment model couldn't be restored" restore_model
+assertLogMessage "Could not restore model because no deployment model backup is available."
+assertError --err_type ValidationError --err_message "Cannot create named backup snapshot: It would not be possible to restore the deployment to a known good state because the last deployment plan was not successfully executed." create_snapshot -n named
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/y -s /software/items/xx
+litp upgrade -p /deployments/site1
+
+litp create_plan
+litp run_plan
+
+assertPlanState successful
+
+litp prepare_restore
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot
+assertPlanState successful
+
+litp update -p /litp/prepare-restore -o path=/ actions='all'
+assertError --err_type=InvalidLocationError show -p /plans/plan

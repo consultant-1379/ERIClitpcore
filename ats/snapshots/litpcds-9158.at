@@ -1,0 +1,5 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+assertState -p /snapshots Initial
+litp create_snapshot
+assertState -p /snapshots Applied

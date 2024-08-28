@@ -1,0 +1,32 @@
+# test_01_p_tagged_task_post_cluster_tag_lock_tasks_present
+
+# Description:
+#   Test that a plugin task with the tag POST_CLUSTER_TAG
+#   specified is assigned to the appropriate task group based 
+#   on the ruleset defined in core.
+
+# Result:
+#  The task is assigned to the appropriate task group
+
+# Prerequisite:
+#   Create a plugin that generates a task with the
+#   tag CLUSTER_TAG and a task with the tag POST_CLUSTER_TAG
+add-extensions extensions/dummy_107214_extension
+add-plugins plugins/dummy_107214_plugin
+
+# Create model items
+runLitpScript ../include/two_nodes.at
+
+# Create dummy tasks
+litp create -t litpcds-107214 -p /software/items/foo -o prop='arbitrary_property'
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+
+# Create plan
+litp create_plan
+
+# Assert that the tasks are returned in the correct order
+let __cluster_task CallbackTask _cluster_cb /deployments/local/clusters/cluster1
+let __post_cluster_task CallbackTask _post_cluster_cb /deployments/local/clusters/cluster1
+
+assertTaskBeforeTask __cluster_task __post_cluster_task

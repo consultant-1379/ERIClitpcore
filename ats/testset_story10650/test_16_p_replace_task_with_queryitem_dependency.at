@@ -1,0 +1,73 @@
+## test_16_p_replace_task_with_queryitem_dependency
+## Description:
+## Ensure that when a task with a Query Item dependency is replaced by
+## a task with a Query Item dependency, this dependency is seen in the
+## manifest
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates ConfigTasks
+##    with a QueryItem dependency:
+##    task1(foo1, bar1) -> QueryItem(ItemA)
+##    task2(foo2, bar2) -> QueryItem(ItemA)
+## 2. Create Plan
+## 3. Run plan
+## 4. Update model items so plug-in will generate replacement tasks,
+##    one with a QueryItem dependency defined and one without:
+##    taskA(fooA, barA) -> QueryItem(ItemA) replaces task1(foo1, bar1)
+##    taskB(fooB, barB) replaces task2(foo2, bar2)
+## 5. Create plan
+## 6. Run plan
+## 7. Check that a replacement task exists in the manifest with a Query Item
+##    dependency defined and one without
+
+## Result:
+## A replacement task can add a Query Item dependency that
+## overwrites an existing Query Item dependency
+
+# Prerequisite:
+# Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-plugins plugins/depend10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates ConfigTasks
+#   with a QueryItem dependency:
+#   task1(foo1, bar1) -> QueryItem(ItemA)
+#   task2(foo2, bar2) -> QueryItem(ItemA)
+litp create -p /software/items/item1 -t story10650 -o name="tc16_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp create -p /software/items/depend1 -t depend10650 -o name="tc16_depend"
+litp inherit -s /software/items/depend1 -p /deployments/local/clusters/cluster1/nodes/node1/items/depend1
+
+#2. Create Plan
+litp create_plan
+assertConfigTask node1 foo1 bar1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc16_foobar1"
+assertConfigTask node1 foo2 bar2 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc16_foobar1"
+assertConfigTask node1 baz1 qux1 /deployments/local/clusters/cluster1/nodes/node1/items/depend1 name="tc16_depend"
+
+#3. Run plan
+litp run_plan
+
+# Check manifest is as expected
+assertFileContents manifests/expected/tc16/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#4. Update model items so plug-in will generate replacement tasks,
+#   one with a QueryItem dependency defined and one without:
+#   taskA(fooA, barA) -> QueryItem(ItemA) replaces task1(foo1, bar1)
+#   taskB(fooB, barB) replaces task2(foo2, bar2)
+litp update -p /software/items/item1 -o name="tc16_foobar2"
+
+#5. Create plan
+litp create_plan
+
+#6. Run plan
+litp run_plan
+
+#7. Check that a replacement task exists in the manifest with a Query Item
+#   dependency defined and one without
+assertFileContents manifests/expected/tc16/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

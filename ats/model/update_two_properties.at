@@ -1,0 +1,8 @@
+litp create -p /infrastructure/networking/networks/ms_network -t network -o name='nodes' subnet='10.10.10.0/24'
+litp create -p /ms/network_interfaces/ip1 -t network-interface -o network_name='nodes' ipaddress='10.10.10.100'
+litp create -p /deployments/local_vm -t deployment
+litp create -p /deployments/local_vm/clusters/cluster1 -t cluster
+litp create -p /deployments/local_vm/clusters/cluster1/nodes/node1 -t node -o hostname='node1'
+litp create -p /deployments/local_vm/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+litp update -p /deployments/local_vm/clusters/cluster1/nodes/node1/network_interfaces/ip1 -o network_name=nodes1 ipaddress='10.46.86.98'
+assertProperty /deployments/local_vm/clusters/cluster1/nodes/node1/network_interfaces/ip1 -o ipaddress="10.46.86.98"

@@ -1,0 +1,9 @@
+runLitpScript misc/common_test_methods.at
+
+litp create -t mock-package -p /software/items/model_change -o name=story_2240
+litp inherit -s /software/items/model_change -p /ms/items/model_change
+
+assertPlanState invalid
+assertError --err_message "Plan is invalid - model changed" run_plan
+
+assertError --err_message "Plan not currently running" stop_plan

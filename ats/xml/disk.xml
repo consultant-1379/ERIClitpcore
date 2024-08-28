@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:disk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="disk0">
+    <bootable>false</bootable>
+    <disk_part>true<!--note: this property is not updatable--></disk_part>
+    <name>disk0</name>
+    <size>1G</size>
+    <uuid>foo</uuid>
+</litp:disk>
+

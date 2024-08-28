@@ -1,0 +1,72 @@
+# first pay the create system tax
+add-plugins ../../plugins/mock_volmgr_plugin
+
+litp create -p /infrastructure/systems/sys1 -t system -o system_name="sys1"
+litp create -p /infrastructure/systems/sys2 -t system -o system_name="sys2"
+litp create -p /infrastructure/networking/networks/mgmt_iprange2 -t network -o name="mgmt" subnet="10.10.10.0/24"
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+
+litp create -p /software/profiles/osprofile1 -t os-profile -o name="node-iso-x86_64" version="rhel6" arch="x86_64" breed="linux" path="/cobbler/ks_mirror/node-iso-x86_64"
+
+litp create -p /deployments/site1 -t deployment
+litp create -p /deployments/site1/clusters/cluster1 -t cluster
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2 -t node -o hostname="node2"
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/sys1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/system -s /infrastructure/systems/sys2
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/os -s /software/profiles/osprofile1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/os -s /software/profiles/osprofile1
+
+litp create -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+litp create -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name="mgmt"
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+
+# okay now we get to play
+# model(x) 
+# ref(y) -> model(x)
+# task(t1) -> ref(y)
+# task(t2) -> ref(y)
+# task(t3) -> ref(y)
+add-extensions litpcds-2859
+add-plugins litpcds-2859
+
+litp create -p /software/items/x -t test-package -o name=x
+litp inherit -p /ms/items/y -s /software/items/x
+litp create_plan
+
+assertState -p /ms/items/y Initial
+assertTask 0 callback_method ms1 /ms/items/y
+assertTask 1 callback_method ms1 /ms/items/y
+assertTask 2 callback_method ms1 /ms/items/y
+
+runPlanUntil 1
+assertState -p /ms/items/y Initial
+
+runPlanUntil 2
+assertState -p /ms/items/y Initial
+
+runPlanUntil 3
+assertState -p /ms/items/y Applied
+assertState -p /software/items/x Initial
+
+#assertState -p /ms/services/cobbler Applied
+#assertState -p /ms/services Initial
+#assertState -p /deployments/site1/clusters/cluster1/nodes/node1/os Initial
+
+#runPlanUntil 2
+
+#assertState -p /ms/services/cobbler Applied
+#assertState -p /ms/services Initial
+#assertState -p /deployments/site1/clusters/cluster1/nodes/node1/os Initial
+
+#runPlanUntil 3
+
+#assertState -p /ms/services/cobbler Applied
+#assertState -p /ms/services Initial
+#assertState -p /deployments/site1/clusters/cluster1/nodes/node1/os Applied

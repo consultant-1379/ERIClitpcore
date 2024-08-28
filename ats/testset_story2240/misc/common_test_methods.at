@@ -1,0 +1,11 @@
+runLitpScript ../../include/two_nodes.at
+
+litp create -t mock-package -p /software/items/story_2240 -o name=finger
+
+litp inherit -s /software/items/story_2240 -p /ms/items/story_2240
+
+litp inherit -s /software/items/story_2240 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_2240
+litp inherit -s /software/items/story_2240 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_2240
+
+litp create_plan
+# End of _exec_common_test_methods

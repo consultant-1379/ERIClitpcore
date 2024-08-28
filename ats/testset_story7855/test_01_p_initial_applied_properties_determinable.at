@@ -1,0 +1,120 @@
+# Test Case 01
+# Description:
+# (Covers acceptance criteria 1-6)
+# Tests the applied_properties_determinable flag when model
+# items transitions from state "Initial" to "Applied" 
+
+# Prerequisite - LITP Deployment
+runLitpScript ../include/two_nodes.at
+
+# 1. Create model items
+litp create -p /software/items/telnet -t mock-package -o name=telnet
+litp inherit -p /ms/items/telnet -s /software/items/telnet
+
+# 2. Check they are in Initial state and their APD flag is set to True
+assertState -p /software/items/telnet Initial
+assertState -p /ms/items/telnet Initial
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+# 3. Update model item
+litp update -p /software/items/telnet -o version=2
+
+# 4. Check they are in Initial state and their APD flag is set to True
+assertState -p /software/items/telnet Initial
+assertState -p /ms/items/telnet Initial
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+# 5. Create plan
+litp create_plan
+
+# 6. Run plan
+litp run_plan
+
+# 7. Wait for plan to succeed
+assertPlanState successful
+
+# 8. Check model items are in applied state and the APD flag is True
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+# 9. Update the model items with the original properties used at creations
+litp update -p /software/items/telnet -o name=telnet
+litp update -p /ms/items/telnet -o name=telnet
+
+# 10.Check model items are in applied state and the APD flag is True
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True
+
+# 11.Create a model item
+litp create -p /software/items/vim -t mock-package -o name=vim
+litp inherit -p /ms/items/vim -s /software/items/vim
+
+# 12.Check they are in Initial state and their APD flag is set to True
+assertState -p /software/items/vim Initial
+assertState -p /ms/items/vim Initial
+assertAppliedPropertiesDeterminable -p /software/items/vim True
+assertAppliedPropertiesDeterminable -p /ms/items/vim True
+
+# 13.Create plan
+litp create_plan
+
+# 14.Run plan
+runPlanUntil 0
+assertPlanState running
+
+# 15.Fail task associated with the model item
+failConfigTask package ms1 /ms/items/vim
+runPlanEnd
+assertPlanState failed
+
+# 16.Check the model item is in Initial state and its APD flag is False
+assertState -p /ms/items/vim Initial
+assertState -p /software/items/vim Initial
+assertAppliedPropertiesDeterminable -p /software/items/vim True
+assertAppliedPropertiesDeterminable -p /ms/items/vim False
+
+# 17.Update the model item to use a new property when its in state "Initial" and APD=False
+litp update -p /software/items/vim -o version=2 arch=1
+
+# 18.Check the model item is in Initial state and its APD flag is False
+assertState -p /ms/items/vim Initial
+assertState -p /software/items/vim Initial
+assertAppliedPropertiesDeterminable -p /software/items/vim True
+assertAppliedPropertiesDeterminable -p /ms/items/vim False
+
+# 19. Create plan
+litp create_plan
+
+# 20.Run plan
+runPlanUntil 0
+assertPlanState running
+
+# 21.Fail task associated with the model item
+failConfigTask package ms1 /ms/items/vim
+runPlanEnd
+assertPlanState failed
+
+# 22.Check the model item is in Initial state and its APD flag is False
+assertState -p /ms/items/vim Initial
+assertState -p /software/items/vim Initial
+assertAppliedPropertiesDeterminable -p /software/items/vim True
+assertAppliedPropertiesDeterminable -p /ms/items/vim False
+
+# 23. Run plan
+litp create_plan
+litp run_plan
+
+# 24. Wait for plan to succeed
+assertPlanState successful
+
+# 25. Check model items are in applied state and the APD flag is True
+assertState -p /software/items/telnet Applied
+assertState -p /ms/items/telnet Applied
+assertAppliedPropertiesDeterminable -p /software/items/telnet True
+assertAppliedPropertiesDeterminable -p /ms/items/telnet True

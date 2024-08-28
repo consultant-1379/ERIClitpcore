@@ -1,0 +1,181 @@
+## test_15_p_remove_indirect_doubly_inherited_descendent_applied
+## Description:
+## When an indirect doubly inherited item or its descendent with a state
+## "Applied" is removed then the item and its descendants
+## will be removed from the model
+##
+## Preconditions: (Indirect Double inheritance)
+## Source item itemA: /software/items/itemA
+## Source item itemB: /software/services/itemB
+## Inherited item item1 (source is itemA): /software/services/itemB/packages/item1
+## Inherited item item3 (source is itemA): /software/services/itemB/packages/item3
+## Inherited item item2 (source is itemB) : /deployments/local/clusters/cluster1/nodes/node1/services/item2
+## The doubly indirectly inherited item1X is implicitly inherited from /software/services/itemB/packages/Item1
+## The doubly indirectly inherited item3X is implicitly inherited from /software/services/itemB/packages/Item3
+
+# Actions:
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_15
+runLitpScript ../include/two_nodes.at
+
+# 1. Create itemA with a child
+litp create -p /software/items/itemA -t parent
+litp create -p /software/items/itemA/childs/child1 -t child
+
+# 2. Create itemB
+litp create -p /software/services/itemB -t service -o service_name='sentinel'
+
+# 3. Inherit itemA to item1
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+
+# 4. Inherit itemA to item3
+litp inherit -p /software/services/itemB/packages/item3 -s /software/items/itemA
+
+# 5. Inherit itemB to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 -s /software/services/itemB
+
+# 6. Check that item1X and item3X and their descendents have been created
+# 7. Check that all items are in state "Initial"
+# itemA
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+
+# itemB
+assertState -p /software/services/itemB Initial
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1 Initial
+
+# item3
+assertState -p /software/services/itemB/packages/item3 Initial
+assertState -p /software/services/itemB/packages/item3/childs/child1 Initial
+
+# item2, item1X, item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Initial
+
+# 8. Execute "create_plan" command
+litp create_plan
+
+# 9. Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 10. Check all items are in "Applied" state
+# itemA
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+
+# itemB
+assertState -p /software/services/itemB Applied
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+
+# item3
+assertState -p /software/services/itemB/packages/item3 Applied
+assertState -p /software/services/itemB/packages/item3/childs/child1 Applied
+
+# item2, item1X, item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Applied
+
+# 11.Remove doubly inherited item1X
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1
+
+# 12.Check that item1X and its descendents
+#    are in state, "ForRemoval"
+# itemA
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+
+# itemB
+assertState -p /software/services/itemB Applied
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+
+# item3
+assertState -p /software/services/itemB/packages/item3 Applied
+assertState -p /software/services/itemB/packages/item3/childs/child1 Applied
+
+# item2, item1X, item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 Applied
+
+# 13.Remove doubly inherited item3X child
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1
+
+# 14.Check that item3X remain in "Applied" state
+#    and item3X child is in state "ForRemoval"
+#    and item1 and ites descendents remain in "ForRemoval" state
+# 15.Check that all other items remain in state "Applied"
+# itemA
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+
+# itemB
+assertState -p /software/services/itemB Applied
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+
+# item3
+assertState -p /software/services/itemB/packages/item3 Applied
+assertState -p /software/services/itemB/packages/item3/childs/child1 Applied
+
+# item2, item1X, item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1 ForRemoval
+
+# 16. Execute "create_plan" command
+litp create_plan
+
+# 17. Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 18. Check that item1X and its descendents have been removed
+# 19. Check that item3X is in "Applied" state
+#     and item3X child has been removed
+# 20. Check that all items are in state "Applied"
+# itemA
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+
+# itemB
+assertState -p /software/services/itemB Applied
+
+# item1
+assertState -p /software/services/itemB/packages/item1 Applied
+assertState -p /software/services/itemB/packages/item1/childs/child1 Applied
+
+# item3
+assertState -p /software/services/itemB/packages/item3 Applied
+assertState -p /software/services/itemB/packages/item3/childs/child1 Applied
+
+# item2, item1X, item3X
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3 Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item3/childs/child1
+
+# Result:
+# The indirect doubly inherited item or its descendent
+# with state "Applied" can be removed

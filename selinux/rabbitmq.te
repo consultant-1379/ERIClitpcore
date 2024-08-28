@@ -1,0 +1,14 @@
+
+module rabbitmq 1.0;
+
+
+require {
+    type groupadd_t;
+    type initrc_tmp_t;
+    class file { read write ioctl };
+}
+
+
+#============= rabbitmq_t ==============
+
+allow groupadd_t initrc_tmp_t:file { read write ioctl };

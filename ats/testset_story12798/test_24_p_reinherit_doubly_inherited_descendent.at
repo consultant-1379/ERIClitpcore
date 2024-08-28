@@ -1,0 +1,139 @@
+## Description:
+## A doubly inherited item or
+## the descendent of a doubly inherited Item
+## when its v-path is a descendent of the inherit
+## source v-path can be recovered via the "inherit" command
+##
+## Preconditions:
+## Source itemA: /software/items/itemA
+## Inherited item1 (source is itemA): /ms/items/item1
+## Doubly inherited item2 (source is child of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item2
+## Note that child of item2 is a reference to the grandchild of item1
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_12
+runLitpScript ../include/two_nodes.at
+
+# 1,4 Create an itemA with a child item a grandchild item and a grand-grandchild
+
+litp create -t parent -p /software/items/itemA -o name=parent1
+litp create -t child -p /software/items/itemA/childs/child1 -o name=child1
+litp create -t g-child -p /software/items/itemA/childs/child1/grand_children/grandchild1 -o name=grandchild1
+litp create -t g-g-child -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 -o name=grand_grandchild1
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 2,4 Inherit itemA to item1
+litp inherit -p /ms/items/item1 -s /software/items/itemA
+
+assertState -p /ms/items/item1 Initial
+assertState -p /ms/items/item1/childs/child1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 3,4 Inherit child of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -s /ms/items/item1/childs/child1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Initial
+
+# 5,6 create and run plan
+litp create_plan
+litp run_plan
+
+# 7. Check all items are in "Applied" state
+
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 8. Remove doubly inherited item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 10.Check item2 and its descendents are in "ForRemoval" state
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 ForRemoval
+
+# 11. Check that all other items are in "Applied" state
+
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 12,13 Execute litp "inherit" command to recover a doubly inherited item (item2) with a v-path that is a descendent of the inherited source v-path
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 \
+ -s /ms/items/item1/childs/child1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 14,15 Remove a descendent of a doubly inherited item (child item)
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 ForRemoval
+
+# 16,17 Execute litp "inherit" command to recover the descendent of a doubly inherited item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 18,19 Update the property of a descendent of an doubly inherited item
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 -o name=grandchild1_updated
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 20. Remove a descendent of a doubly inherited item (child item)
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1
+
+# 21. Check that the descendents of the doubly inherited item, item2 are in "ForRemoval" state
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 ForRemoval
+
+# 22. Attempt to execute litp "inherit" command to recover the descendent of a doubly inherited item to its previous state
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 \
+ -s /ms/items/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+# 23. Check that the inherited item has been recovered to its previous state
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/grand_grandchild1 Applied
+
+
+# Result:
+# A doubly inherited item or
+# the descendent of a doubly inherited Item
+# can be recovered via the "inherit" command
+# when its v-path is the descendent of the inherit
+# source v-path

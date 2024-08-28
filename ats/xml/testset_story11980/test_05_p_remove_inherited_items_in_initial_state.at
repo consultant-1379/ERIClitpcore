@@ -1,0 +1,289 @@
+## test_05_p_remove_inherited_items_in_initial_state.at
+## Description:
+## Remove inherited items in Initial state
+## Verify that when all inherited items in the inheritance tree
+## are in Initial state and I run load --replace <file.xml>
+## where inherited items are omitted on the xml file
+## then I do not get an error msg and inherited items are removed
+
+## Actions:
+
+## AC 2.2
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+
+# 1. Make Changes to the model set all initial:
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+## 1. Assert all initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 2. Run "litp load --replace <file.xml>" to remove inherited grandchildren
+litp load -p / --replace -f xml/inherited_grandchildren_omitted.xml
+
+## 3. Assert that grandchildren have been removed
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+
+## 4. reset model
+clearLandscape
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+
+## set all to inital
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+## 5. Assert all initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+## 6. Run "litp load --replace <file.xml>" to remove node1 grandchild
+litp load -p / --replace -f xml/one_inherited_grandchild_omitted.xml
+
+## 7. Assert that Z path grandchild is removed and rest in state Initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=GSPrim
+
+
+## 8. reset model
+clearLandscape
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+
+# 1. Make Changes to the model set all initial:
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+## 9. Assert all initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+
+
+## 10. Run "litp load --replace <file.xml>" to remove child and grandchild in node1
+litp load -p / --replace -f xml/one_inherited_child_and_grandchild_omitted.xml
+
+
+## 11. Assert that child and grandchild are removed and rest in state initial
+
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=GSPrim
+
+
+## 12. reset model
+clearLandscape
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+
+# 1. Make Changes to the model set all initial:
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 13. Assert all initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+
+## 14. Run "litp load --replace <file.xml>" to remove inherited child and grandchild
+litp load -p / --replace -f xml/inherited_children_omitted.xml
+
+## 15. assert child and grandchild are removed and rest in state inital
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+## 16. reset model
+clearLandscape
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+
+# 1. Make Changes to the model set all initial:
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 17. Assert all initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+## 18. Run "litp load --replace <file.xml>" to remove inherited parent, child and grandchild
+litp load -p / --replace -f xml/inherited_parents_omitted.xml
+
+## 19. assert parent, child and grandchild are removed and rest in state inital
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1
+
+## 20. reset model
+clearLandscape
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+
+# 1. Make Changes to the model set all initial:
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/parent1 -t parent -o name=parent1
+litp create -p /software/services/parent1/childs/child1 -t child -o name=child1
+litp create -p /software/services/parent1/childs/child1/grand_children/grandchild1 -t grand-child -o name=grandchild1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1 -s /software/services/parent1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -s /software/services/parent1
+
+## 21. Assert all initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1  Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 -o name=grandchild1
+
+## 22. Run "litp load --replace <file.xml>" to remove node1 path parent, child and grandchild with node2 path parent updated
+litp load -p / --replace -f xml/one_inherited_parent_child_and_grandchild_omitted.xml
+
+## 23. assert child and grandchild with node2 path are removed and rest in state initial
+assertState -p /software/services/parent1  Initial
+assertState -p /software/services/parent1/childs/child1  Initial
+assertState -p /software/services/parent1/childs/child1/grand_children/grandchild1  Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/parent1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1 Initial
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/parent1 -o name=GDPrim
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/parent1/childs/child1/grand_children/grandchild1 Initial

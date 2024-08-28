@@ -1,0 +1,1 @@
+assertError --err_type "InvalidXMLError" --err_message "No matching global declaration available for the validation root" load -f broken.xml -p /software/profiles

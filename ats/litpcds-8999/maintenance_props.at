@@ -1,0 +1,26 @@
+assertProperty /litp/maintenance -o status="None"
+assertPropertyUnset -p /litp/maintenance -o initiator
+
+let __err_1 --err_type "InvalidRequestError" --err_property "status" --err_message "Unable to modify readonly property: status"
+let __err_2 --err_type "InvalidRequestError" --err_property "initiator" --err_message "Unable to modify readonly property: initiator"
+
+assertError __err_1  update -p /litp/maintenance -o status='idungoof'
+assertProperty /litp/maintenance -o status="None"
+assertPropertyUnset -p /litp/maintenance -o initiator
+
+assertError __err_2  update -p /litp/maintenance -o initiator='idungoof'
+assertProperty /litp/maintenance -o status="None"
+assertPropertyUnset -p /litp/maintenance -o initiator
+
+assertError __err_1 __err_2 --errors_length 2 update -p /litp/maintenance -o initiator='uouo' -o status='ueue'
+assertProperty /litp/maintenance -o status="None"
+assertPropertyUnset -p /litp/maintenance -o initiator
+
+litp update -p /litp/maintenance -o enabled=true
+assertProperty /litp/maintenance -o status="None"
+assertProperty /litp/maintenance -o initiator='user'
+litp update -p /litp/maintenance -o enabled=false
+
+assertError __err_1 __err_2 --errors_length 2 update -p /litp/maintenance -o initiator='uouo' -o status='ueue'
+assertProperty /litp/maintenance -o status="None"
+assertProperty /litp/maintenance -o initiator='user'

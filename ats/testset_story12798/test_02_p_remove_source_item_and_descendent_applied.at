@@ -1,0 +1,282 @@
+## test_02_p_remove_source_item_and_descendant_applied
+## Description:
+## When a source item in state, "Applied"
+## is removed, then the item and its descendants
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+## When the descendant of a source item
+## in state, "Applied" is removed
+## then the item and its descendants
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+## Inherited Items in state initial are be directly removed
+## when their progeny and inherited progeny are in state initial
+
+## Preconditions:
+## Source itemA: /infrastructure/storage/nfs_mounts/itemA
+## Inherited item1 (source is itemA): /ms/file_systems/item1
+## Doubly inherited item2 (source is grandchild of item1): /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+## Inherited item3 (source is itemA): /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3
+## Doubly inherited item4 (source is grandchild of item3): /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4
+
+add-extensions extensions/test_12798_extension_test_02
+add-plugins plugins/test_12798_plugin_test_02
+runLitpScript ../include/two_nodes.at
+
+# 1,2,3 prepare
+# create source itemA with child and grandchild
+litp create -p /infrastructure/storage/nfs_mounts/itemA -t 'file-system' -o name=parent_item
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 -t 'child' -o name=child_item
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 -t 'my-file-system' -o name=g_child_item
+
+assertState -p /infrastructure/storage/nfs_mounts/itemA Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Initial
+
+# Inherited item1 (source is itemA)
+litp inherit -p /ms/file_systems/item1 -s /infrastructure/storage/nfs_mounts/itemA
+
+assertState -p /ms/file_systems/item1 Initial
+assertState -p /ms/file_systems/item1/childs/child1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Initial
+
+# Doubly inherited item2 (source is grandchild of item1)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 -s /ms/file_systems/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Initial
+
+# 4,5 create and run plan
+litp create_plan
+litp run_plan
+
+# 6 check all items in Applied state
+assertState -p /infrastructure/storage/nfs_mounts/itemA Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /ms/file_systems/item1 Applied
+assertState -p /ms/file_systems/item1/childs/child1 Applied
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Applied
+
+# 7, 9. Inherited item3 (source is itemA)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 -s /infrastructure/storage/nfs_mounts/itemA
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 Initial
+
+# 8, 9. Doubly inherited item4 (source is grandchild of item3)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 -s \
+ /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Initial
+
+# 10.Remove the source item, itemA
+litp remove -p /infrastructure/storage/nfs_mounts/itemA
+
+# 11. Check that itemA, item1 and their descendants are in state "ForRemoval"
+assertState -p /infrastructure/storage/nfs_mounts/itemA ForRemoval
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 ForRemoval
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /ms/file_systems/item1 ForRemoval
+assertState -p /ms/file_systems/item1/childs/child1 ForRemoval
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 12. Check that doubly inherited item2 is in state "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 ForRemoval
+
+# 13. Check that that Item3 and item4 and all descendants have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4
+
+# 14,15 create and run plan
+litp create_plan
+litp run_plan
+
+# 16. Check that itemA, item1 and item2 have been removed
+assertNone -p /infrastructure/storage/nfs_mounts/itemA
+
+assertNone -p /ms/file_systems/item1
+
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+
+# 17. Recreate itemA, item1, item2 and item3
+
+litp create -p /infrastructure/storage/nfs_mounts/itemA -t 'file-system' -o name=parent_item
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 -t 'child' -o name=child_item
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 -t 'my-file-system' -o name=g_child_item
+
+assertState -p /infrastructure/storage/nfs_mounts/itemA Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /ms/file_systems/item1 -s /infrastructure/storage/nfs_mounts/itemA
+
+assertState -p /ms/file_systems/item1 Initial
+assertState -p /ms/file_systems/item1/childs/child1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 -s /ms/file_systems/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 -s /infrastructure/storage/nfs_mounts/itemA
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 Initial
+
+# 18,19 create and run plan
+litp create_plan
+litp run_plan
+
+# 20. Check all items are in "Applied" state
+assertState -p /infrastructure/storage/nfs_mounts/itemA Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /ms/file_systems/item1 Applied
+assertState -p /ms/file_systems/item1/childs/child1 Applied
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 Applied
+
+# 21,22 Inherit grandchild of item3 to item4
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 -s \
+ /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Initial
+
+# 23.Remove a descendant of a source item (child descendant)
+litp remove -p /infrastructure/storage/nfs_mounts/itemA/childs/child1
+
+# 24. Check that the descendants of the source item, item1 and item3 and their descendants are in state, "ForRemoval"
+assertState -p /infrastructure/storage/nfs_mounts/itemA Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 ForRemoval
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /ms/file_systems/item1 Applied
+assertState -p /ms/file_systems/item1/childs/child1 ForRemoval
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 25. Check that doubly inherited item2 is in state, "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 ForRemoval
+
+# 26. Check that doubly inherited item4 has been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4
+
+# 27, 28 create and run plan
+litp create_plan
+litp run_plan
+
+# 29. Check that the descendants of the source item, item1 and item3 have been removed
+assertNone -p /infrastructure/storage/nfs_mounts/itemA/childs/child1
+
+assertNone -p /ms/file_systems/item1/childs/child1
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1
+
+# 30. Check that doubly inherited item2 has been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+
+# 31. Recreate the source item descendants that have been removed
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 -t 'child' -o name=child
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 -t 'my-file-system'
+
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Initial
+
+# 32.Check that the inherited items descendants for item1 and item3 have been re-created
+assertState -p /ms/file_systems/item1 Applied
+assertState -p /ms/file_systems/item1/childs/child1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Initial
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 Initial
+
+# 33. Inherit grandchild of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 -s /ms/file_systems/item1/childs/child1/grand_children/grandchild1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Initial
+
+# 34. Inherit grandchild of item3 to item4
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 -s \
+ /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Initial
+
+# 35, 36 execute and run plan
+litp create_plan
+litp run_plan
+
+# 37. Check all items are in "Applied" state
+assertState -p /infrastructure/storage/nfs_mounts/itemA Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Applied
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /ms/file_systems/item1 Applied
+assertState -p /ms/file_systems/item1/childs/child1 Applied
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Applied
+
+# 38. Remove a descendant of a source item (grandchild descendant)
+litp remove -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1
+
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 39. Check that the descendants of the source item, item1 and item3 (grandchild descendants) are in state, "ForRemoval"
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 40. Check that doubly inherited item2 and item4 are in state, "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 ForRemoval
+
+# 41, 42 create and run plan
+litp create_plan
+litp run_plan
+
+# 43. Check that the descendants of the source item, item1 and item2 have been removed (grandchild descendants)
+assertNone -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1
+assertNone -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item3/childs/child1/grand_children/grandchild1
+
+# 44. Check that doubly inherited item2 and item4 have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4
+
+
+# Result:
+# When an inherit source item in state "Applied",
+# is removed, the item and its descendants
+# and all its corresponding inherited progeny
+#(which encompasses inherited progeny and double inherited progeny)
+# will move to "ForRemoval" state
+# and can be successfully removed by executing
+# a plan
+# Inherited Items in state initial are directly removed
+# without running a plan
+# when their progeny and inherited progeny are in state initial

@@ -1,0 +1,127 @@
+## Description:
+## When a source item in state, "Updated"
+## is removed, then the item and its descendants
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+
+## Preconditions:
+## Source itemA: /infrastructure/networking/routes/itemA
+## Inherited item1 (source is itemA): /deployments/local/clusters/cluster1/nodes/node1/routes/item1
+## Doubly inherited item2 (source is grandchild of item1): /deployments/local/clusters/cluster1/nodes/node1/routes/item2
+## Inherited item3 (source is itemA): /deployments/local/clusters/cluster1/nodes/node1/routes/item3
+## Doubly inherited item4 (source is grandchild of item3): /deployments/local/clusters/cluster1/nodes/node2/routes/item4
+
+add-extensions extensions/test_12798_extension_test_03
+add-plugins plugins/test_12798_plugin_test_15
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA with a child item and a grandchild item
+litp create -t parent -p /infrastructure/networking/routes/itemA
+litp create -t child -p /infrastructure/networking/routes/itemA/childs/child1
+litp create -t 'g-child' -p /infrastructure/networking/routes/itemA/childs/child1/grand_children/grandchild1
+
+assertState -p /infrastructure/networking/routes/itemA Initial
+assertState -p /infrastructure/networking/routes/itemA/childs/child1 Initial
+assertState -p /infrastructure/networking/routes/itemA/childs/child1/grand_children/grandchild1 Initial
+
+# 2. Inherit itemA to item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1 -s /infrastructure/networking/routes/itemA
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1/grand_children/grandchild1 Initial
+
+# 3. Inherit grandchild of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/item2 -s \
+ /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item2 Initial
+
+# 4. Inherit itemA to item3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3 -s /infrastructure/networking/routes/itemA
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1/grand_children/grandchild1 Initial
+
+# 5. Inherit grandchild of item3 to item4
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/item4 -s \
+ /deployments/local/clusters/cluster1/nodes/node1/routes/item3/childs/child1/grand_children/grandchild1
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item4 Initial
+
+# 6,7 create and run plan
+litp create_plan
+litp run_plan
+
+# 8. Check all items are in "Applied" state
+assertState -p /infrastructure/networking/routes/itemA Applied
+assertState -p /infrastructure/networking/routes/itemA/childs/child1 Applied
+assertState -p /infrastructure/networking/routes/itemA/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3/childs/child1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3/childs/child1/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item4 Applied
+
+# 9. Update the source item, itemA
+litp update -p /infrastructure/networking/routes/itemA -o name='update_param'
+
+# 10,11. Check that the source itemA, and its corresponding inherited items, item1 and item3 are in state, "Updated"
+assertState -p /infrastructure/networking/routes/itemA Updated
+
+assertState -p /infrastructure/networking/routes/itemA/childs/child1 Applied
+assertState -p /infrastructure/networking/routes/itemA/childs/child1/grand_children/grandchild1 Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item4 Applied
+
+# 12. Remove the source item, itemA
+litp remove -p /infrastructure/networking/routes/itemA
+
+# 13. Check that the source item, itemA, and its corresponding inherited items, item1 and item3 are in state, "ForRemoval"
+assertState -p /infrastructure/networking/routes/itemA ForRemoval
+
+assertState -p /infrastructure/networking/routes/itemA/childs/child1 ForRemoval
+assertState -p /infrastructure/networking/routes/itemA/childs/child1/grand_children/grandchild1 ForRemoval
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1/childs/child1/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3/childs/child1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3/childs/child1/grand_children/grandchild1 ForRemoval
+
+# 14.Check that doubly inherited item2 and item4 are in state "ForRemoval"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/routes/item4 ForRemoval
+
+# 15, 16 create and run plan
+litp create_plan
+litp run_plan
+
+# 17. Check that the source item itemA, and its descendent inherited items, item1 and item3 have been removed
+assertNone -p /infrastructure/networking/routes/itemA
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/routes/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/routes/item3
+
+# 18. Check that doubly inherited item2 and item4 have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/routes/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/routes/item4
+
+## Result:
+## When an inherit source item in state "Updated",
+## is removed, the item and its descendants
+## and all its corresponding inherited progeny
+## (which encompasses inherited progeny and double inherited progeny)
+## will move to "ForRemoval" state
+## and can be successfully removed by executing
+## a plan

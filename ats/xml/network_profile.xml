@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:network-profile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="nodes">
+  <name>nodes</name>
+  <management_network>nodes</management_network>
+  <bridges/>
+  <interfaces>
+    <litp:interface id="nic0">
+      <interface_basename>eth0</interface_basename>
+    </litp:interface>
+  </interfaces>
+  <networks>
+    <litp:network id="mgmt">
+      <default_gateway>false</default_gateway>
+      <interface>nic0</interface>
+      <network_name>nodes</network_name>
+    </litp:network>
+  </networks>
+</litp:network-profile>

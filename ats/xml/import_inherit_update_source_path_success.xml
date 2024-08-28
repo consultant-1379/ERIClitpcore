@@ -1,0 +1,159 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="root">
+  <litp:root-deployments-collection id="deployments">
+    <litp:deployment id="local">
+      <litp:deployment-clusters-collection id="clusters">
+        <litp:cluster id="cluster1">
+          <litp:cluster-configs-collection id="configs"/>
+          <litp:cluster-nodes-collection id="nodes">
+            <litp:node id="node1">
+              <hostname>node1<!--note: this property is not updatable--></hostname>
+              <is_locked>false<!--note: this property is not updatable--></is_locked>
+              <litp:node-configs-collection id="configs"/>
+              <litp:node-file_systems-collection id="file_systems"/>
+              <litp:node-items-collection id="items">
+                <litp:mock-package-inherit source_path="/software/items/b_package" id="your_package"/>
+              </litp:node-items-collection>
+              <litp:node-managed_files-collection id="managed_files"/>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <network_name>nodes</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os"/>
+              <litp:node-routes-collection id="routes"/>
+              <litp:node-services-collection id="services"/>
+              <litp:storage-profile-base-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile"/>
+              <litp:system-inherit source_path="/infrastructure/systems/system1" id="system">
+                <litp:system-controllers-collection-inherit source_path="/infrastructure/systems/system1/controllers" id="controllers">
+                  <litp:controller-base-inherit source_path="/infrastructure/systems/system1/controllers/c1" id="c1"/>
+                </litp:system-controllers-collection-inherit>
+                <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system1/disks" id="disks">
+                  <litp:disk-inherit source_path="/infrastructure/systems/system1/disks/disk0" id="disk0"/>
+                </litp:system-disks-collection-inherit>
+              </litp:system-inherit>
+            </litp:node>
+            <litp:node id="node2">
+              <hostname>node2<!--note: this property is not updatable--></hostname>
+              <is_locked>false<!--note: this property is not updatable--></is_locked>
+              <litp:node-configs-collection id="configs"/>
+              <litp:node-file_systems-collection id="file_systems"/>
+              <litp:node-items-collection id="items"/>
+              <litp:node-managed_files-collection id="managed_files"/>
+              <litp:node-network_interfaces-collection id="network_interfaces">
+                <litp:network-interface id="ip1">
+                  <network_name>nodes</network_name>
+                </litp:network-interface>
+              </litp:node-network_interfaces-collection>
+              <litp:os-profile-inherit source_path="/software/profiles/rhel_6_2" id="os"/>
+              <litp:node-routes-collection id="routes"/>
+              <litp:node-services-collection id="services"/>
+              <litp:storage-profile-base-inherit source_path="/infrastructure/storage/storage_profiles/profile_1" id="storage_profile"/>
+              <litp:system-inherit source_path="/infrastructure/systems/system2" id="system">
+                <litp:system-controllers-collection-inherit source_path="/infrastructure/systems/system2/controllers" id="controllers">
+                  <litp:controller-base-inherit source_path="/infrastructure/systems/system2/controllers/c1" id="c1"/>
+                </litp:system-controllers-collection-inherit>
+                <litp:system-disks-collection-inherit source_path="/infrastructure/systems/system2/disks" id="disks">
+                  <litp:disk-inherit source_path="/infrastructure/systems/system2/disks/disk0" id="disk0"/>
+                </litp:system-disks-collection-inherit>
+              </litp:system-inherit>
+            </litp:node>
+          </litp:cluster-nodes-collection>
+          <litp:cluster-services-collection id="services"/>
+          <litp:cluster-software-collection id="software"/>
+        </litp:cluster>
+      </litp:deployment-clusters-collection>
+    </litp:deployment>
+  </litp:root-deployments-collection>
+  <litp:infrastructure id="infrastructure">
+    <litp:infrastructure-items-collection id="items"/>
+    <litp:networking id="networking">
+      <litp:networking-networks-collection id="networks">
+        <litp:network id="ms_network">
+          <litp_management>false<!--note: this property is not updatable--></litp_management>
+          <name>nodes</name>
+          <subnet>10.10.10.0/24</subnet>
+        </litp:network>
+      </litp:networking-networks-collection>
+      <litp:networking-routes-collection id="routes"/>
+    </litp:networking>
+    <litp:infrastructure-service_providers-collection id="service_providers"/>
+    <litp:storage id="storage">
+      <litp:storage-nfs_mounts-collection id="nfs_mounts"/>
+      <litp:storage-storage_profiles-collection id="storage_profiles">
+        <litp:storage-profile-base id="profile_1"/>
+      </litp:storage-storage_profiles-collection>
+      <litp:storage-storage_providers-collection id="storage_providers"/>
+    </litp:storage>
+    <litp:infrastructure-system_providers-collection id="system_providers"/>
+    <litp:infrastructure-systems-collection id="systems">
+      <litp:system id="system1">
+        <system_name>SYS1</system_name>
+        <litp:system-controllers-collection id="controllers">
+          <litp:controller-base id="c1"/>
+        </litp:system-controllers-collection>
+        <litp:system-disks-collection id="disks">
+          <litp:disk id="disk0">
+            <bootable>false<!--note: this property is not updatable--></bootable>
+            <disk_part>false<!--note: this property is not updatable--></disk_part>
+            <name>disk0<!--note: this property is not updatable--></name>
+            <size>1G<!--note: this property is not updatable--></size>
+            <uuid>foo<!--note: this property is not updatable--></uuid>
+          </litp:disk>
+        </litp:system-disks-collection>
+      </litp:system>
+      <litp:system id="system2">
+        <system_name>SYS2</system_name>
+        <litp:system-controllers-collection id="controllers">
+          <litp:controller-base id="c1"/>
+        </litp:system-controllers-collection>
+        <litp:system-disks-collection id="disks">
+          <litp:disk id="disk0">
+            <bootable>false<!--note: this property is not updatable--></bootable>
+            <disk_part>false<!--note: this property is not updatable--></disk_part>
+            <name>sdb<!--note: this property is not updatable--></name>
+            <size>1G<!--note: this property is not updatable--></size>
+            <uuid>foo<!--note: this property is not updatable--></uuid>
+          </litp:disk>
+        </litp:system-disks-collection>
+      </litp:system>
+    </litp:infrastructure-systems-collection>
+  </litp:infrastructure>
+  <litp:ms id="ms">
+    <hostname>ms1</hostname>
+    <litp:ms-configs-collection id="configs"/>
+    <litp:ms-file_systems-collection id="file_systems"/>
+    <litp:ms-items-collection id="items"/>
+    <litp:ms-network_interfaces-collection id="network_interfaces">
+      <litp:network-interface id="ip1">
+        <ipaddress>10.10.10.100</ipaddress>
+        <network_name>nodes</network_name>
+      </litp:network-interface>
+    </litp:ms-network_interfaces-collection>
+    <litp:ms-routes-collection id="routes"/>
+    <litp:ms-services-collection id="services"/>
+  </litp:ms>
+  <litp:root-plans-collection id="plans"/>
+  <litp:software id="software">
+    <litp:software-deployables-collection id="deployables"/>
+    <litp:software-images-collection id="images"/>
+    <litp:software-items-collection id="items">
+      <litp:mock-package id="b_package">
+        <ensure>installed</ensure>
+        <name>b_package</name>
+      </litp:mock-package>
+    </litp:software-items-collection>
+    <litp:software-profiles-collection id="profiles">
+      <litp:os-profile id="rhel_6_2">
+        <arch>x86_64<!--note: this property is not updatable--></arch>
+        <breed>redhat<!--note: this property is not updatable--></breed>
+        <kopts_post>console=ttyS0,115200<!--note: this property is not updatable--></kopts_post>
+        <name>sample-profile<!--note: this property is not updatable--></name>
+        <path>/profiles/node-iso/<!--note: this property is not updatable--></path>
+        <version>rhel6<!--note: this property is not updatable--></version>
+      </litp:os-profile>
+    </litp:software-profiles-collection>
+    <litp:software-runtimes-collection id="runtimes"/>
+    <litp:software-services-collection id="services"/>
+  </litp:software>
+</litp:root>

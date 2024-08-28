@@ -1,0 +1,21 @@
+## test_01_p_model_item_backup_after_fail_load
+## Description
+## A test on XML load on a path that already exists, to
+## ensure the path is not removed from the model;
+## checks LITPCDS-7864 does not reappear.
+
+runLitpScript two-node-std.inc
+
+#Create two new model items
+litp create -p /software/items/litpcds7864_01 -o name='litpcds7864_01' -t mock-package
+litp create -p /software/items/litpcds7864_02 -o name='litpcds7864_02' -t mock-package
+
+#Export the model items' parent to an XML file
+litp export -p /software/items  -f /tmp/7864items.xml
+
+#Load the XML file back into the model and Check path exists error
+assertError --err_type ItemExistsError --err_message "Item /software/items already exists" --err_vpath "/software/items"  load -p /software -f /tmp/7864items.xml
+
+#Check both model items still exist in the model
+assertState -p /software/items/litpcds7864_01 Initial
+assertState -p /software/items/litpcds7864_02 Initial

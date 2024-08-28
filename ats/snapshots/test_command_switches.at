@@ -1,0 +1,15 @@
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot -n testMe123
+
+assertPlanState successful
+
+litp create_snapshot --name testMeUnosDosTres
+
+assertPlanState successful

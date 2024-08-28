@@ -1,0 +1,29 @@
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/vim -t mock-package -o name="vim"
+
+litp inherit -p /ms/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/vim -s /software/items/vim
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/vim -s /software/items/vim
+
+litp create_plan
+litp run_plan
+
+litp remove -p /ms/items/vim
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/vim
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/items/vim
+
+assertState -p /ms/items/vim ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/vim ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/vim ForRemoval
+
+litp create_plan
+litp run_plan
+
+assertNone -p /ms/items/vim
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/vim
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/items/vim
+
+
+assertDirectoryContents cleanup_plan_tasks /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/

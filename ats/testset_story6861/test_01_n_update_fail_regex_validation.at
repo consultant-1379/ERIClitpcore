@@ -1,0 +1,19 @@
+runLitpScript ../include/two_nodes.at
+
+add-extensions extensions
+add-plugins plugins
+
+litp create -t story6861 -p /software/items/story6861 -o name="test_01" description="regex_validation_fail"
+
+litp create_plan
+
+assertCallbackTask cb_fail_regex_validation /software/items/story6861
+
+disableCallbackMock cb_fail_regex_validation /software/items/story6861
+
+runPlanStart
+runPlanEnd
+
+assertPlanState failed
+
+assertLogMessage "ValidationErrors occurred during update of property \"fail\" on /software/items/story6861:\n<fail - ValidationError - Invalid value \'not_a_path_property\'.>"

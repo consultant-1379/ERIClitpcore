@@ -1,0 +1,73 @@
+## TORF-115415
+add-plugins plugins/dummy_115415_plugin
+add-extensions extensions/dummy_115415_extension
+runLitpScript ../include/two_nodes.at
+
+# Generate a first set of tasks
+litp create -t trigger -p /software/items/trigger_1 -o name=original
+litp create -t trigger -p /software/items/trigger_2 -o name=original
+litp inherit -s /software/items/trigger_1 -p /ms/items/trigger_1
+litp inherit -s /software/items/trigger_2 -p /ms/items/trigger_2
+
+# First plan
+litp create_plan
+
+let __cfgA1 ConfigTask ms1 foo trigger_1 /ms/items/trigger_1 param=original
+let __cfgB1 ConfigTask ms1 bar trigger_1 /ms/items/trigger_1
+assertTaskBeforeTask __cfgA1 __cfgB1
+
+let __cfgA2 ConfigTask ms1 foo trigger_2 /ms/items/trigger_2 param=original
+let __cfgB2 ConfigTask ms1 bar trigger_2 /ms/items/trigger_2
+assertTaskBeforeTask __cfgA2 __cfgB2
+
+litp run_plan
+assertPlanState successful
+
+litp update -p /ms/items/trigger_1 -o name=incorrect_update
+litp update -p /ms/items/trigger_2 -o name=correct_update
+
+# Second plan
+litp create_plan
+
+assertConfigTask ms1 foo trigger_1 /ms/items/trigger_1 param=incorrect_update
+assertConfigTask ms1 foo trigger_2 /ms/items/trigger_2 param=correct_update
+
+# Set up the ConfigTask of resource type 'foo' to fail for item trigger_1
+failConfigTask foo ms1 /ms/items/trigger_1
+
+# The ConfigTask tied to /ms/items/trigger_2 will be successful, but its
+# extra model item will enter the APD == False state owing to the failure of the
+# task above.
+
+litp run_plan
+assertPlanState failed
+
+assertState -p /ms/items/trigger_1 Updated
+assertAppliedPropertiesDeterminable -p /ms/items/trigger_1 False
+
+assertState -p /ms/items/trigger_2 Applied
+assertAppliedPropertiesDeterminable -p /ms/items/trigger_2 True
+
+assertAppliedPropertiesDeterminable -p /ms False
+
+litp update -p /ms/items/trigger_1 -o name=correct_update
+
+# Third plan
+#
+# The plan that will be created includes a new ConfigTask for trigger_2 that
+# is identical to the task generated in the 2nd plan.
+# This task is discarded and the task for trigger_2 that was successfully used
+# in the 2nd plan is reset to the Initial state and injected into the plan.
+#
+# On the other hand, the trigger_2 ConfigTask of resource type 'bar' that was
+# part of the 1st plan is still a valid previously successful task, and it is
+# passed to the PlanBuilder for the creation of this plan.
+# This task has a plugin-set dependency against the previously successful task
+# of type 'foo' that was part of the 1st plan - this task clashes with the task
+# we've reused from the 2nd plan and should not be included here, since it is
+# not (directly) passed to the PlanBuilder
+litp create_plan
+
+assertConfigTask ms1 foo trigger_1 /ms/items/trigger_1 param=correct_update
+assertConfigTask ms1 foo trigger_2 /ms/items/trigger_2 param=correct_update
+assertPhaseLength 0 2

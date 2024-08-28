@@ -1,0 +1,26 @@
+{
+    "items": {
+        "/software": {
+            "itemStatus": "Initial",
+            "__type__": "ModelItem",
+            "itemTypeId": "software",
+            "itemRequire": null,
+            "itemProperties": {}
+        }
+    },
+    "extensions": [
+        {
+            "version": "1.1",
+            "name": "testextension",
+            "class": "test_serializer.TestExtension"
+        }
+    ],
+    "plugins": [
+        {
+            "version": "1.1",
+            "name": "testplugin",
+            "class": "test_serializer.TestPlugin"
+        }
+    ]
+}
+

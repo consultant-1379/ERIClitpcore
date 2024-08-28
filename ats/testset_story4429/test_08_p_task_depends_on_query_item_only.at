@@ -1,0 +1,26 @@
+add-extensions extensions/litpcds_4429
+add-plugins plugins/litpcds_4429
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t story4429 -p /software/items/story4429 -o name=test_08
+litp inherit -s /software/items/story4429 -p /ms/items/story4429
+litp inherit -s /software/items/story4429 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_4429
+litp inherit -s /software/items/story4429 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_4429
+
+litp create -t story4429-1 -p /software/items/story4429-1 -o name=test_08
+litp inherit -s /software/items/story4429-1 -p /ms/items/story4429-1
+litp inherit -s /software/items/story4429-1 -p /deployments/local/clusters/cluster1/nodes/node1/items/story_4429-1
+litp inherit -s /software/items/story4429-1 -p /deployments/local/clusters/cluster1/nodes/node2/items/story_4429-1
+
+litp create_plan
+
+assertCallbackTask cb_do_nothing /software/items/story4429-1
+assertConfigTask node1 notify cf_do_nothing_test_08_1 /software/items/story4429
+
+let __taskA ConfigTask node1 notify cf_do_nothing_test_08_1 /software/items/story4429
+let __taskB CallbackTask cb_do_nothing /software/items/story4429-1
+assertTaskBeforeTask __taskB __taskA
+
+litp run_plan
+assertPlanState successful

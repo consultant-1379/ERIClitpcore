@@ -1,0 +1,132 @@
+## test_17_p_remove_doubly_inherited_descendent_initial
+## Description:
+## When a doubly inherited item or its descendent with a state
+## "Initial" is removed then the item and its descendants
+## will be removed from the model
+##
+## Preconditions:
+## Source item itemA: /infrastructure/storage/nfs_mounts/itemA
+## Inherited item1: /ms/file_systems/item1
+## Doubly inheriteditem2: /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+## Inherited item3: /ms/file_systems/item3
+## Doubly inherited item4: /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4
+
+# Actions:
+add-extensions extensions/test_12798_extension_test_14
+add-plugins plugins/test_12798_plugin_test_14
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA with a child item
+#    a grandchild item and a grand-grandchild
+litp create -p /infrastructure/storage/nfs_mounts/itemA -t parent -o name='parent' # source item
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 -t child
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 -t g-child
+litp create -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 -t g-g-child
+
+# 2. Inherit itemA to item1
+litp inherit -p /ms/file_systems/item1 -s /infrastructure/storage/nfs_mounts/itemA
+
+# 3. Inherit grandchild of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 -s /ms/file_systems/item1/childs/child1/grand_children/grandchild1
+
+# 4. Inherit itemA to item3
+litp inherit -p /ms/file_systems/item3 -s /infrastructure/storage/nfs_mounts/itemA
+
+# 5. Inherit grandchild of item3 to item4
+# (double direct inheritance)
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 -s /ms/file_systems/item3/childs/child1/grand_children/grandchild1
+
+# 6. Check that all descendents are created and in "Initial" state
+# itemA
+assertState -p /infrastructure/storage/nfs_mounts/itemA Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item1
+assertState -p /ms/file_systems/item1 Initial
+assertState -p /ms/file_systems/item1/childs/child1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2/grand_grand_children/g-grandchild1 Initial
+
+# item3
+assertState -p /ms/file_systems/item3 Initial
+assertState -p /ms/file_systems/item3/childs/child1 Initial
+assertState -p /ms/file_systems/item3/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/file_systems/item3/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item4
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4/grand_grand_children/g-grandchild1 Initial
+
+# 7. Remove the doubly inherited item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+
+# 8. Check that item2 and its descendents have been removed
+# 9. Check that all other items remain
+# itemA
+assertState -p /infrastructure/storage/nfs_mounts/itemA Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item1
+assertState -p /ms/file_systems/item1 Initial
+assertState -p /ms/file_systems/item1/childs/child1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2/grand_grand_children/g-grandchild1
+
+# item3
+assertState -p /ms/file_systems/item3 Initial
+assertState -p /ms/file_systems/item3/childs/child1 Initial
+assertState -p /ms/file_systems/item3/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/file_systems/item3/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item4
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4/grand_grand_children/g-grandchild1 Initial
+
+# 10.Remove doubly inherited item4 child
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4/grand_grand_children/g-grandchild1
+
+# 11.Check that item4 remain and item4 child has been removed
+# 12.Check that itemA, item1 and item3 and all descendents remain
+# itemA
+assertState -p /infrastructure/storage/nfs_mounts/itemA Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /infrastructure/storage/nfs_mounts/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item1
+assertState -p /ms/file_systems/item1 Initial
+assertState -p /ms/file_systems/item1/childs/child1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/file_systems/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/item2/grand_grand_children/g-grandchild1
+
+# item3
+assertState -p /ms/file_systems/item3 Initial
+assertState -p /ms/file_systems/item3/childs/child1 Initial
+assertState -p /ms/file_systems/item3/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/file_systems/item3/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item4
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4 Initial
+assertNone -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/item4/grand_grand_children/g-grandchild1
+
+# Result:
+# The doubly inherited item or its descendent
+# with state "Initial" and its descendants
+# (which encompasses inherited progeny and double inherited progeny)
+# can be removed

@@ -1,0 +1,29 @@
+runLitpScript two-node-std.inc
+add-extensions extensions/dummy_extension
+add-plugins plugins/dummy_plugin
+
+litp create -t dummy-package -p /software/items/foo_01
+litp inherit -s /software/items/foo_01 -p /ms/items/foo_01
+# Fail this task, dummy-package tasks will succeed
+litp create -p /software/items/fail_package -t mock-package -o name=fail_package
+litp inherit -s /software/items/fail_package -p /ms/items/fail_package
+
+litp create_plan
+assertConfigTask ms1 call_type_1 foo /ms/items/foo_01 name=foo
+assertConfigTask ms1 call_type_2 foo /ms/items/foo_01 name=foo
+assertConfigTask ms1 package fail_package /ms/items/fail_package ensure=installed
+failConfigTask package ms1 /ms/items/fail_package
+
+litp run_plan
+assertPlanState failed
+
+litp create_plan
+assertNoConfigTask ms1 call_type_1 foo /ms/items/foo_01 name=bar
+assertNoConfigTask ms1 call_type_2 foo /ms/items/foo_01 name=bar
+assertConfigTask ms1 package fail_package /ms/items/fail_package ensure=installed
+
+litp update -p /software/items/foo_01 -o name="bar"
+litp create_plan
+assertConfigTask ms1 call_type_1 foo /ms/items/foo_01 name=bar
+assertConfigTask ms1 call_type_2 foo /ms/items/foo_01 name=bar
+assertConfigTask ms1 package fail_package /ms/items/fail_package ensure=installed

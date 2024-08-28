@@ -1,0 +1,62 @@
+litp create -p /infrastructure/networking/networks/iprange1 -t network -o name=sample-ip-range subnet=10.10.10.0/24
+litp create -p /software/profiles/os-profile1 -t os-profile -o name=sample-os-profile path=/var/www/cobbler/ks_mirror/node-iso-x86_64
+litp create -p /infrastructure/storage/storage_profiles/storage-profile1 -t storage-profile-base
+litp create -p /infrastructure/systems/system1 -t system -o system_name=sample-system
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+
+litp create -p /deployments/local_vm1 -t deployment
+litp create -p /deployments/local_vm1/clusters/cluster1 -t cluster
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1 -t node -o hostname=node1
+litp create -p /deployments/local_vm1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/local_vm1/clusters/cluster1/nodes/node1/system -s /infrastructure/systems/system1
+
+assertError create_plan
+
+add-extensions dummy-package
+add-plugins dummy-package
+
+litp create -p /software/items/foo -t foo -o name="foo"
+litp create -p /software/items/foo/c -t system -o system_name="fooc"
+litp create -p /software/items/foo/ccitems/cc -t system -o system_name="foocc"
+
+litp create_plan
+litp run_plan
+
+
+# TC 1
+# remove item with children then restore with same properties
+
+litp remove -p /software/items/foo
+
+assertState -p /software/items/foo ForRemoval
+assertState -p /software/items/foo/c ForRemoval
+assertState -p /software/items/foo/ccitems ForRemoval
+assertState -p /software/items/foo/ccitems/cc ForRemoval
+
+litp create -p /software/items/foo -t foo -o name="foo"
+
+assertState -p /software/items/foo Applied
+assertState -p /software/items/foo/c Applied
+assertState -p /software/items/foo/ccitems Applied
+assertState -p /software/items/foo/ccitems/cc Applied
+
+
+# TC 2
+# remove item with children then restore with updated properties
+
+litp remove -p /software/items/foo
+
+assertState -p /software/items/foo ForRemoval
+assertState -p /software/items/foo/c ForRemoval
+assertState -p /software/items/foo/ccitems ForRemoval
+assertState -p /software/items/foo/ccitems/cc ForRemoval
+
+litp create -p /software/items/foo -t foo -o name="foo2"
+
+assertState -p /software/items/foo Updated
+assertState -p /software/items/foo/c Applied
+assertState -p /software/items/foo/ccitems Applied
+assertState -p /software/items/foo/ccitems/cc Applied
+

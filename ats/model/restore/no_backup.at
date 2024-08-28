@@ -1,0 +1,2 @@
+assertErrorMessage "The deployment model couldn't be restored" restore_model
+assertLogMessage "Could not restore model because no deployment model backup is available."

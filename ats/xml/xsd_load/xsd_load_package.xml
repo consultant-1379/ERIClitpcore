@@ -1,0 +1,12 @@
+<litp:mock-software-entity id="entity1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+    <name>entity1</name>
+    <litp:mock-software-entity-packages-collection id="packages">
+        <litp:mock-item id="item1">
+            <name>package1</name>
+        </litp:mock-item>
+        <litp:mock-item-extension id="item2">
+            <name>misterpackage</name>
+            <version>1.1</version>
+        </litp:mock-item-extension>
+    </litp:mock-software-entity-packages-collection>
+</litp:mock-software-entity>

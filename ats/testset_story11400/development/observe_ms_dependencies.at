@@ -1,0 +1,65 @@
+## LITPCDS-11400: Core defined dependencies ordering
+## Assert that CallbackTasks haning off a ModelItem are in correct order for Node
+add-plugins ../plugins/dummy_11400_ms_plugin
+runLitpScript ../../include/two_nodes.at
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Node test
+# 0. Libvirt
+# 1. Items
+litp create -p /software/items/item -t software-item
+litp inherit -p /ms/items/item -s /software/items/item
+
+# 2. Services
+litp create -p /ms/services/service -t service-base
+
+# 3. Configs
+litp create -p /ms/configs/config -t node-config
+
+# 4. File systems
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+# 5. Storage profile (in script)
+# 6. Routes
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /ms/routes/route -s /infrastructure/networking/routes/route
+
+# 7. Network interfaces (in script)
+# 8. OS (in script)
+# 9. System (inscript)
+
+# Test deployment (initial) plan ordering
+litp create_plan
+#show show_plan
+
+let __item_task CallbackTask _cb /ms/items/item
+let __service_task CallbackTask _cb /ms/services/service
+let __config_task CallbackTask _cb /ms/configs/config
+let __filesystem_task CallbackTask _cb /ms/file_systems/file_system
+let __storage_profile_task CallbackTask _cb /ms/storage_profile
+let __routes_task CallbackTask _cb /ms/routes/route
+let __net_interface_task CallbackTask _cb /ms/network_interfaces/ip1
+let __os_task CallbackTask _cb /ms/os
+let __system_task CallbackTask _cb /ms/system
+
+# Items and Services on same leve, behind Configs
+assertTaskBeforeTask __config_task __service_task
+assertTaskBeforeTask __config_task __item_task
+
+assertTaskBeforeTask __system_task __os_task __net_interface_task __routes_task __storage_profile_task __filesystem_task __config_task
+
+# Test upgrade (applied) plan ordering
+litp run_plan
+assertPlanState successful
+
+litp create_plan
+#show show_plan
+
+# Items and Services on same leve, behind Configs
+assertTaskBeforeTask __config_task __service_task
+assertTaskBeforeTask __config_task __item_task
+
+assertTaskBeforeTask __system_task __os_task __net_interface_task __routes_task __storage_profile_task __filesystem_task __config_task

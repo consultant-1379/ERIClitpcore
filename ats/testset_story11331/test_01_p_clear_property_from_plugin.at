@@ -1,0 +1,167 @@
+## test_01_p_clear_property_from_plugin
+## Description:
+## Test that a property can be deleted in the plugin
+## by invoking queryItem.clear_property("<property>")
+## if the property meets certain criteria
+
+## Result:
+## From a plugin, queryItem.clear_property invoked on a source item deletes the
+##  property if optional and reset to its defalt value if required
+
+## Prerequisite:
+## Create a plugin that generates the ability to clear a property
+add-extensions extensions/dummy_11331_extension
+add-plugins plugins/test01_11331_plugin
+
+# Set up Model
+runLitpScript ../include/two_nodes.at
+
+## 1a. AC1:Create a source and inherited model item with a valid optional property that is plugin-updatable, has no default and is not a read-only property
+litp create -p /software/items/yum_repo1a -t yum-repository -o name='test01a' required_prop1="test_01a" optional_prop1="old" ac2_prop="hello" ac3_prop="world" ac9_prop="val1"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -s /software/items/yum_repo1a
+
+## 1b. AC2:Create a source and inherited model item with a required property that is plugin-updatable, with a default and is not a read-only property
+litp create -p /software/items/yum_repo1b -t yum-repository -o name='test01b' required_prop1="test_01b" optional_prop1="old" ac2_prop="hello" ac3_prop="world" ac9_prop="val1"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -s /software/items/yum_repo1b
+
+## 2. Create plan
+litp create_plan
+
+## 3. Run plan
+litp run_plan
+
+## 4. Check model items have been created as expected
+assertProperty /software/items/yum_repo1a -o name="test01a"
+assertProperty /software/items/yum_repo1a -o optional_prop1="old"
+assertProperty /software/items/yum_repo1a -o required_prop1="test_01a"
+assertProperty /software/items/yum_repo1a -o ac2_prop="hello"
+assertProperty /software/items/yum_repo1a -o ac3_prop="world"
+assertProperty /software/items/yum_repo1a -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o name="test01a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o optional_prop1="old"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o required_prop1="test_01a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o ac3_prop="world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o ac9_prop="val1"
+
+assertProperty /software/items/yum_repo1b -o name="test01b"
+assertProperty /software/items/yum_repo1b -o optional_prop1="old"
+assertProperty /software/items/yum_repo1b -o required_prop1="test_01b"
+assertProperty /software/items/yum_repo1b -o ac2_prop="hello"
+assertProperty /software/items/yum_repo1b -o ac3_prop="world"
+assertProperty /software/items/yum_repo1a -o ac9_prop="val1"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o name="test01b"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o optional_prop1="old"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o required_prop1="test_01b"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac3_prop="world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac9_prop="val1"
+
+## 5. Update a property for each source item that has been created
+litp update -p /software/items/yum_repo1a -o optional_prop1="source_new"
+assertState -p /software/items/yum_repo1a Updated
+
+litp update -p /software/items/yum_repo1b -o optional_prop1="source_new"
+assertState -p /software/items/yum_repo1b Updated
+
+## 6. Create plan
+# In Plugin, queryItem.clear_property("<property>") is invoked on
+# required and optional properties of the source item
+litp create_plan
+
+## 7. Check that all expected properties are in the model
+# AC1:Check that an optional property is removed from the queryItem when a plugin invokes queryItem.clear_property("<property>")
+assertProperty /software/items/yum_repo1a -o name="test01a"
+assertProperty /software/items/yum_repo1a -o optional_prop1="source_new"
+assertProperty /software/items/yum_repo1a -o required_prop1="test_01a"
+assertProperty /software/items/yum_repo1a -o ac2_prop="hello"
+assertProperty /software/items/yum_repo1a -o ac3_prop="world"
+assertPropertyUnset -p /software/items/yum_repo1a -o ac1_prop
+
+# AC7:Also removed from the inherited item
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o name="test01a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o optional_prop1="source_new"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o required_prop1="test_01a"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o ac3_prop="world"
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1a -o ac1_prop
+
+# AC2:Check that a required property with a default will be reset to its default value when a plugin invokes queryItem.clear_property("<property>")
+assertProperty /software/items/yum_repo1b -o name="test01b"
+assertProperty /software/items/yum_repo1b -o optional_prop1="source_new"
+assertProperty /software/items/yum_repo1b -o required_prop1="test_01b"
+assertProperty /software/items/yum_repo1b -o ac2_prop="story11331_ac2"
+assertProperty /software/items/yum_repo1b -o ac3_prop="world"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o name="test01b"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o optional_prop1="source_new"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o required_prop1="test_01b"
+# AC8:Check that a required property with a default will be reset to its default value when a plugin invokes queryItem.clear_property("<property>")
+# the inherit Item's required property reverts to the source item's required default property value
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac2_prop="story11331_ac2"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac3_prop="world"
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac1_prop
+
+## 8. Create a source and inherited model item with a valid optional property that is plugin-updatable, has no default and is not a read-only property,
+#    has a valid required property that is plugin-updatable, has no default and is not a read-only property and
+#    has a valid required property that is plugin-updatable, has a default and is not a read-only property   
+litp create -p /software/items/yum_repo1c -t yum-repository -o name='test01c' required_prop1="test_01c" ac2_prop="hello" ac3_prop="world" ac6_prop="what" ac9_prop="source_val"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -s /software/items/yum_repo1c -o ac6_prop="ever" ac7_prop="just_inherited" ac9_prop="inherit_val"
+
+## 9. Create plan
+litp create_plan
+
+## 10.Run plan
+litp run_plan
+
+## 11.Check model items have been created as expected
+assertProperty /software/items/yum_repo1c -o name="test01c"
+assertProperty /software/items/yum_repo1c -o required_prop1="test_01c"
+assertProperty /software/items/yum_repo1c -o ac2_prop="hello"
+assertProperty /software/items/yum_repo1c -o ac3_prop="world"
+assertProperty /software/items/yum_repo1c -o ac6_prop="what"
+assertPropertyUnset -p /software/items/yum_repo1c -o ac7_prop
+assertProperty /software/items/yum_repo1c -o ac9_prop="source_val"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o name="test01c"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o required_prop1="test_01c"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac2_prop="hello"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac3_prop="world"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac6_prop="ever"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac7_prop="just_inherited"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac9_prop="inherit_val"
+
+## 12.Update properties for inherited item
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac2_prop="inherited_update"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c Updated
+
+## 13.Create plan
+# In Plugin, queryItem.clear_property("<property>") is invoked on
+# required and optional properties of the source item
+litp create_plan
+
+## 14.Check by invoking queryItem.clear_property("<property>"), the desired behaviour has been achieved
+assertProperty /software/items/yum_repo1c -o name="test01c"
+assertProperty /software/items/yum_repo1c -o required_prop1="test_01c"
+assertProperty /software/items/yum_repo1c -o ac2_prop="hello"
+assertProperty /software/items/yum_repo1c -o ac3_prop="world"
+assertProperty /software/items/yum_repo1c -o ac6_prop="what"
+assertPropertyUnset -p /software/items/yum_repo1c -o ac7_prop
+assertProperty /software/items/yum_repo1c -o ac9_prop="source_val"
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o name="test01c"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o required_prop1="test_01c"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac2_prop="inherited_update"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac3_prop="world"
+# AC6:Check that an optional property of an inherited item will be reverted to the source item property value if it exists
+# when a plugin invokes queryItem.clear_property("<property>")
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac6_prop="what"
+# AC7: When the associated Item of the queryItem is an inherit item and the property is optional and plugin_updatable
+# Then the property is removed if the source item's property does not exist when
+# when a plugin invokes queryItem.clear_property("<property>")
+assertPropertyUnset -p /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1b -o ac7_prop
+# AC9: When the associated Item of the queryItem is an inherit item and the property is required but has no default defined
+# the property is reverted to the source item's property when a plugin invokes queryItem.clear_property("<property>")
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum_repo1c -o ac9_prop="source_val"

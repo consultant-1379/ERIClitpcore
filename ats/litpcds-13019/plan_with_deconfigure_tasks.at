@@ -1,0 +1,25 @@
+add-plugins plugins/deconfigure_tasks
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/item1 -t software-item
+
+litp inherit -p /ms/items/item1 -s /software/items/item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 -s /software/items/item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item1 -s /software/items/item1
+
+litp create_plan
+#show show_plan
+
+let __storage_task_n1 ConfigTask node1 storage_task t1 /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __software_task_n1 ConfigTask node1 software_task t1 /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+let __storage_task_n2 ConfigTask node2 storage_task t1 /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+let __software_task_n2 ConfigTask node2 software_task t1 /deployments/local/clusters/cluster1/nodes/node2/items/item1
+
+assertNoLogMessage "The dependency between deconfigure task \"Storage ConfigTask (deconfigure task on node1)\" for storage-profile-base \"storage_profile\" and configure task \"Generic software ConfigTask\" for software-item \"item1\" is deprecated and will be ignored"
+# storage task on node1 is a deconfigure task so it is sequence after the service task
+assertTaskBeforeTask __software_task_n1 __storage_task_n1
+
+# while the storage task on node2 is not a deconfigure task so it is sequence before the service task
+assertTaskBeforeTask __storage_task_n2 __software_task_n2

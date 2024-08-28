@@ -1,0 +1,11 @@
+add-plugins ../plugins/mock_volmgr_plugin
+litp create_snapshot
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot -n test
+assertError --err_type ValidationError --errors_length 1 --err_message 'Cannot create a Deployment Snapshot if Named Backup Snapshots exist.' create_snapshot

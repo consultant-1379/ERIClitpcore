@@ -1,0 +1,32 @@
+## TORF-111759
+add-extensions extensions/dummy_111759_extension
+add-plugins plugins/dummy_111759_plugin
+runLitpScript ../include/two_nodes.at
+
+litp create -t mock-package -p /software/items/mutt -o name=mutt
+litp inherit -s /software/items/mutt -p /ms/items/mutt
+
+litp create_plan
+litp run_plan
+
+litp create -t left-first -p /software/items/lefty -o name="southpaw"
+litp inherit -s /software/items/lefty -p /ms/items/lefty
+
+
+litp create_plan
+let __left_task CallbackTask _pass_callback /ms/items/lefty/left
+let __right_task CallbackTask _pass_callback /ms/items/lefty/right
+
+assertTaskBeforeTask __left_task __right_task
+
+litp remove_plan
+litp remove -p /software/items/lefty
+
+litp create -t right-first -p /software/items/righty -o name="righty-o"
+litp inherit -s /software/items/righty -p /ms/items/righty
+
+litp create_plan
+let __left_task CallbackTask _pass_callback /ms/items/righty/left
+let __right_task CallbackTask _pass_callback /ms/items/righty/right
+
+assertTaskBeforeTask __right_task __left_task

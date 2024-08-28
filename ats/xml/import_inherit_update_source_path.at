@@ -1,0 +1,14 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/a_package -t mock-package -o name=a_package
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/my_package -s /software/items/a_package
+
+litp create_plan
+litp run_plan
+
+assertError --err_type "ValidationError" --err_vpath=/deployments/local/clusters/cluster1/nodes/node1/items/my_package --err_message  'Cannot update source path "/software/items/b_package". mock-package "my_package" is already inherited from "/software/items/a_package"' load -p / -f import_inherit_update_source_path.xml --merge
+
+assertState -p /software/items/a_package Applied
+assertNone -p /software/items/b_package
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/my_package Applied

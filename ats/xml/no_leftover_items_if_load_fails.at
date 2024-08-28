@@ -1,0 +1,4 @@
+runLitpScript two-node-std.inc
+
+assertError load -p /deployments/site1/clusters/cluster1 -f no_leftover_items_if_load_fails.xml --merge
+assertNone -p /deployments/site1/clusters/cluster1/nodes/node3

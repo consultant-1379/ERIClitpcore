@@ -1,0 +1,24 @@
+add-extensions ../extensions/dummy_logrotate_extensions
+runLitpScript ../model/setup_two_nodes.inc
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/y -s /software/items/xx
+litp upgrade -p /deployments/site1
+
+litp create_plan
+litp run_plan
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/upgrade Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/upgrade Applied
+
+litp update -p /litp/prepare-restore -o path=/ actions='all'
+
+assertError --err_type=InvalidLocationError show -p /deployments/site1/clusters/cluster1/nodes/node1/upgrade
+assertError --err_type=InvalidLocationError show -p /deployments/site1/clusters/cluster1/nodes/node2/upgrade
+
+
+
+

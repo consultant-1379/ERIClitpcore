@@ -1,0 +1,11 @@
+runLitpScript ../../include/two_nodes.at
+add-plugins ../../plugins/failed_callback
+
+litp create_plan
+
+assertTask 0 cb_fail node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 1 baz node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 1 foo node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertTask 1 bar node1 /deployments/local/clusters/cluster1/nodes/node1 Initial
+
+assertTask 1 diff_phase node1 /deployments/local/clusters/cluster1/nodes/node1 Initial

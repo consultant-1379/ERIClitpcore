@@ -1,0 +1,48 @@
+{
+#if "_links" in $context
+    "_links": {
+    #while $context._links
+        #set $link = $context._links.pop(0)
+        "$link.name": {
+            "href": "$link.uri"
+        }#if $context._links# ,#end if
+    #end while
+    },
+#end if
+#if "_embedded" in $context
+    #set $embedded_items = $context._embedded.items()
+    "_embedded": {
+    #while $embedded_items
+        #set $embedded_name, $embedded_list = $embedded_items.pop(0)
+        "$embedded_name": [
+         #while $embedded_list
+         #set $embedded_obj = $embedded_list.pop(0)
+         #if "_links" in $embedded_obj
+            #set $embedded_obj_links = $embedded_obj._links
+            "_links": {
+            #while $embedded_obj_links
+            #set $link = $embedded_obj_links.pop(0)
+                "$link.name": {
+                    "href": "$link.uri"
+                }#if $embedded_obj_links#,#end if
+            #end while
+            }#if $embedded_list#,#end if,
+        #end if
+        #end while
+        ]#if $embedded_items#,#end if,
+    #end while
+    },
+#end if
+#if "properties" in $context
+    "properties": {
+    #for $prop_name, $prop_value in $context.properties.iteritems()
+        "$prop_name": "$prop_value",
+    #end for
+    },
+#end if
+#for $key, $value in $context.iteritems()
+    #if $key not in ["_links", "_embedded", "properties"]
+    "$key": "$value",
+    #end if
+#end for
+}

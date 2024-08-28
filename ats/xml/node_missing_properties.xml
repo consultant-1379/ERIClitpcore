@@ -1,0 +1,18 @@
+<litp:node id="nodea" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"	xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2">
+<!--    <hostname>nodea</hostname>-->
+    <litp:node-ipaddresses-collection id="ipaddresses">
+        <litp:ip-range-inherit id="ip1">
+            <network_name>nodes</network_name>
+        </litp:ip-range-inherit>
+    </litp:node-ipaddresses-collection>
+    <litp:node-items-collection id="items">
+    </litp:node-items-collection>
+    <litp:network-profile-base-inherit id="network_profile"/>
+    <litp:os-profile-inherit id="os">
+        <name>sample-profile</name>
+    </litp:os-profile-inherit>
+    <litp:storage-profile-base-inherit id="storage_profile" />
+    <litp:system-inherit id="system">
+        <system_name>MN1VM</system_name>
+    </litp:system-inherit>
+</litp:node>

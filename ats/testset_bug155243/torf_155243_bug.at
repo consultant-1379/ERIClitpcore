@@ -1,0 +1,10 @@
+## TORF-155243
+add-plugins plugins/dummy_155243_plugin
+runLitpScript ../include/two_nodes.at
+
+litp create_plan
+
+# 2 CallbackTasks only distinction is their dependencies
+assertPhaseLength 0 1
+assertPhaseLength 1 1
+assertPlanLength 2

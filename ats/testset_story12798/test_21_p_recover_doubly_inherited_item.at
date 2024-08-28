@@ -1,0 +1,509 @@
+## test_21_p_recover_doubly_inherited_item
+## Description:
+## When an attempt to recover a doubly inherited item
+## and its corresponding source is in not "ForRemoval" state
+## then the item will return to its previous state.
+##
+## Preconditions:
+## Source itemA: /software/items/itemA
+## Inherited item1 (source is itemA): /ms/items/item1
+## Doubly inherited item2 (source is child of item1): /deployments/local/clusters/cluster1/nodes/node1/items/item2
+## Doubly inherited item3 (source is child of item1): /deployments/local/clusters/cluster1/nodes/node2/items/item3
+## Note that child of item2 is a reference to the grandchild of item1
+
+
+# Actions:
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_14
+runLitpScript ../include/two_nodes.at
+
+# 1. Create an itemA with a child item
+#    and a grandchild item and a grand-grandchild
+litp create -p /software/items/itemA -t parent -o name=parent
+litp create -p /software/items/itemA/childs/child1 -t child -o name=child
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1 -t g-child -o name=grandchild
+litp create -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 -t g-g-child -o name=grandgrandchild
+
+# 2. Inherit itemA to item1
+litp inherit -p /ms/items/item1 -s /software/items/itemA
+
+# 3. Inherit child of item1 to item2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -s /ms/items/item1/childs/child1
+
+# 4. Inherit child of item1 to item3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 -s /ms/items/item1/childs/child1
+
+# 5. Check that all descendents are created and in "Initial" state
+# item A
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Initial
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item 1
+assertState -p /ms/items/item1 Initial
+assertState -p /ms/items/item1/childs/child1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Initial
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Initial
+
+# 6. Execute "create_plan" command
+litp create_plan
+
+# 7. Execute "run_plan" command
+litp run_plan
+assertPlanState successful
+
+# 8. Check all items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# ##################################################################################
+# Check a doubly inherited item can move from "Applied" to "ForRemoval" to "Applied"
+# when its corresponding source is in state, "Applied"
+# ##################################################################################
+# 9. Remove the doubly inherited item, item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 10.Check item2 and its descendents are in "ForRemoval" state
+# 11.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 12.Execute litp "update" command with original applied property to recover
+#    doubly inherited item, item2
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=child
+
+# 13.Check that all items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+
+# ################################################################################
+# Check doubly inherited item can move from "Updated" to "ForRemoval" to "Applied"
+# when its corresponding source is in state, "Applied
+# ################################################################################
+
+# 14.Update a property of item2 to a new value
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_child
+
+# 15.Check that item2 is in the "Updated" state and its
+#    descendents are in the "Applied" state
+# 16.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 17.Remove the doubly inherited item, item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 18.Check that item2 and its descendents are in "ForRemoval" state
+# 19.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 20.Recover the descendent of the doubly inherited item by using the litp
+#    "update" command given the original applied property value
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=child
+
+# 21.Check that item2 and its descendents are in the "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# ################################################################################
+# Check doubly Inherited Item can move from "Updated" to "ForRemoval" to "Updated"
+# when its corresponding source is in state, "Applied"
+# ################################################################################
+# 22.Update a property of item2 to a new value
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_child
+
+# 23.Check that item2 child item is in the "Updated" state and its
+#    descendents are in the "Applied" state
+# 24.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 25.Remove the doubly inherited itemi, item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 26.Check that item2 and its descendents are in "ForRemoval" state
+# 27.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 28.Recover the doubly inherited item by using the litp
+#    "update" command given a new property value
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_child_new
+
+# 29.Check that the doubly inherited item, item2 is in ""Updated" state and its
+#    descendents are in the "Applied" state
+# 30.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# ################################################################################
+# Check doubly Inherited Item can move from "Updated" to "ForRemoval" to "Updated"
+# when its corresponding source is in state, "Updated"
+# ################################################################################
+# 31.Update a property of the item1 child item to a new value
+litp update -p /ms/items/item1/childs/child1 -o name=update_child_new_value
+
+# 32.Check that item1 child, item2 and item3 are in the "Updated" state and their
+#    descendents are in the "Applied" state
+# 33.Check that all other items are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 34.Remove the doubly inherited item, item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 35.Check that item2 and its descendents are in "ForRemoval" state
+# 36.Check that item1 child and item3 are in the "Updated" state and their
+#    descendents are in the "Applied" state
+# 37.Check that itemA and its descendents are in state Applied
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 38.Update a property of the doubly inherited item, item2 to a new value
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_child_new_nalue
+
+# 39.Check that the doubly inherited item, item2 is in the "Updated" state
+# 40.Check that item1 child and item3 items are in the "Updated" state and their
+#    descendents are in the "Applied" state
+# 41.Check that itemA and its descendent are in state Applied
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+
+# #########################################################################
+# Check Inherited Item can move from "Updated" to "ForRemoval" to "Applied"
+# when its corresponding source is in state, "Updated"
+# #########################################################################
+# 42.Update a property of the doubly inherited item, item2
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=update_child
+
+# 43.Check that the doubly inherited item, item2 is in "Updated" state
+# 44.Check that item1 child and item3 items are in the "Updated" state and their
+#    descendents are in the "Applied" state
+#    45.Check that itemA and its descendent are in state Applied
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# 46.Remove the doubly inherited item, item2
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item2
+
+# 47.Check that item2 and its descendents are in "ForRemoval" state
+# 48.Check that item1 child and item3 are in the "Updated" state and their
+#    descendents are in the "Applied" state
+# 49.Check that itemA and its descendents are in state Applied
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 ForRemoval
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+
+# 50.Execute litp "update" command using the original property value to recover
+#    the doubly inherited item, item2
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 -o name=child
+
+# 51.Check that itemA and its descendent are in state Applied
+# 52.Check that item1 child and item3 are in the "Updated" state and their
+#    descendents are in the "Applied" state
+# 53.Check item2 and its descendents are in "Applied" state
+# item A
+assertState -p /software/items/itemA Applied
+assertState -p /software/items/itemA/childs/child1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1 Applied
+assertState -p /software/items/itemA/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item 1
+assertState -p /ms/items/item1 Applied
+assertState -p /ms/items/item1/childs/child1 Updated
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1 Applied
+assertState -p /ms/items/item1/childs/child1/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item2
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/item2/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# item3
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3 Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1 Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/item3/grand_children/grandchild1/grand_grand_children/g-grandchild1 Applied
+
+# Result:
+# The doubly inherited item returns to its previous state
+# when its corresponding source is not in "ForRemoval" state

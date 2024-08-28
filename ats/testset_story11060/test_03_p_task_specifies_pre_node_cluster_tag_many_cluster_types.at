@@ -1,0 +1,118 @@
+# test_03_p_task_specifies_pre_node_cluster_tag_many_cluster_types
+# Description:
+# Test that plugin tasks with the tag DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+# specified, and the deployment cluster plan contains different cluster types,
+# the tasks are assigned to the appropriate task group,
+# i.e. a phase before any node locking/unlocking for the vcs cluster
+# and a phase directly before the node networking phase for non-vcs clusters
+
+# Result:
+# The task is assigned to the phase before any node
+# locking/unlocking for a vcs-cluster and a
+# phase directly before the node networking phase for non-vcs clusters
+
+# Prerequisite:
+# - Create a plugin that generates a task with the
+#   tag DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+add-extensions extensions/story11060_extension
+add-plugins plugins/story11060_plugin
+
+# - Deployment model in state, "Initial"
+# - Clusters of type, cluster and vcs-cluster
+runLitpScript ../include/two_nodes.at
+litp create -p /infrastructure/systems/system3 -t system -o system_name='SYS3'
+litp create -p /infrastructure/systems/system3/disks/disk0 -t disk -o name='disk0' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system3/controllers/c1 -t controller-base
+
+litp create -p /infrastructure/systems/system4 -t system -o system_name='SYS4'
+litp create -p /infrastructure/systems/system4/disks/disk0 -t disk -o name='sdb' size='1G' uuid='foo'
+litp create -p /infrastructure/systems/system4/controllers/c1 -t controller-base
+
+litp create -p /deployments/local/clusters/cluster2 -t cluster -o ha_manager=vcs
+litp update -p /deployments/local/clusters/cluster2 -o dependency_list=cluster1
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node3 -t node -o hostname='node3'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/system -s /infrastructure/systems/system3
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp create -p /deployments/local/clusters/cluster2/nodes/node4 -t node -o hostname='node4'
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/system -s /infrastructure/systems/system4
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/os -s /software/profiles/rhel_6_2
+litp create -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -t network-interface -o network_name='nodes'
+
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node3/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+litp inherit -p /deployments/local/clusters/cluster2/nodes/node4/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+# Actions:
+# 1. Create model items that generate tasks with the
+#    tag, DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+litp create -t litpcds-11060 -p /software/items/foo -o prop='arbitrary_property'
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster2/nodes/node3/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster2/nodes/node4/items/foo
+
+# 2. Create plan
+litp create_plan
+
+# 3. Check that as no locking/unlocking tasks for any of the clusters
+#    exist in the plan, then the task will appear in a phase
+#    directly before the node networking phase
+let __network_task_1 ConfigTask node1 networky_resource resource_title_nodes /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1
+
+let __node_task_1 ConfigTask node1 non_networky_resource resource_title_arbitrary_property /deployments/local/clusters/cluster1/nodes/node1/items/foo
+let __node_task_2 ConfigTask node4 non_networky_resource resource_title_arbitrary_property /deployments/local/clusters/cluster2/nodes/node4/items/foo
+
+let __pre_cluster_task_1 CallbackTask _pre_node_cb /deployments/local/clusters/cluster1
+let __post_cluster_task_1 CallbackTask _post_node_cb /deployments/local/clusters/cluster1
+
+assertTaskBeforeTask __pre_cluster_task_1 __network_task_1
+assertTaskBeforeTask __network_task_1 __node_task_1
+assertTaskBeforeTask __node_task_1 __post_cluster_task_1
+assertTaskBeforeTask  __post_cluster_task_1 __node_task_2
+
+# 4. Run plan
+litp run_plan
+
+# 5. Create other model items that generate tasks with the
+#    tag, DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+litp create -t litpcds-11060 -p /software/items/bar -o prop='another_property'
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node2/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster2/nodes/node3/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster2/nodes/node4/items/bar
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster1/nodes/node2/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster2/nodes/node3/network_interfaces/ip1 -o network_name='updated'
+litp update -p /deployments/local/clusters/cluster2/nodes/node4/network_interfaces/ip1 -o network_name='updated'
+
+# 6. Create plan
+litp create_plan
+
+# 7. Check that although no locking/unlocking tasks for a particular
+#    non-vcs cluster exist in the plan, the pre-node task appears
+#    in a phase directly before the node networking phase
+let __network_task_1 ConfigTask node1 networky_resource resource_title_updated /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1
+
+let __node_task_1 ConfigTask node1 non_networky_resource resource_title_another_property /deployments/local/clusters/cluster1/nodes/node1/items/bar
+let __node_task_2 ConfigTask node2 non_networky_resource resource_title_another_property /deployments/local/clusters/cluster1/nodes/node2/items/bar
+
+let __pre_cluster_task_1 CallbackTask _pre_node_cb /deployments/local/clusters/cluster1
+let __post_cluster_task_1 CallbackTask _post_node_cb /deployments/local/clusters/cluster1
+
+assertTaskBeforeTask __pre_cluster_task_1 __network_task_1 
+assertTaskBeforeTask __network_task_1 __node_task_1
+assertTaskBeforeTask  __node_task_2 __post_cluster_task_1
+
+# 8. Check that as locking/unlocking tasks for the vcs-cluster
+#    exist in the plan, then the task appears in a
+#    phase before any node locking/unlocking for that cluster
+let __lock_task_node3 CallbackTask _lock_node /deployments/local/clusters/cluster2/nodes/node3
+let __pre_cluster2_task_1 CallbackTask _pre_node_cb /deployments/local/clusters/cluster2
+let __post_cluster2_task_1 CallbackTask _post_node_cb /deployments/local/clusters/cluster2
+let __unlock_task_node4 CallbackTask _lock_node /deployments/local/clusters/cluster2/nodes/node4
+
+assertTaskBeforeTask __post_cluster_task_1 __pre_cluster2_task_1
+assertTaskBeforeTask __pre_cluster_task_1 __lock_task_node3
+assertTaskBeforeTask __unlock_task_node4 __post_cluster2_task_1

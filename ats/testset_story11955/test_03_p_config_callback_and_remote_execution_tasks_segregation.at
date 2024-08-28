@@ -1,0 +1,87 @@
+# Test Case 03.
+## Description:
+## Test that on plan creation, the plan allows phases containing both
+## callback and remote execution tasks. The plan does not contain phases where
+## config and call back tasks are mixed nor phases where config and remote
+## execution tasks are mixed.
+## Config tasks phase is scheduled after the phases containing callback and/or
+## remote execution tasks
+
+# Prerequisites
+add-plugins plugins/story11955_plugin
+add-extensions extensions/story11955_extension
+
+runLitpScript ../include/two_nodes.at
+
+# Actions:
+# 1. Create the model items
+# 1a.Create a model item 1a
+# 1b.Create a model item 1b that inherits model item 1a and generates a Config
+#    task, a Callback task and a remote execution task with no dependency
+litp create -p /software/items/item1a -t story11955 -o name='item1a' testcase='tc3'
+litp inherit -s /software/items/item1a -p /deployments/local/clusters/cluster1/nodes/node1/items/item1b
+
+# 1c.Create a model item 2a
+# 1d.Create a model item 2b that inherits model item 2a and generates two Config
+#    tasks, two Callback tasks and two remote execution tasks with no dependency
+litp create -p /software/items/item2a -t story11955 -o name='item2a' testcase='tc3'
+litp inherit -s /software/items/item2a -p /deployments/local/clusters/cluster1/nodes/node1/items/item2b
+
+# 1e.Create a model item 3a
+# 1f.Create a model item 3b that inherits model item 3a and generates a Callback
+#    task that requires one of the remote execution task associated with item 2b
+litp create -p /software/items/item3a -t story11955 -o name='item3a' testcase='tc3'
+litp inherit -s /software/items/item3a -p /deployments/local/clusters/cluster1/nodes/node1/items/item3b
+
+# 1g.Create a model item 4a
+# 1h.Create a model item 4b that inherits model item 4a and generates a remote
+#    execution task that requires the Callback task associated with item 3b
+litp create -p /software/items/item4a -t story11955 -o name='item4a' testcase='tc3'
+litp inherit -s /software/items/item4a -p /deployments/local/clusters/cluster1/nodes/node1/items/item4b
+
+# 1i.Create a model item 5a
+# 1j.Create a model item 5b that inherits model item 5a and generates a config
+#    task
+litp create -p /software/items/item5a -t story11955 -o name='item5a' testcase='tc3'
+litp inherit -s /software/items/item5a -p /deployments/local/clusters/cluster1/nodes/node1/items/item5b
+
+# 2. Execute the 'create_plan' command
+# 3. Execute the 'show_plan' command
+litp create_plan
+
+# 4. Check that config tasks are in different phases from callback tasks and remote execution tasks
+# 4.1 Check that first phase contain mixed callback and remote execution tasks
+#     but no config tasks
+## LITPCDS-13364 validate remote execution task description displayed in plan
+assertTask 0 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 0 _cb1 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+assertTask 0 _cb2 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+assertRemoteExecutionTask 0 /deployments/local/clusters/cluster1/nodes/node1/items/item1b node1 lock_unlock_a lock_a Initial 'tc3 RemoteExecution task 1b'
+assertRemoteExecutionTask 0 /deployments/local/clusters/cluster1/nodes/node1/items/item2b node1 lock_unlock_b lock_b Initial 'tc3 first RemoteExecution task 2b'
+assertRemoteExecutionTask 0 /deployments/local/clusters/cluster1/nodes/node1/items/item2b node1 lock_unlock_c lock_c Initial 'tc3 second RemoteExecution task 2b'
+
+# 4.2 Check that second phase contains only config tasks
+assertTask 1 tc3_res_1b node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1b Initial
+assertTask 1 tc3_res_2b_first node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+assertTask 1 tc3_res_2b_second node1 /deployments/local/clusters/cluster1/nodes/node1/items/item2b Initial
+assertTask 1 tc3_res_5b node1 /deployments/local/clusters/cluster1/nodes/node1/items/item5b Initial
+
+# 4.3 Check that third phase contains only callback task for item 3b
+assertTask 2 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item3b Initial
+
+# 4.4 Check that the last phase contains only remote execution task for item 4b
+assertRemoteExecutionTask 3 /deployments/local/clusters/cluster1/nodes/node1/items/item4b node1 lock_unlock_d lock_d Initial 'tc3 RemoteExecution task 4b'
+
+# 5. Execute the 'run_plan' command
+litp run_plan
+
+# 6. Check that plan is successful
+assertPlanState successful
+# Result:
+# On Plan creation, the plan allows mixed callback and remote execution tasks
+# in the same phase. Callback and remote execution tasks can also be separated
+# through dependencies.
+# Config tasks phase is scheduled after the callback and/or remote execution
+# tasks phases
+# Plan can be run successfully
+

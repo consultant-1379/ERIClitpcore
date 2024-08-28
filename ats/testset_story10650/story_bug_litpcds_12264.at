@@ -1,0 +1,16 @@
+## Story bug 12264: Return all error messages if multiple tasks are replacing for multiple items
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+
+# testing failing validation
+
+litp create -p /software/items/item1 -t story10650 -o name="litpcds_12264"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node2/items/item1
+
+assertError create_plan --err_type "InternalServerError" --err_message "Create plan failed: Task validation errors occurred."
+assertLogMessage 'ERROR - A task is trying to replace another task ("foo", "bar") for node "node1" defined in current plan'
+assertLogMessage 'ERROR - A task is trying to replace another task ("foo", "bar") for node "node2" defined in current plan'

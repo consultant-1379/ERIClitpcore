@@ -1,0 +1,62 @@
+## test_03_p_double_inherit_remove_src_initial
+## Description:
+## A test on double inheritance, using the CLI, where both source
+## and referenced items are in Initial state. Check behaviour on
+## removing an overwritten property and on removing source item
+## completely.
+## Requirements id: TORF-107260
+
+add-plugins plugins
+add-extensions extensions
+runLitpScript two-node-std.inc
+
+#Create a parent item with name property
+litp create -p /software/items/bug7725_tc_03 -t bug7725-sw-item -o name='tc_03'
+
+#Inherit parent item to ms overwriting its name property
+litp inherit -p /ms/items/bug7725_tc_03 -s /software/items/bug7725_tc_03 -o name='tc_03_overwrite_src'
+
+#Inherit parent item to node1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_03 -s /software/items/bug7725_tc_03
+
+#Double inherit ms child item to node2
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_03 -s /ms/items/bug7725_tc_03
+
+#Check all items in Initial state, name properties as expected
+assertState -p /software/items/bug7725_tc_03 Initial
+assertProperty /software/items/bug7725_tc_03 -o name='tc_03'
+
+assertState -p /ms/items/bug7725_tc_03 Initial
+assertProperty /ms/items/bug7725_tc_03 -o name='tc_03_overwrite_src'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_03 Initial
+assertProperty /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_03 -o name='tc_03'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_03 Initial
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_03 -o name='tc_03_overwrite_src'
+
+
+#Remove ms child items name property
+litp update -p /ms/items/bug7725_tc_03 -d name
+
+#Check item name restored to parents item name
+assertState -p /ms/items/bug7725_tc_03 Initial
+assertProperty /ms/items/bug7725_tc_03 -o name='tc_03'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_03 Initial
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_03 -o name='tc_03'
+
+#Remove parent item
+litp remove -p /software/items/bug7725_tc_03
+
+#Check parent and children no longer found
+assertError --err_type InvalidLocationError --err_message "Not found" show -p /software/items/bug7725_tc_03
+assertError --err_type InvalidLocationError --err_message "Not found" show -p /ms/items/bug7725_tc_03
+assertError --err_type InvalidLocationError --err_message "Not found" show -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_03
+assertError --err_type InvalidLocationError --err_message "Not found" show -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_03
+
+
+
+
+
+

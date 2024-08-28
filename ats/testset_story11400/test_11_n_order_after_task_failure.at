@@ -1,0 +1,135 @@
+## test_11_n_order_after_task_failure
+## Description:
+## Test that the correct order is maintained after a task failure
+## Actions:
+## 1. Create a basic 2 node deployment setup containing the following Item-Types
+## on the MS and all peer nodes:
+## "os" profile Item-Type
+## "storage profile" Item-Type
+## "system" Item-Type
+## "network" Item-Type
+runLitpScript ../include/two_nodes.at
+add-plugins plugins/initial_install_plugin
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+litp inherit -p /ms/system -s /infrastructure/systems/system1
+litp inherit -p /ms/os -s /software/profiles/rhel_6_2
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_1
+
+## "software-item" item type
+litp create -p /software/items/item -t mock-package -o name=foo
+litp inherit -p /ms/items/item -s /software/items/item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /software/services/service -t service-base
+litp create -p /ms/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/service -s /software/services/service
+
+## "node-config" item type
+litp create -p /ms/configs/config -t node-config
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+litp create -p /deployments/local/clusters/cluster1/nodes/node2/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /ms/routes/route -s /infrastructure/networking/routes/route
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+# Define task varaibles
+let __configs_ms ConfigTask ms1 ms::configs id_ms_config /ms/configs
+let __services_ms ConfigTask ms1 ms::services id_ms_service /ms/services
+let __routes_ms ConfigTask ms1 ms::routes id_ms_route /ms/routes
+let __items_ms ConfigTask ms1 ms::items id_ms_item /ms/items
+let __file_systems_ms ConfigTask ms1 ms::file_systems id_ms_file /ms/file_systems
+let __network_interfaces_ms ConfigTask ms1 ms::network_interfaces id_ms_net /ms/network_interfaces
+let __storage_profile_ms ConfigTask ms1 ms::storage_profile id_ms_storage /ms/storage_profile
+let __os_ms ConfigTask ms1 ms::os id_ms_os /ms/os
+let __system_ms ConfigTask ms1 ms::system id_ms_system /ms/system
+
+let __configs_node1 ConfigTask node1 node::configs id_node_config /deployments/local/clusters/cluster1/nodes/node1/configs
+let __services_node1 ConfigTask node1 node::services id_node_service /deployments/local/clusters/cluster1/nodes/node1/services
+let __items_node1 ConfigTask node1 node::items id_node_item  /deployments/local/clusters/cluster1/nodes/node1/items
+let __file_systems_node1 ConfigTask node1 node::file_systems id_node_file /deployments/local/clusters/cluster1/nodes/node1/file_systems
+let __routes_node1 ConfigTask node1 node::routes id_node_route /deployments/local/clusters/cluster1/nodes/node1/routes
+let __network_interfaces_node1 ConfigTask node1 node::network_interfaces id_node_net /deployments/local/clusters/cluster1/nodes/node1/network_interfaces
+let __storage_profile_node1 ConfigTask node1 node::storage_profile id_node_storage /deployments/local/clusters/cluster1/nodes/node1/storage_profile
+let __os_node1 ConfigTask node1 node::os id_node_os /deployments/local/clusters/cluster1/nodes/node1/os
+let __system_node1 ConfigTask node1 node::system id_node_system /deployments/local/clusters/cluster1/nodes/node1/system
+
+let __configs_node2 ConfigTask node2 node::configs id_node_config /deployments/local/clusters/cluster1/nodes/node2/configs
+let __services_node2 ConfigTask node2 node::services id_node_service /deployments/local/clusters/cluster1/nodes/node2/services
+let __items_node2 ConfigTask node2 node::items id_node_item  /deployments/local/clusters/cluster1/nodes/node2/items
+let __file_systems_node2 ConfigTask node2 node::file_systems id_node_file /deployments/local/clusters/cluster1/nodes/node2/file_systems
+let __routes_node2 ConfigTask node2 node::routes id_node_route /deployments/local/clusters/cluster1/nodes/node2/routes
+let __network_interfaces_node2 ConfigTask node2 node::network_interfaces id_node_net /deployments/local/clusters/cluster1/nodes/node2/network_interfaces
+let __storage_profile_node2 ConfigTask node2 node::storage_profile id_node_storage /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+let __os_node2 ConfigTask node2 node::os id_node_os /deployments/local/clusters/cluster1/nodes/node2/os
+let __system_node2 ConfigTask node2 node::system id_node_system /deployments/local/clusters/cluster1/nodes/node2/system
+
+let __lock_task_node1 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node1 lock_unlock lock
+let __unlock_task_node1 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node1 lock_unlock unlock
+let __lock_task_node2 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node2 lock_unlock lock
+let __unlock_task_node2 RemoteExecutionTask /deployments/local/clusters/cluster1/nodes/node1 node2 lock_unlock unlock
+
+## 3. Execute the "run_plan" command
+## 4. Wait for th plan to fail
+failConfigTask ms::network_interfaces ms1 /ms/network_interfaces
+litp run_plan
+
+## 5. Re-create the plan
+litp create_plan
+## 6. Check the tasks are as expected in the re-created plan
+assertTaskBeforeTask __routes_ms __storage_profile_ms __file_systems_ms __configs_ms __items_ms __services_ms
+assertTaskBeforeTask __system_node1  __os_node1 __routes_node1 __storage_profile_node1 __file_systems_node1 __configs_node1 __items_node1 __services_node1
+assertTaskBeforeTask __system_node2  __os_node2 __routes_node2 __storage_profile_node2 __file_systems_node2 __configs_node2 __items_node2 __services_node2
+
+## 7. Execute the "run_plan" command
+## 8. Wait for the plan to fail 
+failConfigTask ms::file_systems ms1 /ms/file_systems
+litp run_plan
+
+## 9. Re-create the plan
+litp create_plan
+
+## 10.Check the tasks are as expected in the re-created plan
+assertTask 0 ms::file_systems ms1 /ms/file_systems
+assertTaskBeforeTask __system_node1  __os_node1 __routes_node1 __storage_profile_node1 __file_systems_node1 __configs_node1 __items_node1 __services_node1
+assertTaskBeforeTask __system_node2  __os_node2 __routes_node2 __storage_profile_node2 __file_systems_node2 __configs_node2 __items_node2 __services_node2
+
+## 11.Execute the "run_plan" command
+## 12.Wait for the plan to fail
+failConfigTask node::os node1 /deployments/local/clusters/cluster1/nodes/node1/os
+failConfigTask node::system node2 /deployments/local/clusters/cluster1/nodes/node2/system
+litp run_plan
+
+## 13.Re-create the plan
+litp create_plan
+
+## 14.Check the tasks are as expected in the re-created plan
+assertTaskBeforeTask  __os_node1 __routes_node1 __storage_profile_node1 __file_systems_node1 __configs_node1 __items_node1 __services_node1
+assertTaskBeforeTask __system_node2 __routes_node2 __storage_profile_node2 __file_systems_node2 __configs_node2 __items_node2 __services_node2
+
+## 15.Execute the "run_plan" command
+## 16.Wait for the plan to fail
+failConfigTask node::configs node1 /deployments/local/clusters/cluster1/nodes/node1/configs
+failConfigTask node::storage_profile node2 /deployments/local/clusters/cluster1/nodes/node2/storage_profile
+litp run_plan
+
+## 16.Re-create the plan
+litp create_plan
+
+## 17.Check the tasks are as expected in the re-created plan
+assertTask 0 node::configs node1 /deployments/local/clusters/cluster1/nodes/node1/configs
+assertTask 0 node::storage_profile node2 /deployments/local/clusters/cluster1/nodes/node2/storage_profile

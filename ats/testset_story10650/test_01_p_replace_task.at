@@ -1,0 +1,78 @@
+## test_01_p_replace_task
+## Description:
+## Test that an existing persisted tasks can be replaced on the same node
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates persisted ConfigTasks
+## 2. Create Plan
+## 3. Run plan
+## 4. Update model items so plug-in will generate replacement tasks
+##    plug-in original persisted: (foo1, bar1)
+##    plug-in original persisted: (foo2, bar2)
+##    plug-in original persisted: (foo3, bar3)
+##    plug-in replacement task1: (fooX, barX), replaces: (foo1, bar1)
+##    plug-in replacement task2: (fooY, barY), replaces: (foo2, bar2), (foo3, bar3)
+## 5. Create plan
+## 6. Run plan
+## 7. Check replacement tasks exist in manifest and the replaced
+##    tasks have been removed from the manifest
+
+## Results:
+## A plug-in that generates a replacement Config Task at create_plan
+## results in core removing the Config Task(s) specified by "replaces"
+## during run_plan and adding the replacement Config Task to the manifest
+
+#Prerequisite:
+#Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates persisted ConfigTasks
+litp create -p /software/items/item1 -t story10650 -o name="tc01_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create Plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+# Check manifest is as expected
+assertFileContents manifests/expected/tc01/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#4. Update model items so plug-in will generate replacement tasks
+#   plug-in original persisted: (foo1, bar1)
+#   plug-in original persisted: (foo2, bar2)
+#   plug-in original persisted: (foo3, bar3)
+#   plug-in replacement task1: (fooX, barX), replaces: (foo1, bar1)
+#   plug-in replacement task2: (fooY, barY), replaces: (foo2, bar2), (foo3, bar3)
+litp update -p /software/items/item1 -o name="tc01_foobar2"
+
+#5. Create plan
+litp create_plan
+
+#6. Run plan
+litp run_plan
+
+#7. Check replacement tasks exist in manifest and the replaced
+#   tasks have been removed from the manifest
+assertFileContents manifests/expected/tc01/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#8. Remove Item
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp remove -p /software/items/item1
+
+#9. Create plan
+litp create_plan
+
+#10.Run plan
+litp run_plan
+
+#11.Check that the tasks have been removed from the manifest
+assertFileContents manifests/expected/tc01/removed.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+

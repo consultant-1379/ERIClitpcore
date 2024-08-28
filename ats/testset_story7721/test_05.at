@@ -1,0 +1,14 @@
+add-plugins plugins/plugins5
+litp create -t software-item -p /software/items/pkg1
+litp inherit -p /ms/items/pkg1 -s /software/items/pkg1
+litp create -p /ms/network_interfaces/nic1 -t network-interface -o network_name=mgmt ipaddress=10.10.10.100
+litp create_plan
+#show show_plan
+litp run_plan
+litp create -t service-base -p /ms/services/srv1
+
+litp create_plan
+#show show_plan
+litp run_plan
+
+assertFileContents ./manifests/test_05.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

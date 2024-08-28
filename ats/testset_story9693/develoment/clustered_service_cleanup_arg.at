@@ -1,0 +1,7 @@
+# Allowed arguments in the cleanup_command property
+litp create -p /software/services/service1 -t service -o cleanup_command='/sbin/service service1 stop-undefine --stop-timeout=0' \
+    service_name='service1' stop_command='/sbin/service service1 stop' status_command='/sbin/service service1 status' \
+    start_command='/sbin/service service1 start'
+litp create -p /software/services/service2 -t service -o cleanup_command='/sbin/service service2 stop-undefine --stop-timeout 0' \
+    service_name='service2' stop_command='/sbin/service service2 stop' status_command='/sbin/service service2 status' \
+    start_command='/sbin/service service2 start'

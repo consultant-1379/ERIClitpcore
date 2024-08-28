@@ -1,0 +1,7 @@
+
+.. warning::
+  This page documents LITP Core internal API's.
+  These API's are for explicit use within LITP Core and any non LITP Core software may not use them.
+  They are not subject to backwards compatibility constraints and may change at any time.
+  Only Core team members may change or use these API's and all changes are subject to review by Core development and architecture.
+

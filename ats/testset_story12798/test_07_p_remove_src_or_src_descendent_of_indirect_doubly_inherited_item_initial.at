@@ -1,0 +1,101 @@
+## Description:
+## When a source item or a source descendent of a doubly inherited item with a state
+## "Initial" is removed then the item and its descendants
+## (which encompasses inherited progeny and double inherited progeny)
+## will be removed from the model
+##
+## Preconditions: (Indirect Double inheritance)
+## Source item itemA: /software/items/itemA
+## Source item itemB: /software/services/itemB
+## Inherited item item1 (source is itemA): /software/services/itemB/packages/item1
+## Inherited item item2 (source is itemB): /deployments/d1/clusters/c1/nodes/node1/services/item2
+## The doubly indirectly inherited itemX is implicitly inherited from /software/services/itemB/packages/item1
+
+add-extensions extensions/test_12798_extension_test_12
+add-plugins plugins/test_12798_plugin_test_05
+runLitpScript ../include/two_nodes.at
+
+# 1. create itemA with a child
+litp create -t 'parent' -p /software/items/itemA -o name='parentA'
+litp create -t 'child' -p /software/items/itemA/childs/child1 -o name='child1'
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+
+#2. create itemB
+litp create -t 'parent-b' -p /software/services/itemB -o service_name=parent_b_service name='parentB'
+
+assertState -p /software/services/itemB Initial
+
+# 3. Inherit itemA to item1
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+
+assertState -p /software/services/itemB/packages/item1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1 Initial
+
+# 4. Inherit itemB to item2
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 -s /software/services/itemB
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+# 5. Check that item2's descendants have been created
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Initial
+
+# 6. remove itemB
+litp remove -p /software/services/itemB
+
+assertNone -p /software/services/itemB
+assertNone -p /software/services/itemB/packages/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+
+assertState -p /software/items/itemA Initial
+assertState -p /software/items/itemA/childs/child1 Initial
+
+# 7,8. Recreate itemB
+litp create -t 'parent-b' -p /software/services/itemB -o service_name=parent_b_service name='parentB'
+
+assertState -p /software/services/itemB Initial
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 -s /software/services/itemB
+
+assertState -p /software/services/itemB/packages/item1 Initial
+assertState -p /software/services/itemB/packages/item1/childs/child1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Initial
+
+# 9,10 remove item1
+litp remove -p /software/services/itemB/packages/item1
+
+assertNone -p /software/services/itemB/packages/item1
+assertNone -p /software/services/itemB/packages/item1/childs/child1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+
+# 11.Check that all other items remain
+
+assertState -p /software/services/itemB Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2 Initial
+
+# 12. recreate item1
+litp inherit -p /software/services/itemB/packages/item1 -s /software/items/itemA
+
+# 13. Check that item2's descendants have been created
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1 Initial
+
+# 14.Remove the inherited descendent (child of item1)
+litp remove -p /software/services/itemB/packages/item1
+
+assertNone -p /software/services/itemB/packages/item1
+
+# 15. Check that item2's descendants have been removed
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/services/item2/packages/item1/childs/child1
+
+# Result:
+# The source item or source descendent of an indirect doubly inherited item
+# with state "Initial" and its descendants
+# (which encompasses inherited progeny and double inherited progeny)
+# can be removed

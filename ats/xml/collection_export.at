@@ -1,0 +1,7 @@
+litp create -t deployment -p /deployments/d1
+litp create -t cluster -p /deployments/d1/clusters/c1
+litp create -t node -p /deployments/d1/clusters/c1/nodes/n1 -o hostname=node1
+
+litp export -p /deployments -f /tmp/exported_deployment.xml
+
+assertFileContents exported_collections.xml /tmp/exported_deployment.xml

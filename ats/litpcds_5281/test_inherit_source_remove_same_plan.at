@@ -1,0 +1,33 @@
+runLitpScript two-node-std.inc
+
+litp create -p /software/items/litpcds_5281 -t mock-package -o name="litpcds_5281"
+litp inherit -p /ms/items/litpcds_5281 -s /software/items/litpcds_5281
+
+litp create_plan
+litp run_plan
+
+assertState -p /ms/items/litpcds_5281 Applied
+assertState -p /software/items/litpcds_5281 Applied
+
+litp remove -p /ms/items/litpcds_5281
+assertState -p /ms/items/litpcds_5281 ForRemoval
+
+litp remove -p /software/items/litpcds_5281
+assertState -p /software/items/litpcds_5281 ForRemoval
+
+assertError --err_type "MethodNotAllowedError" --err_message "Item's source item is marked for removal" inherit -p /ms/items/litpcds_5281 -s /software/items/litpcds_5281
+
+litp create -p /software/items/litpcds_5281 -t mock-package -o name="litpcds_5281"
+assertState -p /software/items/litpcds_5281 Applied
+assertState -p /ms/items/litpcds_5281 Applied
+
+litp update -p /ms/items/litpcds_5281 -o name="litpcds_5281_update"
+assertState -p /ms/items/litpcds_5281 Updated
+assertState -p /software/items/litpcds_5281 Applied
+
+litp remove -p /ms/items/litpcds_5281
+litp remove -p /software/items/litpcds_5281
+assertState -p /ms/items/litpcds_5281 ForRemoval
+assertState -p /software/items/litpcds_5281 ForRemoval
+
+assertError --err_type "MethodNotAllowedError" --err_message "Item's source item is marked for removal" inherit -p /ms/items/litpcds_5281 -s /software/items/litpcds_5281

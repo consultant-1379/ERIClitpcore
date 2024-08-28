@@ -1,0 +1,5 @@
+litp update -p /litp/logging -o force_debug=true
+litp update -p /litp/maintenance -o enabled=true
+assertError --err_type ServerUnavailableError --err_message "LITP is in maintenance mode" update -p /litp/logging -o force_debug=false
+litp update -p /litp/maintenance -o enabled=false
+litp update -p /litp/logging -o force_debug=false

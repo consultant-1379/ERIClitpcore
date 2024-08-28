@@ -1,0 +1,98 @@
+#        Test Description
+#        Given a running plan, if a property value is updated, prior to the
+#        ConfigTask() execution, during the plan execution, then updated again
+#        after the ConfigTask()'s execution, the task's properties will reflect
+#        the first update.
+#
+#        Pre-Requisites
+#         A running litpd service
+#         An installed test item type extension/plugin
+#
+#        Risks
+#         Once an item type extension is installed and registered with the litpd
+#         service, it cannot be removed
+#         Once a plugin is installed, it cannot be removed
+#
+#        Pre-Test Steps
+#        1.  Create a new item type extension as described in the LITP 2 SDK
+#        2.  Create a new plugin as described in the LITP 2 SDK
+#        3.  Edit the item type extension to have a plugin updatable property
+#            with a default value
+#        4.  Edit the plugin to have a CallbackTask() to update the plugin
+#            updatable property value
+#        5.  Edit the plugin to have a ConfigTask() to make use of the property
+#            value
+#        6.  Build and install the extension package
+#        7.  Build and install the plugin package
+#
+#        Steps
+#        1.  Execute the create command to create a model item
+#        2.  Execute the create_plan command
+#        3.  Check the property's default value
+#        4.  Execute the run_plan command
+#        5.  Check that the CallbackTask() updates the property's value
+#        6.  Wait for Configtask() to complete successfully
+#        7.  Check the generated manifest configuration uses the property's
+#            updated value
+#        8.  Check that another CallbackTask() updates the property's value a
+#            second time
+#        9.  Wait for second Configtask() to complete successfully
+#        10. Check the generated manifest second configuration uses the
+#            property's updated value
+#        11. Check the generated manifest first configuration remains unchanged
+#        12. Wait for plan execution to complete successfully
+#
+#        Restore
+#        1.  Execute the remove command on the created model item
+#        2.  Execute the create_plan command
+#        3.  Execute the run_plan command
+#        4.  Wait for plan execution to complete succesfully
+#        5.  Check model item is removed from the model
+#
+#        Expected Result
+#        The puppet manifests generated from the ConfigTask(), during the plan
+#        execution, will reflect the property's values as updated by the
+#        previous CallbackTask().
+
+runLitpScript ../../include/two_nodes.at
+add-extensions ../../plugins/future_property
+add-plugins ../../plugins/future_property
+add-plugins ../../plugins/mock_volmgr_plugin
+
+litp create -p /software/items/task_trigger -t test_item -o name=task_trigger
+
+#        1.  Execute the create command to create a model item
+litp create -p /software/items/test_item -t test_item -o name=test_item 
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+#        2.  Execute the create_plan command
+litp create_plan
+
+#        3.  Check the property's default value
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version="X.X.X"
+
+#        4.  Execute the run_plan command
+disableCallbackMock cb_update_property /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_update_property_again /deployments/local/clusters/cluster1/nodes/node1
+runPlanUntil 2
+
+#        5.  Check that the CallbackTask() updates the property's value
+#        6.  Wait for Configtask() to complete successfully
+#        7.  Check the generated manifest configuration uses the property's
+#            updated value
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Y.Y.Y'
+assertDirectoryContents future_property_manifests /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+runPlanEnd
+
+#        8.  Check that another CallbackTask() updates the property's value a
+#            second time
+#        9.  Wait for second Configtask() to complete successfully
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Z.Z.Z'
+
+#        10. Check the generated manifest second configuration uses the
+#            property's updated value
+#        11. Check the generated manifest first configuration remains unchanged
+assertDirectoryContents future_property_multiple_manifests /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+#        12. Wait for plan execution to complete successfully
+assertPlanState successful

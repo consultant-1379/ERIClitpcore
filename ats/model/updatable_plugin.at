@@ -1,0 +1,80 @@
+runLitpScript ../include/two_nodes.at
+add-extensions ../plugins/update_property
+add-plugins ../plugins/update_property
+add-plugins ../plugins/mock_volmgr_plugin
+
+# Execute the create command on an item in the model tree
+# The property value for the item type must have a default value
+# set on creation
+litp create -p /software/items/test_item -t test_item -o name=test_item 
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+# Execute the create_plan command
+litp create_plan
+# Check the item's state is set to Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Initial
+
+# Check the property value
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='X.X.X'
+
+# Execute the run_plan command
+disableCallbackMock cb_update_property /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_do_nothing /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_update_property_again /deployments/local/clusters/cluster1/nodes/node1
+runPlanUntil 1
+
+# Check the property value is updated by the first CallbackTask()
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Y.Y.Y'
+
+# Check the item's state is still set to Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Initial
+
+# Check the property value is updated by the second
+# CallbackTask()
+runPlanUntil 3
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Z.Z.Z'
+
+# Check plan completes successfully
+runPlanEnd
+assertPlanState successful
+
+# Check the state is then set to Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Applied
+
+###############################################################################
+# Now check that a property update from within a plugin
+# does change the state of an item (from "Applied" to "Updated")
+
+litp create_plan
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Applied
+
+# Check the property value
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Z.Z.Z'
+
+# Execute the run_plan command
+disableCallbackMock cb_update_property /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_do_nothing /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock cb_update_property_again /deployments/local/clusters/cluster1/nodes/node1
+runPlanUntil 1
+
+# Check the property value is updated by the first CallbackTask()
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Y.Y.Y'
+
+# Check the item's state is still set to Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Updated
+
+# Check the property value is updated by the second
+# CallbackTask()
+runPlanUntil 3
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Z.Z.Z'
+
+# Check the item's state is still set to Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Applied
+
+# Check plan completes successfully
+runPlanEnd
+assertPlanState successful
+
+# Check the state is then set to Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Applied

@@ -1,0 +1,23 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/foo -t mock-package -o name=foo
+litp create -p /software/services/foo -t service -o service_name=foo
+litp inherit -p /software/services/foo/packages/pkg1 -s /software/items/foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/foo -s /software/services/foo
+
+litp create -p /software/services/httpd -t service -o service_name=httpd
+litp create -p /deployments/local/clusters/cluster1/services/httpd -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs1"
+litp inherit -p /deployments/local/clusters/cluster1/services/httpd/applications/SG_httpd -s /software/services/httpd
+
+litp create_plan
+litp run_plan
+
+assertState -p /software/services/httpd Applied
+assertState -p /deployments/local/clusters/cluster1/services/httpd Applied
+assertState -p /deployments/local/clusters/cluster1/services/httpd/applications/SG_httpd Applied
+
+litp remove -p /deployments/local/clusters/cluster1/services/httpd/
+litp remove -p /software/services/httpd
+
+assertError --err_type "MethodNotAllowedError" --err_message "Item has a descendant whose source item is marked for removal" update -p /deployments/local/clusters/cluster1/services/httpd/ -o name="cs2"
+

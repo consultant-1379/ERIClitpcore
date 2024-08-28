@@ -1,0 +1,20 @@
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/foo -t mock-package -o name=foo
+litp create -p /software/items/bar -t mock-package -o name=bar
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/bar -s /software/items/bar
+
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+litp remove -p /deployments/local/clusters/cluster1/nodes/node2
+
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp run_plan
+
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 ForRemoval

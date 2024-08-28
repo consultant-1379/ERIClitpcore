@@ -1,0 +1,11 @@
+runLitpScript ../include/two_nodes_with_packages.at
+litp create_plan
+litp run_plan
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+
+litp load -p /deployments/local/clusters/cluster1/nodes -f node1.xml --replace
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false
+
+litp load -p /deployments/local/clusters/cluster1/nodes -f node1.xml --merge
+assertProperty /deployments/local/clusters/cluster1/nodes/node1 -o is_locked=false

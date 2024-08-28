@@ -1,0 +1,65 @@
+## test_03_p_req_config_task_not_returned_req_2_tasks_model_dep_ms
+## Description:
+## Ensure that when a required Config task is not returned by the plugin,
+## which in turns requires 2 tasks (one returned and one not returned),
+## the model defined dependencies which are defined on the 'ms' item types
+## are taken into account in the plan and the manifest for all the required tasks.
+
+## Prerequisite
+## Plugin generates a required Config task (t2) which is not returned which in turns
+## requires 2 tasks (t4 returned) and (t5 not returned)
+## t1 - Config task associated with 'software-item' item type
+## t1 requires t2
+## t2 - Config task associated with 'node-config' item type (not returned by plugin)
+## t3 - Config task associated with 'file_system' item type
+## t3 requires t4 and t5
+## t4 - Config task associated with 'routes' item type (route-a)
+## t5 - Config task associated with 'routes' item type (route-b) (not returned by plugin)
+
+
+add-plugins plugins/tc3_tc4_plugin
+
+# Define 2 nodes deployment
+runLitpScript ../include/two_nodes.at
+
+## Actions:
+
+## 1. Create Model items on ms
+## "software-item" item type
+litp create -p /software/items/item -t software-item
+litp inherit -p /ms/items/item_tc3 -s /software/items/item
+
+## "node-config" item type
+litp create -p /ms/configs/config_tc3 -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /ms/file_systems/file_system_tc3 -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /ms/routes/route_a_tc3 -s /infrastructure/networking/routes/route
+litp inherit -p /ms/routes/route_b_tc3 -s /infrastructure/networking/routes/route
+
+## 2. Execute the 'create_plan' command
+litp create_plan
+
+## 3. Check that the tasks associated with software-item, node-config, routes
+## and filesystem are all in the plan, even though the tasks associated with
+## 'node-config' and 'route' model items were not returned by the plugin.
+assertTask 0 ms::items ms1 /ms/items/item_tc3
+assertTask 0 ms::configs ms1 /ms/configs/config_tc3
+assertTask 0 ms::file_systems ms1 /ms/file_systems/file_system_tc3
+assertTask 0 ms::routes_a ms1 /ms/routes/route_a_tc3
+assertTask 0 ms::routes_b ms1 /ms/routes/route_b_tc3
+
+## 4. Execute the 'run__plan' command
+litp run_plan
+
+## 5. Assert puppet manifest
+## Model defined dependency for the required tasks that were not returned by
+## the plugin are present in the manifest:
+## Task (t2) associated with 'node-config' item type requires tasks (t3)
+## associated with 'file_system' item type (model defined dependency) and also
+## requires tasks (t4, t5) associated with 'routes' item type ('route_a and route_b')
+assertFileContents manifests/tc3_ms1.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

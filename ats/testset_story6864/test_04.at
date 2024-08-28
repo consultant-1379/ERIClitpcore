@@ -1,0 +1,32 @@
+# test_04_p_restore_model_create_plan
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/x -t mock-package -o name=x
+litp inherit -p /ms/items/x -s /software/items/x
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/y -s /software/items/x -o name=y
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/y -s /software/items/x -o name=foo
+
+litp create_plan
+assertConfigTask ms1 package x /ms/items/x ensure='installed'
+assertConfigTask node1 package y /deployments/local/clusters/cluster1/nodes/node1/items/y ensure='installed'
+assertConfigTask node2 package foo /deployments/local/clusters/cluster1/nodes/node2/items/y ensure='installed'
+
+# Run plan so that a restore_model file is created
+litp run_plan
+
+assertState -p /ms/items/x Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/y Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/y Applied
+
+# Create a new item in the model
+litp create -p /software/items/z -t mock-package -o name=z
+litp inherit -p /ms/items/z -s /software/items/z
+assertState -p /ms/items/z Initial
+
+litp create_plan
+litp restore_model
+
+# Assert that the created item was removed from the model
+assertNone -p /software/items/z
+assertNone -p /ms/items/z

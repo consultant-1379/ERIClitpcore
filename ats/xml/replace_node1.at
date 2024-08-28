@@ -1,0 +1,15 @@
+litp create -p /software/profiles/rhel_6_4 -t os-profile -o name='sample-profile' path='/profiles/node-iso/'
+litp create -p /infrastructure/systems/system1 -t system -o system_name='SYS1'
+litp create -p /infrastructure/storage/storage_profiles/profile_1 -t storage-profile-base
+
+litp create -p /deployments/dep1 -t deployment
+litp create -p /deployments/dep1/clusters/cluster1 -t cluster
+
+litp load -p / -f root-dep2.xml --replace
+
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea -o hostname=nodea
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodeb -o hostname=nodeb
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodea/network_interfaces/ip1 -o network_name=nodes
+assertProperty /deployments/dep2/clusters/at_cluster/nodes/nodeb/network_interfaces/ip1 -o network_name=nodes
+
+assertError show -p /deployments/dep1

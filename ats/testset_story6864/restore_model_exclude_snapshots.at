@@ -1,0 +1,45 @@
+## Snapshot items should be ignored during restore_mode
+
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+# Create a restore point
+litp create -p /software/items/foo -t mock-package -o name=foo
+litp inherit -p /ms/items/foo -s /software/items/foo
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Create snapshot items post restore point
+litp create_snapshot
+litp create_snapshot -n spam
+litp create_snapshot -n eggs
+
+assertState -p /snapshots Applied
+assertState -p /snapshots/snapshot Applied
+assertState -p /snapshots/eggs Applied
+assertState -p /snapshots/spam Applied
+
+# Restore model, snapshots are left in place
+litp restore_model
+
+assertState -p /snapshots Applied
+assertState -p /snapshots/snapshot Applied
+assertState -p /snapshots/eggs Applied
+assertState -p /snapshots/spam Applied
+
+# Create another restore point
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Remove the snapshots post restore point
+litp remove_snapshot
+litp remove_snapshot -n spam
+litp remove_snapshot -n eggs
+
+# Restore model, snapshots are still gone
+assertNone -s /snapshots/snapshot
+assertNone -s /snapshots/spam
+assertNone -s /snapshots/eggs

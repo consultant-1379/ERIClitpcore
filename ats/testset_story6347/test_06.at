@@ -1,0 +1,18 @@
+runLitpScript two-node-std.inc
+add-extensions extensions/dummy_extension
+
+litp create -t dummy-profile -p /software/profiles/dummy
+litp create -t dummy-item -p /software/profiles/dummy/item -o name=foo1
+litp create -t dummy-item -p /software/profiles/dummy/item/item -o name=foo2
+
+litp inherit -s /software/profiles/dummy/item -p /software/profiles/dummy/ro/refcoll/item1
+assertError --err_type "ValidationError" --err_message "Read-only reference cannot be updated" update -p /software/profiles/dummy/ro/refcoll/item1/item -o name=bar
+
+litp inherit -s /software/profiles/dummy/ro/refcoll/item1/item -p /software/profiles/dummy/rw/refcoll/item2
+litp update -p /software/profiles/dummy/rw/refcoll/item2 -o name=bar
+
+litp inherit -s /software/profiles/dummy/ro/refcoll/item1 -p /software/profiles/dummy/ro/refcoll/item3
+assertError --err_type "ValidationError" --err_message "Read-only reference cannot be updated" update -p /software/profiles/dummy/ro/refcoll/item3/item -o name=baz
+
+litp inherit -s /software/profiles/dummy/item/item -p /software/profiles/dummy/ro/refcoll/item4
+assertError --err_type "ValidationError" --err_message "Read-only reference cannot be updated" update -p /software/profiles/dummy/ro/refcoll/item4 -o name=bar

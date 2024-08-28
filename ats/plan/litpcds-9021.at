@@ -1,0 +1,13 @@
+runLitpScript ../include/two_nodes.at
+add-extensions ../plugins/task_dependencies
+add-plugins ../plugins/dummy_9021
+
+litp create -p /software/items/test_item -t test_item -o name=test_item 
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item 
+
+litp create_plan
+
+# ensure the required task not provided by the plugin is added to the plan
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/test_item Initial
+assertTask 0 node_call_type node1 /deployments/local/clusters/cluster1/nodes/node1 Initial

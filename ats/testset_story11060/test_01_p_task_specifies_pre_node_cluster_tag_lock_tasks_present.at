@@ -1,0 +1,73 @@
+# test_01_p_task_specifies_pre_node_cluster_tag_lock_tasks_present
+# Description:
+# Test that a plugin task with the tag DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+# specified, and the deployment cluster plan contains node locks,
+# the task is assigned to the appropriate task group,
+# i.e.a phase before any node locking/unlocking for that cluster
+
+# Result:
+# The task is assigned to the phase before any node
+# locking/unlocking for that cluster
+
+# Prerequisite:
+# - Create a plugin that generates a task with the
+#   tag DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+add-extensions extensions/story11060_extension
+add-plugins plugins/story11060_plugin
+
+# - Deployment model in state, "Initial"
+# - Cluster is of type, vcs-cluster
+runLitpScript ../include/two_nodes.at
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+# Actions:
+# 1. Create a model item that generates a task with the
+#    tag, DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+litp create -t litpcds-11060 -p /software/items/foo -o prop='arbitrary_property'
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp inherit -s /software/items/foo -p /deployments/local/clusters/cluster1/nodes/node2/items/foo
+
+# 2. Create plan
+litp create_plan
+
+# 3. Check that although no locking/unlocking tasks for that cluster exist in
+# the initial plan, then the pre-node task appears before the networking tasks
+# for the node, which themselves are before the other node tasks
+let __node_task_1 ConfigTask node1 non_networky_resource resource_title_arbitrary_property /deployments/local/clusters/cluster1/nodes/node1/items/foo
+let __node_task_2 ConfigTask node2 non_networky_resource resource_title_arbitrary_property /deployments/local/clusters/cluster1/nodes/node2/items/foo
+
+let __pre_cluster_task_1 CallbackTask _pre_node_cb /deployments/local/clusters/cluster1
+let __post_cluster_task_1 CallbackTask _post_node_cb /deployments/local/clusters/cluster1
+
+let __network_task_1 ConfigTask node1 networky_resource resource_title_nodes /deployments/local/clusters/cluster1/nodes/node1/network_interfaces/ip1
+assertTaskBeforeTask __pre_cluster_task_1 __network_task_1
+assertTaskBeforeTask __network_task_1 __node_task_1
+assertTaskBeforeTask __node_task_1 __post_cluster_task_1
+
+# 4. Run plan
+litp run_plan
+
+# 5. Create another model item that generates a task with the
+#    tag, DEPLOYMENT_PRE_NODE_CLUSTER_TAG
+litp create -t litpcds-11060 -p /software/items/bar -o prop='arbitrary_property2'
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node1/items/bar
+litp inherit -s /software/items/bar -p /deployments/local/clusters/cluster1/nodes/node2/items/bar
+
+let __node_task_3 ConfigTask node1 non_networky_resource resource_title_arbitrary_property2 /deployments/local/clusters/cluster1/nodes/node1/items/bar
+let __node_task_4 ConfigTask node2 non_networky_resource resource_title_arbitrary_property2 /deployments/local/clusters/cluster1/nodes/node2/items/bar
+
+# 6. Create plan
+litp create_plan
+
+# 7. Check that as locking/unlocking tasks for that cluster
+#    exist in the plan, then the pre-node task appears in a
+#    phase before any node locking/unlocking for that cluster
+let __lock_task_node1 CallbackTask _lock_node /deployments/local/clusters/cluster1/nodes/node1
+let __unlock_task_node2 CallbackTask _unlock_node /deployments/local/clusters/cluster1/nodes/node2
+
+assertTaskBeforeTask __pre_cluster_task_1 __lock_task_node1
+assertTaskBeforeTask __lock_task_node1 __node_task_3
+assertTaskBeforeTask __node_task_3 __node_task_4
+assertTaskBeforeTask __node_task_4 __unlock_task_node2
+
+assertTaskBeforeTask __unlock_task_node2 __post_cluster_task_1

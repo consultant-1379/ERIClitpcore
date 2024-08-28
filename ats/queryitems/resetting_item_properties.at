@@ -1,0 +1,37 @@
+
+runLitpScript setup_twonodes.inc
+
+litp create_plan
+litp run_plan
+
+litp update -p /software/items/package_vim -o version="2"
+litp update -p /software/items/package_file -o version="2"
+litp update -p /software/items/package_file -o version="1"
+
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -o ipaddress=10.10.10.10
+litp update -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -o ipaddress=10.10.10.111
+litp update -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 -o ipaddress=10.10.10.2
+
+
+assertState -p /software/items/package_vim Updated
+assertState -p /software/items/package_file Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 Updated
+# TODO (xigomil) This was Applied but now is Updated. Check with core contributors.
+# assertState -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 Updated
+litp create_plan
+
+litp update -p /software/items/package_vim -o version="1"
+litp update -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 -o ipaddress=10.10.10.1
+
+assertState -p /software/items/package_vim Applied
+assertState -p /software/items/package_file Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2 Applied
+# TODO (xigomil) These were Applied but now are Updated. Check with core contributors
+# assertState -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 Applied
+# assertState -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/network_interfaces/ip1 Updated
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/network_interfaces/ip1 Updated

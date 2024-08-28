@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<litp:ms-configs-collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" id="configs">
+  <litp:dummy_extension id="defaults_and_non">
+    <property10>this_is_a_default_value<!--note: this property is not updatable--></property10>
+    <property12>this_is_a_default_value<!--note: this property is not updatable--></property12>
+    <property14>user_supplied_value<!--note: this property is not updatable--></property14>
+    <property16>user_supplied_value<!--note: this property is not updatable--></property16>
+    <property2>this_is_a_default_value<!--note: this property is not updatable--></property2>
+    <property4>this_is_a_default_value<!--note: this property is not updatable--></property4>
+    <property5>user_supplied_required_value</property5>
+    <property6>user_supplied_required_value<!--note: this property is not updatable--></property6>
+    <property7>user_supplied_required_value</property7>
+    <property8>user_supplied_required_value<!--note: this property is not updatable--></property8>
+  </litp:dummy_extension>
+  <litp:dummy_extension id="all_user_supplied">
+    <property10>user_supplied_value<!--note: this property is not updatable--></property10>
+    <property12>user_supplied_value<!--note: this property is not updatable--></property12>
+    <property14>user_supplied_value<!--note: this property is not updatable--></property14>
+    <property16>user_supplied_value<!--note: this property is not updatable--></property16>
+    <property2>user_supplied_value<!--note: this property is not updatable--></property2>
+    <property4>user_supplied_value<!--note: this property is not updatable--></property4>
+    <property5>user_supplied_value</property5>
+    <property6>user_supplied_value<!--note: this property is not updatable--></property6>
+    <property7>user_supplied_value</property7>
+    <property8>user_supplied_value<!--note: this property is not updatable--></property8>
+  </litp:dummy_extension>
+  <litp:dummy_extension id="only_required">
+    <property10>this_is_a_default_value<!--note: this property is not updatable--></property10>
+    <property12>this_is_a_default_value<!--note: this property is not updatable--></property12>
+    <property2>this_is_a_default_value<!--note: this property is not updatable--></property2>
+    <property4>this_is_a_default_value<!--note: this property is not updatable--></property4>
+    <property5>user_supplied_required_value</property5>
+    <property6>user_supplied_required_value<!--note: this property is not updatable--></property6>
+    <property7>user_supplied_required_value</property7>
+    <property8>user_supplied_required_value<!--note: this property is not updatable--></property8>
+  </litp:dummy_extension>
+
+</litp:ms-configs-collection>

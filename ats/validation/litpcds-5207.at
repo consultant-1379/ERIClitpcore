@@ -1,0 +1,34 @@
+runLitpScript ../model/setup_two_nodes.inc
+
+litp create -p /deployments/site1/clusters/cluster1/services/service1 -t clustered-service -o active=1 standby=1 node_list='node1,node3' name="cs1"
+assertError --err_message 'Create plan failed: Node "/deployments/site1/clusters/cluster1/nodes/node3" does not exist. Ensure node_list property is correct' create_plan
+litp remove -p /deployments/site1/clusters/cluster1/services/service1
+
+litp create -p /deployments/site1/clusters/cluster1/services/service1 -t clustered-service -o active=1 standby=1 node_list='node1,node' name="cs1"
+assertError --err_message 'Create plan failed: Node "/deployments/site1/clusters/cluster1/nodes/node" does not exist. Ensure node_list property is correct' create_plan
+litp remove -p /deployments/site1/clusters/cluster1/services/service1
+
+litp create -p /deployments/site1/clusters/cluster1/services/service1 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs1"
+assertError --err_type "DoNothingPlanError" --err_message 'Create plan failed: no tasks were generated' create_plan
+litp remove -p /deployments/site1/clusters/cluster1/services/service1
+
+litp create -p /deployments/site1/clusters/cluster1/services/service1 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs1"
+litp create -p /deployments/site1/clusters/cluster1/services/service2 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs2" dependency_list="service1"
+litp create -p /deployments/site1/clusters/cluster1/services/service3 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs3" dependency_list="service1,service2"
+assertError --err_type "DoNothingPlanError" --err_message 'Create plan failed: no tasks were generated' create_plan
+litp remove -p /deployments/site1/clusters/cluster1/services/service1
+litp remove -p /deployments/site1/clusters/cluster1/services/service2
+litp remove -p /deployments/site1/clusters/cluster1/services/service3
+
+litp create -p /deployments/site1/clusters/cluster1/services/service1 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs1"
+litp create -p /deployments/site1/clusters/cluster1/services/service2 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs2" dependency_list="service1"
+litp create -p /deployments/site1/clusters/cluster1/services/service3 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs3" dependency_list="service1,service4"
+assertError --err_message "Create plan failed: '/deployments/site1/clusters/cluster1/services/service4' does not exist. Please ensure dependency_list property is correct" create_plan
+litp remove -p /deployments/site1/clusters/cluster1/services/service1
+litp remove -p /deployments/site1/clusters/cluster1/services/service2
+litp remove -p /deployments/site1/clusters/cluster1/services/service3
+
+litp create -p /deployments/site1/clusters/cluster1/services/service1 -t clustered-service -o active=1 standby=1 node_list='node1,node2' name="cs1" dependency_list="service1"
+assertError --err_message 'Create plan failed: A service can not depend on itself. Please ensure dependency_list property is correct' create_plan
+litp remove -p /deployments/site1/clusters/cluster1/services/service1
+

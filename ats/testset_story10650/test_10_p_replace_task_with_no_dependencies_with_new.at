@@ -1,0 +1,64 @@
+## test_10_p_replace_task_with_no_dependencies_with_new
+## Description:
+## Ensure that a persisted task without dependencies
+## can be replaced by a task with dependencies
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates a persisted ConfigTask
+##    with the following dependency:
+##    original persisted tasks: task1(foo1, bar1)
+##                              task2(foo2, bar2)
+## 2. Create Plan
+## 3. Run plan
+## 4. Update model items so plug-in will generate a replacement task
+##    to replace task1
+##    plug-in replacement taskA: (fooA, barA) replaces task1(foo1, bar1) and add dependency to task2(foo2, bar2)
+## 5. Create plan
+## 6. Run plan
+## 7. Check the new persisted task exists in manifest with 
+##    defined taskA dependencies
+
+## Result:
+## A persisted task with no dependencies
+## can be replaced by a task with dependencies
+
+#Prerequisite:
+#Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates a persisted ConfigTask
+#   with the following dependency:
+#   original persisteds: task1(foo1, bar1)
+#                        task2(foo2, bar2)
+litp create -p /software/items/item1 -t story10650 -o name="tc10_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+#2. Create Plan
+litp create_plan
+
+#3. Run plan
+litp run_plan
+
+# Check manifest is as expected
+assertFileContents manifests/expected/tc10/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#4. Update model items so plug-in will generate a replacement task
+#   to replace task1
+#   plug-in replacement taskA: (fooA, barA) replaces task1(foo1, bar1) and add dependency to task2(foo2, bar2)
+litp update -p /software/items/item1 -o name="tc10_foobar2"
+
+#5. Create plan
+litp create_plan
+
+#6. Run plan
+litp run_plan
+
+#7. Check the new persisted task exists in manifest with
+#   defined taskA dependencies
+assertFileContents manifests/expected/tc10/replaced.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

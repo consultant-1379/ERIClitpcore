@@ -1,0 +1,45 @@
+# Test_01_p_Config_and_Callback_split
+#
+#Description:
+#As a LITP Architect when I run create plan
+#the resultant plan should not have phases
+#containing both Config tasks and Callback tasks.
+#
+#Test_04_p_Callback_before_Config
+#
+#Description:
+#Currently for mixed task plan phases CT
+#are kicked off first followed by CBTs RETs
+#Currently there is no requirement dictating
+#which should be execute first so it is advised
+#in decision 034 that the CBT'/RET phase should
+#be scheduled first.
+runLitpScript ../../include/two_nodes.at
+add-plugins plugins
+
+litp update -p /deployments/local/clusters/cluster1 -o ha_manager=vcs
+
+## "software-item" item type
+litp create -p /software/items/item -t mock-package -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item -s /software/items/item
+
+## "service-item" item type
+litp create -p /software/services/service -t service-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/service -s /software/services/service
+
+## "node-config" item type
+litp create -p /deployments/local/clusters/cluster1/nodes/node1/configs/config -t node-config
+
+## "file-system" item type
+litp create -p /infrastructure/storage/nfs_mounts/file_system -t file-system-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/file_systems/file_system -s /infrastructure/storage/nfs_mounts/file_system
+
+## "route" item type
+litp create -p /infrastructure/networking/routes/route -t route-base
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/routes/route -s /infrastructure/networking/routes/route
+
+## 2. Execute the "create_plan" command
+litp create_plan
+
+assertTask 12 _cb node1 /deployments/local/clusters/cluster1/nodes/node1/items/item Initial
+assertTask 13 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/item Initial

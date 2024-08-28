@@ -1,0 +1,8 @@
+<litp:clustered-service xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd"
+        id="PMmed" version="LITP2">
+  <active>1</active>
+  <name>PMmed</name>
+  <node_list>node1,node2</node_list>
+  <standby>1</standby>
+</litp:clustered-service>

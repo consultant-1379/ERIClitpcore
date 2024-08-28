@@ -1,0 +1,16 @@
+runLitpScript ../../include/two_nodes.at
+add-extensions ../../plugins/future_property
+add-plugins ../../plugins/future_property
+
+litp create -p /software/items/test_item -t test_item -o name=view_trigger evaluate_once=true
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+litp create_plan
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version="X.X.X"
+
+disableCallbackMock cb_update_property /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Y.Y.Y'
+
+assertDirectoryContents future_property_manifests_views_evaluated_once /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/

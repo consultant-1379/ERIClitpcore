@@ -1,0 +1,45 @@
+runLitpScript setup_twonodes.inc
+add-plugins ../plugins/mock_volmgr_plugin
+
+litp create_plan
+
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_file
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_file
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim
+
+failConfigTask package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_file
+
+litp run_plan
+
+assertState -p /software/items/package_file Initial
+assertState -p /software/items/package_vim Initial
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Initial
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_file Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_file Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim Applied
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Failed
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_vim Success
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_file Success
+assertTask 0 package node2 /deployments/site1/clusters/cluster1/nodes/node2/items/package_vim Success
+
+litp create_plan
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Initial
+
+litp run_plan
+
+assertTask 0 package node1 /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Success
+
+assertState -p /software/items/package_file Applied
+assertState -p /software/items/package_vim Applied
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/package_file Applied

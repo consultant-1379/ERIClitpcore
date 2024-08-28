@@ -1,0 +1,379 @@
+# test_13_n_dependency_list_max_number
+# ====================================
+
+# Actions:
+# 1. Create 50 clusters within a deployment
+# 2. Add all 50 clusters to the "dependency_list" property
+# 
+# Result:
+# ValidationError raised
+
+# 1. Create 50 clusters within a deployment
+litp create -t deployment -p /deployments/litpcds_8809
+
+# Infrastructure and software items
+litp create -p /infrastructure/networking/networks/ip-range1 -t network -o name=sample-ip-range subnet=10.10.10.0/24
+litp create -p /software/profiles/os-profile1 -t os-profile -o name=sample-os-profile path=/var/www/cobbler/ks_mirror/node-iso-x86_64
+litp create -p /infrastructure/storage/storage_profiles/storage-profile1 -t storage-profile-base
+litp create -p /infrastructure/systems/system1 -t system -o system_name=sample-system1
+litp create -p /infrastructure/systems/system1/disks/disk0 -t disk -o name=hd0 size=512G bootable=true uuid="0x5000c50035ca73fe"
+litp create -p /software/items/ha_node_item -t mock-package -o name=bar
+
+# Clusters!
+litp create -p /deployments/litpcds_8809/clusters/cluster_1 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1 -t node -o hostname=c1-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_2 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node1 -t node -o hostname=c2-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_3 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node1 -t node -o hostname=c3-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_4 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_4/nodes/node1 -t node -o hostname=c4-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_4/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_4/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_4/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_4/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_5 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_5/nodes/node1 -t node -o hostname=c5-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_5/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_5/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_5/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_5/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_6 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_6/nodes/node1 -t node -o hostname=c6-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_6/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_6/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_6/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_6/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_7 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_7/nodes/node1 -t node -o hostname=c7-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_7/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_7/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_7/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_7/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_8 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_8/nodes/node1 -t node -o hostname=c8-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_8/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_8/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_8/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_8/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_9 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_9/nodes/node1 -t node -o hostname=c9-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_9/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_9/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_9/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_9/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_10 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_10/nodes/node1 -t node -o hostname=c10-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_10/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_10/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_10/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_10/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_11 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_11/nodes/node1 -t node -o hostname=c11-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_11/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_11/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_11/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_11/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_12 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_12/nodes/node1 -t node -o hostname=c12-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_12/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_12/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_12/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_12/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_13 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_13/nodes/node1 -t node -o hostname=c13-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_13/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_13/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_13/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_13/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_14 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_14/nodes/node1 -t node -o hostname=c14-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_14/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_14/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_14/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_14/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_15 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_15/nodes/node1 -t node -o hostname=c15-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_15/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_15/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_15/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_15/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_16 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_16/nodes/node1 -t node -o hostname=c16-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_16/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_16/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_16/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_16/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_17 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_17/nodes/node1 -t node -o hostname=c17-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_17/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_17/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_17/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_17/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_18 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_18/nodes/node1 -t node -o hostname=c18-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_18/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_18/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_18/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_18/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_19 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_19/nodes/node1 -t node -o hostname=c19-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_19/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_19/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_19/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_19/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_20 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_20/nodes/node1 -t node -o hostname=c20-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_20/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_20/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_20/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_20/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_21 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_21/nodes/node1 -t node -o hostname=c21-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_21/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_21/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_21/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_21/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_22 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_22/nodes/node1 -t node -o hostname=c22-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_22/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_22/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_22/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_22/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_23 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_23/nodes/node1 -t node -o hostname=c23-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_23/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_23/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_23/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_23/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_24 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_24/nodes/node1 -t node -o hostname=c24-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_24/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_24/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_24/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_24/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_25 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_25/nodes/node1 -t node -o hostname=c25-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_25/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_25/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_25/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_25/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_26 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_26/nodes/node1 -t node -o hostname=c26-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_26/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_26/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_26/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_26/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_27 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_27/nodes/node1 -t node -o hostname=c27-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_27/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_27/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_27/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_27/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_28 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_28/nodes/node1 -t node -o hostname=c28-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_28/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_28/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_28/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_28/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_29 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_29/nodes/node1 -t node -o hostname=c29-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_29/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_29/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_29/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_29/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_30 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_30/nodes/node1 -t node -o hostname=c30-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_30/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_30/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_30/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_30/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_31 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_31/nodes/node1 -t node -o hostname=c31-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_31/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_31/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_31/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_31/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_32 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_32/nodes/node1 -t node -o hostname=c32-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_32/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_32/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_32/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_32/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_33 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_33/nodes/node1 -t node -o hostname=c33-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_33/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_33/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_33/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_33/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_34 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_34/nodes/node1 -t node -o hostname=c34-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_34/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_34/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_34/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_34/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_35 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_35/nodes/node1 -t node -o hostname=c35-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_35/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_35/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_35/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_35/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_36 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_36/nodes/node1 -t node -o hostname=c36-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_36/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_36/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_36/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_36/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_37 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_37/nodes/node1 -t node -o hostname=c37-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_37/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_37/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_37/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_37/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_38 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_38/nodes/node1 -t node -o hostname=c38-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_38/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_38/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_38/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_38/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_39 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_39/nodes/node1 -t node -o hostname=c39-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_39/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_39/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_39/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_39/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_40 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_40/nodes/node1 -t node -o hostname=c40-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_40/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_40/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_40/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_40/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_41 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_41/nodes/node1 -t node -o hostname=c41-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_41/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_41/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_41/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_41/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_42 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_42/nodes/node1 -t node -o hostname=c42-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_42/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_42/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_42/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_42/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_43 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_43/nodes/node1 -t node -o hostname=c43-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_43/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_43/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_43/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_43/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_44 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_44/nodes/node1 -t node -o hostname=c44-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_44/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_44/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_44/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_44/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_45 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_45/nodes/node1 -t node -o hostname=c45-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_45/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_45/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_45/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_45/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_46 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_46/nodes/node1 -t node -o hostname=c46-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_46/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_46/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_46/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_46/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_47 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_47/nodes/node1 -t node -o hostname=c47-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_47/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_47/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_47/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_47/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_48 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_48/nodes/node1 -t node -o hostname=c48-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_48/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_48/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_48/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_48/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_49 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_49/nodes/node1 -t node -o hostname=c49-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_49/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_49/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_49/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_49/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_50 -t cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_50/nodes/node1 -t node -o hostname=c50-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_50/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_50/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_50/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_50/nodes/node1/system -s /infrastructure/systems/system1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+
+# 2. Add all 50 clusters to the "dependency_list" property
+litp update -p /deployments/litpcds_8809/clusters/cluster_1 -o dependency_list=cluster_2,cluster_3,cluster_4,cluster_5,cluster_6,cluster_7,cluster_8,cluster_9,cluster_10,cluster_11,cluster_12,cluster_13,cluster_14,cluster_15,cluster_16,cluster_17,cluster_18,cluster_19,cluster_20,cluster_21,cluster_22,cluster_23,cluster_24,cluster_25,cluster_26,cluster_27,cluster_28,cluster_29,cluster_30,cluster_31,cluster_32,cluster_33,cluster_34,cluster_35,cluster_36,cluster_37,cluster_38,cluster_39,cluster_40,cluster_41,cluster_42,cluster_43,cluster_44,cluster_45,cluster_46,cluster_47,cluster_48,cluster_49,cluster_50,absent_cluster_51
+assertError --err_type="ValidationError" --err_message="A cluster cannot specify more than 49 sibling dependencies" create_plan
+
+litp update -p /deployments/litpcds_8809/clusters/cluster_1 -o dependency_list=cluster_2,cluster_3,cluster_4,cluster_5,cluster_6,cluster_7,cluster_8,cluster_9,cluster_10,cluster_11,cluster_12,cluster_13,cluster_14,cluster_15,cluster_16,cluster_17,cluster_18,cluster_19,cluster_20,cluster_21,cluster_22,cluster_23,cluster_24,cluster_25,cluster_26,cluster_27,cluster_28,cluster_29,cluster_30,cluster_31,cluster_32,cluster_33,cluster_34,cluster_35,cluster_36,cluster_37,cluster_38,cluster_39,cluster_40,cluster_41,cluster_42,cluster_43,cluster_44,cluster_45,cluster_46,cluster_47,cluster_48,cluster_49,cluster_50
+litp create_plan

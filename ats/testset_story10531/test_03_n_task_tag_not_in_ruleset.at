@@ -1,0 +1,50 @@
+# Test Case 03.
+
+# Description:
+# Test that on creating a plan with deployment ruleset defined and an invalid
+# task's tag is set and not matching any ruleset criteria, the task will be
+# assigned to the MS_GROUP and will get ordered in the correct phase.
+# A warning message is also raised for the invalid tag's task.
+#
+# Actions:
+# 1. Create model item that generates a task associated with a tag not defined
+#    in the ruleset, with no dependency between tasks
+# 2. Execute "create_plan" command
+# 3. Check plan
+# 3.1 Check that the plan was created
+# 3.2 Check that the task with the invalid tag's name is in the MS phase
+# 3.3 Check that a warning message for "Invalid task tag name" is raised and
+#     specifies the unmatched task's tag
+#
+# Result:
+# On plan creation with a task with an invalid tag, the plan is created, the
+# task with the invalid tag is in the MS phase and a warning message specifying
+# the invalid tag name is raised.
+
+# Prerequisites
+add-extensions extensions/story10531_extension
+add-plugins plugins/story10531_plugin
+
+runLitpScript ../include/two_nodes.at
+
+# 1. Create model item that generates a task associated with a tag not defined
+#    in the ruleset, with no dependency between tasks
+litp create -p /software/items/item1 -t foo3 -o name='item1'
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+
+# 2. Execute "create_plan" command
+litp create_plan
+
+# 3. Check plan
+# 3.1 Check that the plan was created
+assertTask 0 res_ms node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 1 res_boot_1 node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 2 res_node node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+assertTask 3 res_cluster node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+
+# 3.2 Check that the task with the invalid tag's name is in the MS phase
+assertTask 0 res_invalid_tag node1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 Initial
+
+# 3.3 Check that a warning message for "Invalid task tag name" is raised and
+#     specifies the unmatched task's tag
+assertLogMessage "Invalid task tag name: \"invalid_tag_name\""

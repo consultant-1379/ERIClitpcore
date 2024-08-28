@@ -1,0 +1,121 @@
+## Test CLI for parent/child inheritance
+## Purpose:
+## Check that a reference child descendant can be removed by setting the
+## parent reference ForRemoval, updating the source item and creating and running
+## the plan. Reference collection descendant item is not removed.
+
+## Setup:
+##  Source item with collection and child. All in Applied state
+##  Reference item and inherited collection and child. All in Applied state
+## Action 1:
+##  Remove reference item
+## Result 1:
+##  Source item, collection and child still Applied
+##  Reference item collection and child are all ForRemoval
+## Action 2:
+##  Update source property to a new value by CLI
+## Result 2:
+##  Source item is Updated with collection and child still Applied
+##  Reference item is Updated with collection and child still ForRemoval
+## Action 3:
+##  Create and run plan
+## Result 3:
+##  Source item, collection and child are Applied
+##  Reference item is Applied
+##  Reference item descendants' child was removed but collection was not removed
+
+# Prerequisite:
+add-extensions ../../extensions/update_src_prop_extensions
+add-plugins ../../plugins/parent_child_inheritance_plugin
+
+# Set up Model
+runLitpScript ../../include/two_nodes.at
+
+# foo item is used by plugin as a flag to control which source item is updated
+litp create -p /software/items/foo -t mock-package -o name='foo' version=1
+
+# Setup
+# Test case pre-condition: starting state
+litp create -p /software/items/prop1_new_repo -t myrepository -o name='prop1_new_repo' -o myprop1='orig' -o myprop2='orig'
+litp create -p /software/items/prop1_new_repo/packages/bar -t dummy-package -o name='bar'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -s /software/items/prop1_new_repo
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Source item, collection and child
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /software/items/prop1_new_repo/packages Applied
+assertState -p /software/items/prop1_new_repo/packages/bar Applied
+
+# Reference item, collection and child
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages/bar Applied
+
+# Check property values
+assertProperty /software/items/prop1_new_repo -o myprop1='orig'
+assertProperty /software/items/prop1_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop1='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='orig'
+
+# Action 1:
+# Remove Reference item
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo
+
+# Result 1:
+# Interim state
+# Source item, collection and child
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /software/items/prop1_new_repo/packages Applied
+assertState -p /software/items/prop1_new_repo/packages/bar Applied
+
+# Reference item, collection and child
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages/bar ForRemoval
+
+# Action 2:
+# Update source property to a new value by CLI
+litp update -p /software/items/prop1_new_repo -o myprop1='new'
+
+# Result 2:
+# Source item, collection and child
+assertState -p /software/items/prop1_new_repo Updated
+assertState -p /software/items/prop1_new_repo/packages Applied
+assertState -p /software/items/prop1_new_repo/packages/bar Applied
+
+# Reference item, collection and child
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages Updated
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages/bar ForRemoval
+
+# Check property values
+assertProperty /software/items/prop1_new_repo -o myprop1='new'
+assertProperty /software/items/prop1_new_repo -o myprop2='orig'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop1='new'
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo -o myprop2='orig'
+
+# Action 3:
+# Create and run plan
+litp update -p /software/items/foo -o name='anything'
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+# Result 3:
+#  Source item, collection and child are Applied
+#  Reference item is Applied
+#  Reference item descendants' child was removed but collection was not removed
+
+# Source item, collection and child
+assertState -p /software/items/prop1_new_repo Applied
+assertState -p /software/items/prop1_new_repo/packages Applied
+assertState -p /software/items/prop1_new_repo/packages/bar Applied
+
+# Reference item, collection and child
+# Check that reference descendant child is removed but collection is not removed
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages Applied
+assertNone -p /deployments/local/clusters/cluster1/nodes/node1/items/prop1_new_repo/packages/bar

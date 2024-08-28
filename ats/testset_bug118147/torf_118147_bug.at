@@ -1,0 +1,31 @@
+## TORF-118147: Duplicate validation errors returned at create_plan
+add-extensions ../extensions/dummy_volmgr_extensions
+add-plugins plugins/dummy_118147_plugin
+runLitpScript ../include/two_nodes.at
+
+# create volmgr items
+litp create -p /infrastructure/storage/storage_profiles/profile_2 -t storage-profile
+litp create -p /infrastructure/storage/storage_profiles/profile_2/volume_groups/vg1 \
+    -t volume-group -o volume_group_name="vg1"
+litp create -p /infrastructure/storage/storage_profiles/profile_2/volume_groups/vg1/file_systems/fs1 \
+    -t file-system -o size=1G
+litp create -p /infrastructure/storage/storage_profiles/profile_2/volume_groups/vg1/physical_devices/pd1 \
+    -t physical-device -o device_name="pd1"
+
+# inherit it to ms
+litp inherit -p /ms/storage_profile -s /infrastructure/storage/storage_profiles/profile_2
+
+# fail plan leaving Inital items APD=False
+litp create_plan
+failConfigTask foo ms1 /ms/storage_profile/volume_groups/vg1/physical_devices/pd1
+litp run_plan
+assertPlanState failed
+assertAppliedPropertiesDeterminable -p /ms/storage_profile/volume_groups/vg1/physical_devices/pd1 False
+
+# remove item, item and children move to ForRemoval
+litp remove -p /ms/storage_profile/volume_groups/vg1/
+assertState -p /ms/storage_profile/volume_groups/vg1 ForRemoval
+assertState -p /ms/storage_profile/volume_groups/vg1/physical_devices/pd1 ForRemoval
+
+# Create plan should not have duplicate error messages on /ms/../volume_groups
+assertError --errors_length 1 --err_type "CardinalityError" create_plan

@@ -1,0 +1,15 @@
+runLitpScript  ../include/two_nodes.at
+add-extensions ../plugins/update_property
+add-plugins plugins/dummy_9866_update_model_ok
+
+litp create -p /software/items/test_item -t test_item -o name=test_item
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+# check that update_model gets called
+litp create_plan
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Y.Y.Y'
+
+disableCallbackMock cb_update_property /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version='Z.Z.Z'

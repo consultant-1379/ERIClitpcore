@@ -1,0 +1,5 @@
+
+litp create -p /deployments/local_vm -t deployment
+assertError create -p /deployments/local_vm -t deployment
+
+litp create -p /deployments/should_fail -t deployment

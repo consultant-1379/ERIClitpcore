@@ -1,0 +1,20 @@
+add-plugins ../plugins/non_persistent_task
+
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/item1 -t software-item
+
+litp inherit -p /ms/items/item1 -s /software/items/item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/item1 -s /software/items/item1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/item1 -s /software/items/item1
+
+litp create_plan
+litp run_plan
+
+assertDirectoryContents cleanup_before_non_persistent_task /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+
+litp create_plan
+litp run_plan
+
+assertDirectoryContents cleanup_after_non_persistent_task /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/
+

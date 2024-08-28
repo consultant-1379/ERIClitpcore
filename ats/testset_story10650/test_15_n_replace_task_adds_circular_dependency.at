@@ -1,0 +1,79 @@
+## test_15_n_replace_task_adds_circular_dependency
+## Description:
+## Ensure that if a replace task introduces a circular dependency,
+## an Error is raised
+
+## Prerequisite:
+## Create a plug-in that generates persisted tasks
+
+## Actions:
+## 1. Create a model item that generates ConfigTasks
+##    with dependencies:
+##    task4(foo4, bar4) -> task3(foo3, bar3) -> task2(foo2, bar2) -> task1(foo1, bar1) 
+##    task1(foo1, bar1) -> QueryItem("depend10650")
+## 2. Create Plan
+## 3. Run plan
+## 4. Update model items so plug-in will generate the following replacement tasks
+##    with dependencies:
+##    task5(foo5, bar5) -> task1(foo1, bar1) replaces task2(foo2, bar2)
+##    task6(foo6, bar6) -> task3(foo3, bar3)replaces task4(foo4, bar4)
+##    QueryItem("depend10650") task -> task1(foo1, bar1)
+##    Resulting in following dependency graph:
+##    task6(foo6, bar6) -> task3(foo3, bar3) -> task5(foo5, bar5) -> task1(foo1, bar1)
+##    task1(foo1, bar1) -> QueryItem("depend10650")
+##    QueryItem("depend10650") -> task1(foo1, bar1)
+## 5. Create plan
+## 6. Check "InternalServerError" raised
+
+## Result:
+## When a replacement task generates a circular dependency, this is caught
+
+#Prerequisite:
+#Create a plug-in that generates persisted tasks
+add-plugins plugins/story10650_plugin
+add-plugins plugins/depend10650_plugin
+add-extensions extensions/story10650_extension
+
+runLitpScript ../include/two_nodes.at
+
+#1. Create a model item that generates ConfigTasks
+#   with dependencies:
+#   task4(foo4, bar4) -> task3(foo3, bar3) -> task2(foo2, bar2) -> task1(foo1, bar1)
+#   task1(foo1, bar1) -> QueryItem("depend10650")
+litp create -p /software/items/item1 -t story10650 -o name="tc15_foobar1"
+litp inherit -s /software/items/item1 -p /deployments/local/clusters/cluster1/nodes/node1/items/item1
+litp create -p /software/items/depend1 -t depend10650 -o name="tc15_depend"
+litp inherit -s /software/items/depend1 -p /deployments/local/clusters/cluster1/nodes/node1/items/depend1
+
+#2. Create Plan
+litp create_plan
+assertConfigTask node1 foo1 bar1 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc15_foobar1"
+assertConfigTask node1 foo2 bar2 /deployments/local/clusters/cluster1/nodes/node1/items/item1 name="tc15_foobar1"
+assertConfigTask node1 baz1 qux1 /deployments/local/clusters/cluster1/nodes/node1/items/depend1 name="tc15_depend"
+
+#3. Run plan
+litp run_plan
+
+# Check manifest is as expected
+assertFileContents manifests/expected/tc15/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp
+
+#4. Update model items so plug-in will generate the following replacement tasks
+#   with dependencies:
+#   task5(foo5, bar5) -> task1(foo1, bar1) replaces task2(foo2, bar2)
+#   task6(foo6, bar6) -> task3(foo3, bar3)replaces task4(foo4, bar4)
+#   QueryItem("depend10650") task -> task1(foo1, bar1)
+#   Resulting in following dependency graph:
+#   task6(foo6, bar6) -> task3(foo3, bar3) -> task5(foo5, bar5) -> task1(foo1, bar1)
+#   task1(foo1, bar1) -> QueryItem("depend10650")
+#   QueryItem("depend10650") -> task1(foo1, bar1)
+litp update -p /software/items/item1 -o name="tc15_foobar2"
+litp update -p /software/items/depend1 -o name="tc15_depend2"
+
+#5. Create plan
+#6. Check "InternalServerError" raised
+assertError create_plan
+let __err_test –err_type InternalServerError –err_message “Create plan failed: See logs for details” assertError __err_test create_plan
+assertLogMessage 'Error while creating deployment plan, cyclic dependency found'
+
+# Check manifests hav not been altered
+assertFileContents manifests/expected/tc15/initial.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/node1.pp

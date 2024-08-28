@@ -1,0 +1,33 @@
+runLitpScript ../../include/two_nodes.at
+add-extensions ../../plugins/simple_future_property
+add-plugins ../../plugins/simple_future_property
+
+litp create -p /software/items/test_item -t test_item -o name=test_item
+litp inherit -p /ms/items/test_item -s /software/items/test_item -o version="X.X.X"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item -s /software/items/test_item -o version="X.X.X"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/test_item -s /software/items/test_item -o version="X.X.X"
+
+litp create_plan
+assertProperty /ms/items/test_item -o version="X.X.X"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version="X.X.X"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/test_item -o version="X.X.X"
+
+litp run_plan
+assertConfigTask ms1 package test_item /ms/items/test_item version='X.X.X'
+
+assertProperty /ms/items/test_item -o version="X.X.X"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/test_item -o version="X.X.X"
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/items/test_item -o version="X.X.X"
+
+litp prepare_restore
+
+assertState -p /ms Applied
+assertState -p /ms/items/test_item Applied
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/test_item Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2 Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/items/test_item Initial
+
+litp create_plan
+assertConfigTask ms1 package test_item /ms/items/test_item version='X.X.X'

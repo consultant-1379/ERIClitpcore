@@ -1,0 +1,95 @@
+# test_17_p_cluster_expansion_and_upgrade
+# =======================================
+# Description:
+# Test that adding a cluster and upgrading is successful
+# 
+# Actions:
+# 1. Add a cluster to the 2 cluster deployment
+# 2. Update the "dependency_list" property but so not
+# include the cluster being added
+# 3. Follow the upgrade steps
+# 4. After upgrade plan is created, check that
+# the new cluster is instlled first, then the clusters
+# are upgraded as per the "dependency_list" property
+# 
+# Result:
+# The legacy functionality where by new clusters are
+# installed first is not impacted
+
+# Create multi applied cluster deployment
+add-extensions ../plugins/dummy_8809
+add-plugins ../plugins/dummy_8809
+runLitpScript misc/create_multi_cluster_applied_deployment.inc
+
+# 1. Existing clusters are Applied. Add a new cluster
+litp create -p /deployments/litpcds_8809/clusters/cluster_x -t cluster -o dependency_list='' ha_manager="cmw"
+litp create -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node1 -t node -o hostname=cx-node1
+litp create -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/system -s /infrastructure/systems/system1
+
+litp create -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node2 -t node -o hostname=cx-node2
+litp create -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/system -s /infrastructure/systems/system2
+
+# 2. Update the dependency list, don't include new cluster
+# See create multi cluster deployment step. Dependency:
+# cluster_1 depends on cluster_2, cluster_2 depends on cluster_3 (zulu, alpha, no_ha & cluster_x unlisted)
+
+# 3. Create configurations on the clusters
+litp create -p /software/items/ha_node_item -t foo -o name=bar
+
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_1/nodes/node3/items/ha_node_item -s /software/items/ha_node_item
+
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_3/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_no_ha/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_no_ha/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+# New cluster tasks
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/items/ha_node_item -s /software/items/ha_node_item
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/items/ha_node_item -s /software/items/ha_node_item
+
+# 4. Create plan, new cluster is installed first followed by dependency order
+litp create_plan
+# Order: cluster_x install tasks, cluster_3 -> 2 -> 1 upgrade tasks, unlisted upgrade tasks last
+# New cluster (x) Install tasks - boot tasks
+let __task_n1_boot_cx CallbackTask _wait_for_node /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/system
+let __task_n2_boot_cx CallbackTask _wait_for_node /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/system
+# New cluster (x) Install tasks - cobbler tasks
+let __task_n1_cob_cx ConfigTask ms1 cobbler '/deployments/litpcds_8809/clusters/cluster_x/nodes/node1/system' '/ms/services/cobbler'
+let __task_n2_cob_cx ConfigTask ms1 cobbler '/deployments/litpcds_8809/clusters/cluster_x/nodes/node2/system' '/ms/services/cobbler'
+# New cluster (x) upgrade tasks
+let __task_n1_cx ConfigTask cx-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_x/nodes/node1/items/ha_node_item
+let __task_n2_cx ConfigTask cx-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_x/nodes/node2/items/ha_node_item
+# Existing cluster upgrade tasks
+let __task_n1_c3 ConfigTask c3-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/items/ha_node_item
+let __task_n2_c3 ConfigTask c3-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node2/items/ha_node_item
+
+let __task_n1_c2 ConfigTask c2-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/items/ha_node_item
+let __task_n2_c2 ConfigTask c2-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node2/items/ha_node_item
+
+let __task_n1_c1 ConfigTask c1-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/items/ha_node_item
+let __task_n2_c1 ConfigTask c1-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node2/items/ha_node_item
+
+# Assert that the install tasks for the new cluster go first, then the dependency order of the existing clusters
+assertTaskBeforeTask __task_n1_cob_cx __task_n1_boot_cx __task_n1_c3 __task_n1_c2 __task_n1_c1
+assertTaskBeforeTask __task_n2_cob_cx __task_n2_boot_cx __task_n2_c3 __task_n2_c2 __task_n2_c1
+
+# Upgrade tasks for cluster_x are not in dependency list so they go at the end
+assertTaskBeforeTask __task_n1_c1 __task_n1_cx
+assertTaskBeforeTask __task_n2_c1 __task_n2_cx

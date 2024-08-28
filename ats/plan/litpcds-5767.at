@@ -1,0 +1,13 @@
+add-plugins litpcds_5767
+add-extensions litpcds_5767
+#runLitpScript ../include/two_nodes.at
+litp create -p /infrastructure/storage/nfs_mounts/nfs_mount -t file-system-base
+#litp create -t system -p /infrastructure/systems/ms_system -o system_name=MSVM
+#litp inherit -p /ms/system -s /infrastructure/systems/ms_system
+litp create -p /ms/configs/cfg -t node-config
+litp create -p /ms/configs/fwcfg -t firewall-node-config
+litp inherit -p /ms/file_systems/fsystem -s /infrastructure/storage/nfs_mounts/nfs_mount
+
+litp create_plan
+litp run_plan
+assertFileContents litpcds_5767/ms1.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp

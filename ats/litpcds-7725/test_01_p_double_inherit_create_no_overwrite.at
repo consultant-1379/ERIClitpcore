@@ -1,0 +1,96 @@
+## test_01_p_double_inherit_create_no_overwrite
+## Description:
+## Double inheritance via CLI with no properties overwritten on reference creation.
+## Double inheritance of Applied item must follow the same rules as single inheritance.
+## Requirements id: TORF-107260
+
+add-plugins plugins
+add-extensions extensions
+runLitpScript two-node-std.inc
+
+#Create a parent item on the ms
+litp create -p /software/items/bug7725_tc_01 -t bug7725-sw-item -o name='tc_01'
+
+#Inherit the source item to the ms
+litp inherit -p /ms/items/bug7725_tc_01 -s /software/items/bug7725_tc_01
+
+#Inherit the source item to node1
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 -s /software/items/bug7725_tc_01
+
+#Inherit the inherited ms child item to node2 (double-inheritance)
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 -s /ms/items/bug7725_tc_01
+
+assertState -p /ms/items/bug7725_tc_01 Initial
+assertProperty /ms/items/bug7725_tc_01 -o name='tc_01'
+
+#Create/run plan
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+#Check state Applied for all paths and property propagated to all references
+assertState -p /software/items/bug7725_tc_01 Applied
+assertProperty /software/items/bug7725_tc_01 -o name='tc_01'
+
+assertState -p /ms/items/bug7725_tc_01 Applied
+assertProperty /ms/items/bug7725_tc_01 -o name='tc_01'
+
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 Applied
+assertProperty /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 -o name='tc_01'
+
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 Applied
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 -o name='tc_01'
+
+#Update source item
+litp update -p /software/items/bug7725_tc_01 -o name='tc_01_updated'
+
+
+#Check all paths state Updated and property update propagated to all references
+
+assertState -p /software/items/bug7725_tc_01 Updated
+assertProperty /software/items/bug7725_tc_01 -o name='tc_01_updated'
+
+assertState -p /ms/items/bug7725_tc_01 Updated
+assertProperty /ms/items/bug7725_tc_01 -o name='tc_01_updated'
+
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 Updated
+assertProperty /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 -o name='tc_01_updated'
+
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 Updated
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 -o name='tc_01_updated'
+
+#restore model to last applied state
+litp restore_model
+
+#Update ms reference item
+litp update -p /ms/items/bug7725_tc_01 -o name='tc_01_updated'
+
+#Check source item unchanged and only the reference item inherited from ms item is changed
+assertState -p /software/items/bug7725_tc_01 Applied
+assertProperty /software/items/bug7725_tc_01 -o name='tc_01'
+
+assertState -p /ms/items/bug7725_tc_01 Updated
+assertProperty /ms/items/bug7725_tc_01 -o name='tc_01_updated'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 Applied
+assertProperty /deployments/site1/clusters/cluster1/nodes/node1/items/bug7725_tc_01 -o name='tc_01'
+
+assertState -p /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 Updated
+assertProperty /deployments/site1/clusters/cluster1/nodes/node2/items/bug7725_tc_01 -o name='tc_01_updated'
+
+#Remove parent item
+litp remove -p /software/items/bug7725_tc_01
+
+#Inherited descendants are in "ForRemoval" state
+assertState -p /ms/items/bug7725_tc_01 ForRemoval
+assertProperty /ms/items/bug7725_tc_01 -o name='tc_01_updated'
+
+
+
+
+
+

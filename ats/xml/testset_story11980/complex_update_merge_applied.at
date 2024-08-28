@@ -1,0 +1,70 @@
+#Update source Child and destination grandchild using load --merge
+
+add-extensions extensions/test_11980_extension
+add-plugins plugins/test_11980_plugin
+runLitpScript ../../include/two_nodes.at
+
+litp create -p /software/services/PS -t parent -o name=PS
+litp create -p /software/services/PS/childs/C -t child -o name=CS
+litp create -p /software/services/PS/childs/C/grand_children/G -t grand-child -o name=GS
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/services/PD -s /software/services/PS
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/services/PD -s /software/services/PS
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /software/services/PS Applied
+assertState -p /software/services/PS/childs/C Applied
+assertProperty /software/services/PS/childs/C -o name="CS"
+assertState -p /software/services/PS/childs/C/grand_children/G Applied
+assertProperty /software/services/PS/childs/C/grand_children/G -o name="GS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C -o name="CS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C/grand_children/G Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C/grand_children/G -o name="GS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C -o name="CS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C/grand_children/G Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C/grand_children/G -o name="GS"
+
+litp load -p / -f xml/complex_update_merge.xml --merge
+
+assertState -p /software/services/PS Applied
+assertState -p /software/services/PS/childs/C Updated
+assertProperty /software/services/PS/childs/C -o name="CSPrim"
+assertState -p /software/services/PS/childs/C/grand_children/G Applied
+assertProperty /software/services/PS/childs/C/grand_children/G -o name="GS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C -o name="CSPrim"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C/grand_children/G Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C/grand_children/G -o name="GS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C -o name="CSPrim"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C/grand_children/G Updated
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C/grand_children/G -o name="GSPrim"
+
+litp create_plan
+litp run_plan
+assertPlanState successful
+
+assertState -p /software/services/PS Applied
+assertState -p /software/services/PS/childs/C Applied
+assertProperty /software/services/PS/childs/C -o name="CSPrim"
+assertState -p /software/services/PS/childs/C/grand_children/G Applied
+assertProperty /software/services/PS/childs/C/grand_children/G -o name="GS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C -o name="CSPrim"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C/grand_children/G Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/services/PD/childs/C/grand_children/G -o name="GS"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD Applied
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C -o name="CSPrim"
+assertState -p /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C/grand_children/G Applied
+assertProperty /deployments/local/clusters/cluster1/nodes/node2/services/PD/childs/C/grand_children/G -o name="GSPrim"

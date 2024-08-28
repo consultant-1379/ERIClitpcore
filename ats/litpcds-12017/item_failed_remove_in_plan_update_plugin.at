@@ -1,0 +1,36 @@
+## LITPCDS-12017: Remove parent in plan, but fail plan before child item is
+## removed in cleanup at end of plan. Then try update parent item via PluginAPI
+add-extensions extensions/dummy_12017_extension
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/foo -t dummy-12017 -o name=foo updatable_prop=original
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+litp create_plan
+litp run_plan
+
+# Remove parent item, note it has child item (CollectionItem 'packages')
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/foo
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo/packages ForRemoval
+
+litp create_plan
+runPlanUntil 1
+stopPlan
+runPlanEnd
+assertPlanState stopped
+
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo/packages ForRemoval
+
+# Update parent item from within plugin which has failed removal
+add-plugins plugins/dummy_12017_plugin
+let __val_err --err_type "InternalServerError" --err_message 'Create plan failed: Model update failed with: ValidationErrors occurred during update of property "updatable_prop" on /deployments/local/clusters/cluster1/nodes/node1/items/foo:'
+assertError --errors_length 1 __val_err create_plan
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/foo -o updatable_prop=original
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/foo/packages ForRemoval
+
+assertLogMessage 'AttributeError: ValidationErrors occurred during update of property "updatable_prop" on /deployments/local/clusters/cluster1/nodes/node1/items/foo:'
+assertLogMessage '</deployments/local/clusters/cluster1/nodes/node1/items/foo - MethodNotAllowedError - Cannot update item which has previously failed removal>'

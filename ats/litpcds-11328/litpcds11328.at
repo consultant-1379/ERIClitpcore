@@ -1,0 +1,24 @@
+runLitpScript ../include/two_nodes.at
+add-plugins plugin
+
+litp create -p /software/items/mock_item -t mock-package -o name=mock_item -o not_updatable="SHOULD_NOT_BE_UPDATED"
+assertState -p /software/items/mock_item Initial
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/mock_item -s /software/items/mock_item
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/mock_item Initial
+
+litp create_plan
+disableCallbackMock cb_fail /deployments/local/clusters/cluster1/nodes/node1
+litp run_plan
+
+assertState -p /software/items/mock_item Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/mock_item Applied
+
+let __err --err_type=InvalidRequestError --err_message="Unable to modify readonly property: not_updatable"
+assertError __err update -p /deployments/local/clusters/cluster1/nodes/node1/items/mock_item -o not_updatable="THIS_VALUE_SHOULD_NOT_BE_SET"
+assertError __err update -p /software/items/mock_item -o not_updatable="THIS_VALUE_SHOULD_NOT_BE_SET"
+assertState -p /software/items/mock_item Initial
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/mock_item Applied
+
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/mock_item -o not_updatable="SHOULD_NOT_BE_UPDATED"
+assertProperty /software/items/mock_item -o not_updatable="SHOULD_NOT_BE_UPDATED"

@@ -1,0 +1,41 @@
+# test_01_p_create_restore_remove_deployment_snapshot_success
+# ===========================================================
+# Description:
+# This test case tests the following:
+# -Test that on the successful execution of a deployment snapshot plan,
+# a backup of the LITP snapshot model is stored
+# -Test at the removal of the deployment snapshot, the associated backed up
+# deployment snapshot model is removed
+# -Test that a back up of the model is taken at the creation of a named snapshot
+# -Test that a back up of the model is removed at the removal of a named snapshot
+
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+#assertDirectoryContents misc/NON_EXISTENT_FILE /tmp/SNAPSHOT_PLAN_snapshot
+
+litp create_snapshot
+assertPlanState successful
+
+#assertFileContents misc/SNAPSHOT_PLAN_DEPLOYMENT /tmp/SNAPSHOT_PLAN_snapshot
+
+litp remove_snapshot
+assertPlanState successful
+
+#assertDirectoryContents misc/NON_EXISTENT_FILE /tmp/SNAPSHOT_PLAN_snapshot
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+litp create_snapshot -n some_named_snapshot
+assertPlanState successful
+
+#assertFileContents misc/SNAPSHOT_PLAN_NAMED /tmp/SNAPSHOT_PLAN_some_named_snapshot
+
+litp remove_snapshot -n some_named_snapshot
+assertPlanState successful
+
+#assertDirectoryContents misc/NON_EXISTENT_FILE /tmp/SNAPSHOT_PLAN_some_named_snapshot

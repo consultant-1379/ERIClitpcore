@@ -1,0 +1,27 @@
+litp create -p /deployments/deployment1 -t deployment
+litp create -p /deployments/deployment1/clusters/cluster1 -t cluster
+litp create -p /deployments/deployment1/clusters/cluster1/nodes/node1 -t node -o hostname="node1"
+litp create -p /deployments/deployment1/clusters/cluster1/nodes/node2 -t node -o hostname="node2"
+litp create -p /deployments/deployment1/clusters/cluster1/nodes/node3 -t node -o hostname="node3"
+litp create -p /deployments/deployment1/clusters/cluster1/nodes/node4 -t node -o hostname="node4"
+
+assertState -p /deployments/deployment1/clusters/cluster1/nodes/node1 Initial
+assertState -p /deployments/deployment1/clusters/cluster1/nodes/node2 Initial
+assertState -p /deployments/deployment1/clusters/cluster1/nodes/node3 Initial
+assertState -p /deployments/deployment1/clusters/cluster1/nodes/node4 Initial
+
+litp remove -p /deployments/deployment1/clusters/cluster1/nodes/node1
+assertNone -p /deployments/deployment1/clusters/cluster1/nodes/node1
+
+litp remove -p /deployments/deployment1/clusters/cluster1/nodes/node2
+assertNone -p /deployments/deployment1/clusters/cluster1/nodes/node2
+
+litp remove -p /deployments/deployment1/clusters/cluster1/nodes/node3
+assertNone -p /deployments/deployment1/clusters/cluster1/nodes/node3
+
+assertError remove -p /deployments/deployment1/clusters/cluster1/nodes
+assertError remove -p /deployments/deployment1/clusters
+assertError remove -p /deployments
+assertError remove -p /
+
+assertState -p /deployments/deployment1/clusters/cluster1/nodes/node4 Initial

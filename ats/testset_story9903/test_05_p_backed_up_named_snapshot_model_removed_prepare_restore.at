@@ -1,0 +1,36 @@
+# test_05_p_backed_up_named_snapshot_model_removed_prepare_restore
+# =====================================================================
+# Description:
+# Test that when the "prepare_restore" command is executed,
+# the associated backed up named snapshot model
+# file is removed
+
+# Result:
+# The associated backed up named snapshot model
+# file is removed when the "prepare_restore" command is executed
+
+add-plugins ../plugins/mock_volmgr_plugin
+runLitpScript ../include/two_nodes.at
+
+litp create -p /software/items/xx -t mock-package -o name=xx
+litp inherit -p /ms/items/y -s /software/items/xx
+
+litp create_plan
+litp run_plan
+
+# Make sure 'snapshots' collection is in an Applied state (to match test_01)
+litp create_snapshot
+litp remove_snapshot
+
+litp create_snapshot -n some_named_snapshot
+
+#assertFileContents misc/SNAPSHOT_PLAN_NAMED /tmp/SNAPSHOT_PLAN_some_named_snapshot
+
+litp create -p /software/items/A -t mock-package -o name=A
+litp inherit -p /ms/items/A -s /software/items/A
+litp create_plan
+litp run_plan
+
+litp prepare_restore
+
+#assertDirectoryContents misc/NON_EXISTENT_FILE /tmp/SNAPSHOT_PLAN_some_named_snapshot

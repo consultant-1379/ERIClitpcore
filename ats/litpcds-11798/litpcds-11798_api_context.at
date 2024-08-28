@@ -1,0 +1,30 @@
+add-extensions ../extensions/dummy_package_like_extensions
+add-plugins ../plugins/dummy_package_like
+add-plugins plugins/update_api_context
+
+runLitpScript ../include/two_nodes.at
+
+litp create -t dummy-package-like -p /software/items/myitem -o name='myitem' updatable='a_value'
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/myitem -s /software/items/myitem
+
+litp create_plan
+litp run_plan
+
+litp remove  -p /deployments/local/clusters/cluster1/nodes/node1
+assertState -p /deployments/local/clusters/cluster1/nodes/node1 ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items ForRemoval
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/myitem ForRemoval
+assertError --err_type MethodNotAllowedError update -p /deployments/local/clusters/cluster1/nodes/node1/items/myitem -o updatable='update_should_be_disallowed_on_for_removal_item'
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/myitem ForRemoval
+
+litp create_plan
+assertCallbackTask _cb_fail /deployments/local/clusters/cluster1/nodes/node1
+disableCallbackMock _cb_fail /deployments/local/clusters/cluster1/nodes/node1
+
+litp run_plan
+assertPlanState failed
+
+assertLogMessage "<ModelItem /deployments/local/clusters/cluster1/nodes/node1 type=node state=ForRemoval> won't change state due to failure of set([<CallbackTask /deployments/local/clusters/cluster1/nodes/node1 - _cb_fail:  [Failed]>])."
+
+assertLogMessage "{'error': 'ValidationErrors occurred during update of property \"updatable\" on /deployments/local/clusters/cluster1/nodes/node1/items/myitem:\\n</deployments/local/clusters/cluster1/nodes/node1/items/myitem - MethodNotAllowedError - Item\'s parent is marked for removal>'}"
+

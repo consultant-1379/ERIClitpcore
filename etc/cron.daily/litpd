@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# remove old ks-script-* files
+find /tmp/ -type f -name "ks-script-*" -mtime +30 -exec rm {} \;

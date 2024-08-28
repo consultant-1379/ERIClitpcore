@@ -1,0 +1,5 @@
+litp create -t network -p /infrastructure/networking/networks/net1 -o name=foo subnet='1.2.3.0/24'
+litp create -t network -p /infrastructure/networking/networks/net2 -o name=foo subnet='1.2.4.0/24'
+
+# Error trying to create plan
+assertError create_plan

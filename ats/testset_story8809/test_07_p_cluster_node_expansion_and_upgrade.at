@@ -1,0 +1,67 @@
+# test_07_p_cluster_node_expansion_and_upgrade
+# =======================================
+# Description:
+# Test that adding a node and upgrading is successful
+# 
+# Actions:
+# 1.Add a node to a cluster
+# 2.Update the "dependency_list" property
+# 3. Follow the upgrade steps
+# 4. After upgrade plan is created, check that
+# the new node is instlled first, then the clusters
+# are upgraded as per the "dependency_list" property
+# 
+# Result:
+# The legacy functionality where by new nodes are
+# installed first is not impacted
+
+# Create multi cluster deployment
+add-extensions ../plugins/dummy_8809
+add-plugins ../plugins/dummy_8809
+runLitpScript misc/create_multi_cluster_deployment.inc
+
+# 1. Add a new node to a cluster (node will be initial others will be applied)
+litp create -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node4 -t node -o hostname=c2-node4
+litp create -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node4/network_interfaces/ip1 -t network-interface -o network_name=sample-ip-range
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node4/os -s /software/profiles/os-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node4/storage_profile -s /infrastructure/storage/storage_profiles/storage-profile1
+litp inherit -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node4/system -s /infrastructure/systems/system4
+
+assertState -p /deployments/litpcds_8809/clusters/cluster_2/nodes/node4 Initial
+
+# 2. Update the dependency list property
+# Order: cluster_3 -> cluster_2 -> cluster_1 -> cluster_zulu -> cluster_alpha -> cluster_no_ha
+litp update -p /deployments/litpcds_8809/clusters/cluster_zulu -o dependency_list="cluster_2"
+
+# 3. Create configurations on the clusters
+# Create multi cluster deployment step
+
+# 4. Create plan, check that new node is installed first, then the ordering applies
+litp create_plan
+
+# New node (4) install tasks - cobbler and boot
+let __task_n4_boot_c2 CallbackTask _wait_for_node /deployments/litpcds_8809/clusters/cluster_2/nodes/node4/system
+let __task_n4_cob_c2 ConfigTask ms1 cobbler '/deployments/litpcds_8809/clusters/cluster_2/nodes/node4/system' '/ms/services/cobbler'
+
+# Existing cluster upgrade tasks
+let __task_n1_c3 ConfigTask c3-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node1/items/ha_node_item
+let __task_n2_c3 ConfigTask c3-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_3/nodes/node2/items/ha_node_item
+
+let __task_n1_c2 ConfigTask c2-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node1/items/ha_node_item
+let __task_n2_c2 ConfigTask c2-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_2/nodes/node2/items/ha_node_item
+
+let __task_n1_c1 ConfigTask c1-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node1/items/ha_node_item
+let __task_n2_c1 ConfigTask c1-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_1/nodes/node2/items/ha_node_item
+
+let __task_n1_ca ConfigTask ca-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node1/items/ha_node_item
+let __task_n2_ca ConfigTask ca-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_alpha/nodes/node2/items/ha_node_item
+
+let __task_n1_cnha ConfigTask c-no-ha-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_no_ha/nodes/node1/items/ha_node_item
+let __task_n2_cnha ConfigTask c-no-ha-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_no_ha/nodes/node2/items/ha_node_item
+
+let __task_n1_cz ConfigTask cz-node1 foo foo1 /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node1/items/ha_node_item
+let __task_n2_cz ConfigTask cz-node2 foo foo1 /deployments/litpcds_8809/clusters/cluster_zulu/nodes/node2/items/ha_node_item
+
+# Expected order: cluster_3 -> cluster_2 -> cluster_1 -> cluster_zulu -> cluster_alpha -> cluster_no_ha
+assertTaskBeforeTask __task_n4_cob_c2 __task_n4_boot_c2 __task_n1_c3 __task_n1_c2 __task_n1_c1 __task_n1_cz __task_n1_ca __task_n1_cnha
+assertTaskBeforeTask __task_n4_cob_c2 __task_n4_boot_c2 __task_n2_c3 __task_n2_c2 __task_n2_c1 __task_n2_cz __task_n2_ca __task_n2_cnha

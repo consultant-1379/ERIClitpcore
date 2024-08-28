@@ -1,0 +1,32 @@
+# LITPCDS-8858 if a new task and a prev successful task are equal then the old
+# one should be used for puppet and it's not shown in plan output
+#
+add-plugins plugins/plugins8
+#litp create -t service-base -p /ms/services/srv1
+litp create -p /ms/network_interfaces/nic1 -t network-interface -o network_name=mgmt
+
+litp create_plan
+failConfigTask eth_dependent ms1  /ms/network_interfaces/nic1
+assertConfigTask ms1 eth test8 /ms/network_interfaces/nic1
+assertConfigTask ms1 eth_dependent test8 /ms/network_interfaces/nic1
+litp run_plan
+#show show_plan
+
+assertAppliedPropertiesDeterminable -p /ms/network_interfaces/nic1 False
+
+# create again - same task will be generated
+litp create_plan
+
+# Dont filter /ms/network_interfaces/nic1 tasks as its apd=False
+assertConfigTask ms1 eth test8 /ms/network_interfaces/nic1
+assertConfigTask ms1 eth_dependent test8 /ms/network_interfaces/nic1
+litp run_plan
+#show show_plan
+
+assertAppliedPropertiesDeterminable -p /ms/network_interfaces/nic1 True
+
+# Create plan again to retrieve the same tasks, this time they will all be
+# filtered out as /ms/network_interfaces/nic1 apd=True
+assertError create_plan --errors_length 1 --err_message "Create plan failed: no tasks were generated"
+
+assertFileContents ./manifests/test_08.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
